@@ -38,6 +38,9 @@ class Sensors:
         self.foul_words    = pisg.get("FoulWords", [])
         # Monologue tracking: {(network, channel): (last_nick, consecutive_count)}
         self._last_speaker: dict = {}
+        # Nick list cache for reference detection: {(network,channel): (ts, [nicks])}
+        self._nick_cache: dict = {}
+        self._nick_cache_ttl = 300  # seconds
         self.log_wordstats = config.get("stats", {}).get("log_wordstats", True)
         self.quote_freq = config.get("stats", {}).get("quote_frequency", 5)
         self.kick_context = config.get("stats", {}).get("kick_context", 5)
@@ -126,15 +129,20 @@ class Sensors:
             for word in parsed["word_list"]:
                 incr_word(nick_id, self.network, channel, word, nick=nick)
 
-        # Nick reference tracking
+        # Nick reference tracking — uses a cached nick list (refreshed every 5 min)
         from database.models import get_conn as _gc, incr_nick_ref
         from bot.parser import find_nick_refs
-        with _gc() as _c:
-            _known = [r["nick"] for r in _c.execute(
-                "SELECT n.nick FROM nicks n JOIN stats st ON st.nick_id=n.id"
-                " WHERE n.network=? AND n.channel=? AND st.words>0 AND st.period=0",
-                (self.network, channel)
-            ).fetchall()]
+        import time as _time
+        _cache_key = (self.network, channel)
+        _cached_ts, _known = self._nick_cache.get(_cache_key, (0, []))
+        if _time.time() - _cached_ts > self._nick_cache_ttl:
+            with _gc() as _c:
+                _known = [r["nick"] for r in _c.execute(
+                    "SELECT n.nick FROM nicks n JOIN stats st ON st.nick_id=n.id"
+                    " WHERE n.network=? AND n.channel=? AND st.words>0 AND st.period=0",
+                    (self.network, channel)
+                ).fetchall()]
+            self._nick_cache[_cache_key] = (_time.time(), _known)
         for mentioned in find_nick_refs(text, _known):
             if mentioned.lower() != nick.lower():
                 incr_nick_ref(self.network, channel, mentioned, nick)
@@ -165,13 +173,15 @@ class Sensors:
     def on_action(self, nick: str, host: str, channel: str, text: str):
         if not channel.startswith(('#', '&', '!')):
             return
+        if is_ignored(nick, self.network, host, channel):
+            return
         nick_id = get_or_create_nick(nick, self.network, channel, host)
         incr(nick_id, "actions", 1)
         full_text = f"* {nick} {text}"
         set_example(nick_id, "action_ex", full_text)
 
         # Check for violent actions — also detect victim nick
-        from bot.parser import count_violent, find_nick_refs
+        from bot.parser import count_violent, find_nick_refs, parse_message
         if self.violent_words and count_violent(text, self.violent_words):
             incr(nick_id, "violent", 1)
             set_example(nick_id, "violent_ex", full_text)
@@ -191,9 +201,39 @@ class Sensors:
                     set_example(victim_id, "attacked_ex", full_text)
                     break  # only first victim
 
-        # Actions count as lines/words — parse only `text` (not "* nick text")
-        # so the nick doesn't get counted as a word
-        self.on_privmsg(nick, host, channel, text)
+        # Count lines/words/letters for the action directly — do NOT call
+        # on_privmsg to avoid double-counting lines, smileys, quotes, etc.
+        parsed = parse_message(text, self.smileys, self.sad_smileys, self.min_word,
+                               self.violent_words, self.foul_words)
+        incr(nick_id, "lines",   1)
+        incr(nick_id, "words",   parsed["words"])
+        incr(nick_id, "letters", parsed["letters"])
+        if parsed["smileys"]:
+            incr(nick_id, "smileys", parsed["smileys"])
+        if parsed["sad"]:
+            incr(nick_id, "sad", parsed["sad"])
+        if parsed["questions"]:
+            incr(nick_id, "questions", 1)
+
+        # Word frequency
+        if self.log_wordstats:
+            from database.models import incr_word
+            for word in parsed["word_list"]:
+                incr_word(nick_id, self.network, channel, word, nick=nick)
+
+        # Quote logging
+        key = (self.network, channel)
+        nick_key = (self.network, channel, nick_id)
+        self._quote_counters[key] = self._quote_counters.get(key, 0) + 1
+        is_first = nick_key not in self._quote_counters
+        self._quote_counters[nick_key] = True
+        if is_first or self._quote_counters[key] >= self.quote_freq:
+            add_quote(nick_id, self.network, channel, full_text)
+            if self._quote_counters[key] >= self.quote_freq:
+                self._quote_counters[key] = 0
+
+        # Channel log
+        add_chanlog(self.network, channel, nick, full_text, type_=1)
 
     # ─── JOIN ────────────────────────────────────────────────────────────────
 
