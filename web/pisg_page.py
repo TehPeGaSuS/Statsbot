@@ -118,6 +118,21 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
     _net_entry  = next((n for n in config.get("networks", []) if n.get("name") == network), {})
     maintainer  = _net_entry.get("nick") or config.get("bot", {}).get("nick", "")
     now_str      = datetime.now().strftime("%Y-%m-%d %H:%M")
+    now_long     = datetime.now().strftime("%A %d %B %Y - %H:%M:%S")
+
+    # Earliest first_seen across all nicks gives us the tracking start date
+    with get_conn() as conn:
+        _fs = conn.execute(
+            "SELECT MIN(first_seen) as fs FROM nicks WHERE network=? AND channel=?",
+            (network, channel)
+        ).fetchone()
+    tracking_start = _fs["fs"] if _fs and _fs["fs"] else None
+    if tracking_start:
+        from datetime import timedelta
+        start_dt  = datetime.fromtimestamp(tracking_start)
+        days_tracked = max(1, (datetime.now() - start_dt).days)
+    else:
+        days_tracked = 0
 
     # ── HTML construction ─────────────────────────────────────────────────────
     H = []  # HTML buffer
@@ -198,6 +213,8 @@ body {{ background: var(--bg); color: var(--text);
 .page-header a {{ color: var(--blue); text-decoration: none; font-size: .85rem; }}
 .page-header h1 {{ font-size: 1.8rem; color: var(--blue); margin: .3rem 0 .2rem; }}
 .page-header .meta {{ color: var(--muted); font-size: .82rem; }}
+.page-header .subtitle {{ color: var(--muted); font-size: .85rem;
+                           margin-top: .3rem; line-height: 1.5; }}
 
 /* Layout */
 .container {{ max-width: 1200px; margin: 1.5rem auto; padding: 0 1.5rem; }}
@@ -337,10 +354,9 @@ b {{ color: var(--cyan); }}
   <h1>{channel} <span style="color:var(--muted);font-size:1rem">on {network}</span>
     <span id="live-count">●</span>
   </h1>
-  <div class="meta">
-    {total_users} users tracked · peak {peak_data['peak']}
-    {' · ' + _ts_date(peak_data['peak_at']) if peak_data['peak_at'] else ''} · {now_str}
-  </div>
+  <p class="subtitle">Statistics generated on {now_long}</p>
+  <p class="subtitle">During this {days_tracked}-day reporting period, a total of
+  <b>{total_users}</b> different nicks were represented on {channel}.</p>
 </div>
 <div class="container">
 """)
