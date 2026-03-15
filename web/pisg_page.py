@@ -39,7 +39,8 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
         get_channel_hourly, get_recent_urls, get_recent_kicks,
         get_recent_topics, get_peak, count_users, get_conn,
         get_top_smileys, get_top_nick_refs, get_quote_for_nick,
-        get_random_quote, get_example
+        get_random_quote, get_example,
+        get_karma_top, get_karma_bottom
     )
 
     pisg = config.get("pisg", {})
@@ -63,6 +64,8 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
     recent_topics = get_recent_topics(network, channel, pisg.get("TopicHistory", 5))
     top_smileys  = get_top_smileys(network, channel, pisg.get("SmileyHistory", 10)) if pisg.get("ShowSmileys", True) else []
     nick_refs    = get_top_nick_refs(network, channel, pisg.get("NickHistory", 5)) if pisg.get("ShowMrn", True) else []
+    karma_top    = get_karma_top(network, channel, pisg.get("KarmaHistory", 10)) if pisg.get("ShowKarma", True) else []
+    karma_bottom = get_karma_bottom(network, channel, 5) if pisg.get("ShowKarma", True) else []
 
     # Active nicks (sorted by words or lines)
     sort_by  = "words" if pisg.get("SortByWords", True) else "lines"
@@ -638,6 +641,29 @@ b {{ color: var(--cyan); }}
         for i, r in enumerate(nick_refs):
             h(f'<tr><td class="rank">{i+1}</td><td class="nick-name">{r["mentioned"]}</td>'
               f'<td class="val">{r["count"]}</td><td class="small">{r.get("by_nick","")}</td></tr>')
+        h('</tbody></table>')
+
+    # ── Karma leaderboard ────────────────────────────────────────────────────
+    if pisg.get("ShowKarma", True) and (karma_top or karma_bottom):
+        section("Karma")
+        h('<table class="info-table"><thead><tr>')
+        h('<th class="rank">#</th><th>Nick</th><th>Score</th></tr></thead><tbody>')
+        # Top positive karma
+        for i, r in enumerate(karma_top):
+            score = r["score"]
+            colour = "var(--green)" if score > 0 else "var(--red)"
+            sign   = "+" if score > 0 else ""
+            h(f'<tr><td class="rank">{i+1}</td>'
+              f'<td class="nick-name">{r["nick"]}</td>'
+              f'<td class="val" style="color:{colour}">{sign}{score}</td></tr>')
+        # Bottom (only if not already in top)
+        top_nicks = {r["nick"].lower() for r in karma_top}
+        extras = [r for r in karma_bottom if r["nick"].lower() not in top_nicks]
+        for r in extras:
+            score = r["score"]
+            h(f'<tr><td class="rank">—</td>'
+              f'<td class="nick-name">{r["nick"]}</td>'
+              f'<td class="val" style="color:var(--red)">{score}</td></tr>')
         h('</tbody></table>')
 
     # ── Smiley frequency table ────────────────────────────────────────────────

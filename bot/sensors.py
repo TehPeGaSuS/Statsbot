@@ -147,6 +147,25 @@ class Sensors:
             if mentioned.lower() != nick.lower():
                 incr_nick_ref(self.network, channel, mentioned, nick)
 
+        # Karma tracking — detect nick++ / nick-- (suffix only).
+        # Rule: strip exactly the last two chars (++ or --) from the token;
+        # the remainder is the nick. This handles nicks that themselves contain
+        # -- or ++ (e.g. "Mike----" → nick "Mike--", delta -1).
+        # Only award karma if the target nick is actually in the channel
+        # (_known is the nick cache built above for nick-refs).
+        from database.models import change_karma as _change_karma
+        _known_lower = {n.lower(): n for n in _known}
+        for _token in text.split():
+            _token = _token.strip(".,!?;:\"'<>@")
+            if len(_token) > 2 and _token.endswith('++'):
+                _kn = _token[:-2]
+                if _kn and _kn.lower() != nick.lower() and _kn.lower() in _known_lower:
+                    _change_karma(self.network, channel, _known_lower[_kn.lower()], +1)
+            elif len(_token) > 2 and _token.endswith('--'):
+                _kn = _token[:-2]
+                if _kn and _kn.lower() != nick.lower() and _kn.lower() in _known_lower:
+                    _change_karma(self.network, channel, _known_lower[_kn.lower()], -1)
+
         # URL logging
         if self.log_urls and parsed["urls"]:
             for url in parsed["urls"]:

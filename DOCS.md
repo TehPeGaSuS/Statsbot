@@ -18,6 +18,7 @@ that anyone familiar with pisg can migrate without reading much.
    - [Big numbers](#big-numbers)
    - [Section toggles](#section-toggles)
    - [History limits](#history-limits)
+   - [Karma](#karma-options)
    - [Page](#page)
 7. [Database](#database)
 8. [Logging](#logging)
@@ -217,9 +218,15 @@ The dashboard serves three pages:
 
 | URL | Description |
 |-----|-------------|
-| `/` | Landing page — all networks and channels |
-| `/<network>/` | Network page — channel cards with word/line counts |
+| `/` | Landing page — network cards (whole card is clickable) |
+| `/<network>/` | Network page — channel cards (whole card is clickable) |
 | `/<network>/<channel>/` | Full pisg-style channel stats page |
+
+The landing page shows each network as a card displaying the network name,
+IRC server address, user count, and channel count. Clicking anywhere on the
+card navigates to the network page. The network page shows each channel as a
+card with tracked users, total words, and total lines; clicking navigates to
+the full channel stats page.
 
 Live user count on the channel page polls `/api/<network>/<channel>/online`
 every 30 seconds via JavaScript.
@@ -368,7 +375,7 @@ and by whom.
 
 #### `ShowMrn`
 Show the "Most referenced nicks" section — which nicks are mentioned most
-in conversation.
+in conversation. Nick casing is preserved as it appears on IRC.
 **Default:** `true` — pisg default: true
 
 #### `ShowMru`
@@ -425,6 +432,42 @@ Number of rows in the "Most active nicks by hour" table (per band).
 
 ---
 
+### Karma options
+
+#### `ShowKarma`
+Show the Karma leaderboard section on the channel stats page. Scores are
+sorted highest to lowest; positive scores are green, negative are red.
+**Default:** `true`
+
+#### `KarmaHistory`
+Maximum number of nicks shown in the karma table.
+**Default:** `10`
+
+#### How karma works
+
+Users award or deduct karma by appending `++` or `--` to a nick in any
+channel message:
+
+```
+<Alice> Bob++        ← Bob's score +1
+<Alice> Bob--        ← Bob's score -1
+```
+
+**Rules enforced by the bot:**
+
+- **Suffix only** — `nick++` / `nick--`. Prefix forms (`++nick`) are ignored.
+- **Channel membership required** — the target nick must be present in the
+  channel at the time of the message. Messages referencing absent nicks or
+  random words ending in `++`/`--` are silently ignored.
+- **No self-karma** — a user cannot modify their own score.
+- **Nicks containing `--` or `++`** are handled correctly. The bot strips
+  exactly the last two characters to find the nick, so `Mike----` awards −1
+  to nick `Mike--`, not to nick `Mike`.
+- Karma is stored per-channel; a nick's score on one network/channel is
+  independent of any other.
+
+---
+
 ### Page
 
 #### `Maintainer`
@@ -469,8 +512,8 @@ logging:
 | Periods | One fixed period (log window) | All-time, today, this week, this month |
 | Peak users | Not tracked | Tracked with timestamp |
 | Live count | Not possible | Yes, polls every 30s |
+| Karma (`nick++`) | Yes | Yes |
 | User pictures | Yes | Not yet |
-| Karma (`nick++`) | Yes | Not yet |
 | Gender stats | Yes | Not yet |
 | Music charts | Yes | Not yet |
 | Daily activity graph | Yes | Not yet |

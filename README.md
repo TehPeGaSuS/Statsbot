@@ -21,6 +21,7 @@ live web dashboard — no log files, no cron jobs, no static HTML generation.
 | Stats periods | One fixed window | All-time, today, week, month |
 | Peak users | ✗ | ✓ with timestamp |
 | Live user count | ✗ | ✓ updates every 30s |
+| Karma (`nick++` / `nick--`) | ✓ | ✓ |
 | Multi-network | ✗ | ✓ |
 | Admin via IRC | ✗ | ✓ via PM commands |
 
@@ -35,13 +36,17 @@ option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
 - Tracks **words, lines, letters, actions, kicks, modes, bans, joins, topics,
   minutes online, smileys (happy + sad separately), questions, CAPS lines,
   violent actions, foul language, monologues**
+- **Karma** — `nick++` / `nick--` suffix syntax; only counts if the target is
+  in the channel; nicks containing `--` or `++` are handled correctly
+  (e.g. `Mike----` awards −1 to nick `Mike--`)
 - **Big numbers** — questions, shouting %, CAPS %, violence + victim tracking
   with example lines, smiles %, sad %, line lengths, monologues, words per line
 - **Other interesting numbers** — kicks given/received, most actions, most joins,
   foul language %
 - **Most active by hour** — pisg-style 4-band table (0–5, 6–11, 12–17, 18–23)
 - **Most used words** — filterable by length and ignore list, with last-used-by nick
-- **Most referenced nicks** — who gets mentioned most in conversation
+- **Most referenced nicks** — who gets mentioned most in conversation, displayed
+  with original casing
 - **Smiley frequency table** — which specific smiley used most, and by whom
 - **Most referenced URLs** — deduplicated with use count and last poster
 - **Latest topics** with setter and timestamp
@@ -51,6 +56,7 @@ option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
 - **Peak users** with date
 - **Live user count** badge, updates every 30 seconds
 - **Multi-network** — connect to Libera, Undernet, PTirc simultaneously
+- **Fully clickable cards** on the landing and network pages
 - **PM admin interface** — identify, ignore management, master management
 - **bcrypt password auth** — session lasts until disconnect, works from any nick
 - **Auto-auth** via hostmask — silent authentication on join if host matches
@@ -136,8 +142,8 @@ See **[DOCS.md](DOCS.md)** for the complete reference.
 ## Stats page URL structure
 
 ```
-http://yourserver:8033/                        — all networks
-http://yourserver:8033/<network>/              — channels on a network
+http://yourserver:8033/                        — all networks (clickable cards)
+http://yourserver:8033/<network>/              — channels on a network (clickable cards)
 http://yourserver:8033/<network>/<channel>/    — full pisg-style stats page
 http://yourserver:8033/<network>/<channel>/?period=1   — today
 ```
@@ -150,6 +156,29 @@ Set `web.public_url` in config so `!stats` generates proper external links:
 web:
   public_url: "https://stats.yourserver.org"
 ```
+
+---
+
+## Karma
+
+Users can award or deduct karma points by appending `++` or `--` to a nick:
+
+```
+<Alice> Bob++
+<Alice> Bob--
+```
+
+Rules:
+- **Suffix only** — `nick++` and `nick--`; prefix forms (`++nick`) are not recognised
+- **Channel membership** — the target nick must currently be in the channel; random
+  words ending in `++`/`--` are silently ignored
+- **No self-karma** — you cannot modify your own score
+- **Nicks containing `--` or `++`** are handled correctly: `Mike----` strips
+  exactly the last two characters, awarding −1 to nick `Mike--`
+
+Karma scores appear in the **Karma** section of the channel stats page, sorted
+highest to lowest. Negative scores are shown in red. Toggle with `ShowKarma`
+in the `pisg:` config section.
 
 ---
 
@@ -190,7 +219,7 @@ ircstats/
 │   ├── auth.py              # Master auth — sessions, bcrypt, auto-auth via mask
 │   ├── connector.py         # Async IRC connection, RFC 1459 parser, WHO handler
 │   ├── parser.py            # Message parsing: words, smileys, caps, violent, foul
-│   ├── sensors.py           # Event handlers — stats, quotes, monologues, victims
+│   ├── sensors.py           # Event handlers — stats, quotes, karma, monologues
 │   └── scheduler.py         # Daily/weekly/monthly stat resets
 ├── database/
 │   └── models.py            # SQLite schema, all queries, auto-migrations
@@ -220,7 +249,6 @@ see the "not yet implemented" table below for what's missing.
 | pisg feature | Status |
 |---|---|
 | User pictures | Not yet |
-| Karma (`nick++` / `nick--`) | Not yet |
 | Gender stats | Not yet |
 | Daily activity graph (lines per day) | Not yet |
 | NickTracking / nick aliases | Not yet |

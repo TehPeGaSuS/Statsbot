@@ -235,11 +235,10 @@ body { background: #0d0d1a; color: #c8d3f5; font-family: 'Segoe UI', Tahoma, mon
 .container { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
 .chan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
 .chan-card { background: #1a1a2e; border: 1px solid #1e2a45; border-radius: 10px;
-             padding: 1.2rem 1.4rem; transition: border-color .2s; }
-.chan-card:hover { border-color: #7aa2f7; }
-.chan-card .cn { font-size: 1.1rem; font-weight: bold; margin-bottom: .8rem; }
-.chan-card .cn a { color: #7aa2f7; text-decoration: none; }
-.chan-card .cn a:hover { text-decoration: underline; }
+             padding: 1.2rem 1.4rem; transition: border-color .2s, box-shadow .2s;
+             display: block; text-decoration: none; color: inherit; cursor: pointer; }
+.chan-card:hover { border-color: #7aa2f7; box-shadow: 0 0 0 1px #7aa2f7; }
+.chan-card .cn { font-size: 1.1rem; font-weight: bold; margin-bottom: .8rem; color: #7aa2f7; }
 .stat-row { display: flex; justify-content: space-between; padding: .22rem 0;
              border-bottom: 1px solid #1a1a3e; font-size: .83rem; }
 .stat-row:last-child { border-bottom: none; }
@@ -259,12 +258,12 @@ body { background: #0d0d1a; color: #c8d3f5; font-family: 'Segoe UI', Tahoma, mon
   {% if channels %}
   <div class="chan-grid">
     {% for ch in channels %}
-    <div class="chan-card">
-      <div class="cn"><a href="/{{ network }}/{{ ch.name[1:] }}/">{{ ch.name }}</a></div>
-      <div class="stat-row"><span class="sk">tracked users</span><span class="sv">{{ ch.users }}</span></div>
-      <div class="stat-row"><span class="sk">total words</span><span class="sv">{{ "{:,}".format(ch.words) }}</span></div>
-      <div class="stat-row"><span class="sk">total lines</span><span class="sv">{{ "{:,}".format(ch.lines) }}</span></div>
-    </div>
+    <a class="chan-card" href="/{{ network }}/{{ ch.name[1:] }}/">
+      <div class="cn">{{ ch.name }}</div>
+      <div class="stat-row"><span class="sk">Tracked users</span><span class="sv">{{ ch.users }}</span></div>
+      <div class="stat-row"><span class="sk">Total words</span><span class="sv">{{ "{:,}".format(ch.words) }}</span></div>
+      <div class="stat-row"><span class="sk">Total lines</span><span class="sv">{{ "{:,}".format(ch.lines) }}</span></div>
+    </a>
     {% endfor %}
   </div>
   {% else %}
@@ -308,24 +307,17 @@ body { background: #0d0d1a; color: #c8d3f5; font-family: 'Segoe UI', Tahoma, mon
 /* Network cards */
 .net-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; }
 .net-card { background: #1a1a2e; border: 1px solid #1e2a45; border-radius: 10px;
-            padding: 1.4rem; }
+            padding: 1.4rem; display: block; text-decoration: none; color: inherit;
+            cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+.net-card:hover { border-color: #9ece6a; box-shadow: 0 0 0 1px #9ece6a; }
 .net-card .net-name { font-size: 1.15rem; font-weight: bold; color: #9ece6a;
                        margin-bottom: .2rem; }
 .net-card .net-host { font-size: .8rem; color: #565f89; margin-bottom: 1rem;
                        font-family: monospace; }
-.net-meta { display: flex; gap: 1.2rem; margin-bottom: 1rem; }
+.net-meta { display: flex; gap: 1.2rem; }
 .net-meta .nm { text-align: center; }
 .net-meta .nmv { font-size: 1.2rem; font-weight: bold; color: #e0af68; }
 .net-meta .nml { font-size: .72rem; color: #565f89; text-transform: uppercase; letter-spacing: .4px; }
-
-/* Channel list inside card */
-.chan-list { border-top: 1px solid #1e2a45; padding-top: .8rem;
-             display: flex; flex-direction: column; gap: .35rem; }
-.chan-row { display: flex; justify-content: space-between; align-items: center;
-            font-size: .85rem; }
-.chan-row a { color: #7aa2f7; text-decoration: none; }
-.chan-row a:hover { text-decoration: underline; }
-.chan-row .cu { color: #565f89; font-size: .78rem; }
 
 .empty { color: #565f89; text-align: center; padding: 3rem 0; font-size: .9rem; }
 
@@ -366,8 +358,8 @@ body { background: #0d0d1a; color: #c8d3f5; font-family: 'Segoe UI', Tahoma, mon
   <div class="section-label">Networks</div>
   <div class="net-grid">
     {% for net in network_list %}
-    <div class="net-card">
-      <a href="/{{ net.name }}/" style="text-decoration:none"><div class="net-name">{{ net.name }} →</div></a>
+    <a class="net-card" href="/{{ net.name }}/">
+      <div class="net-name">{{ net.name }} →</div>
       <div class="net-host">{{ net.host }}</div>
       <div class="net-meta">
         <div class="nm">
@@ -379,15 +371,7 @@ body { background: #0d0d1a; color: #c8d3f5; font-family: 'Segoe UI', Tahoma, mon
           <div class="nml">channels</div>
         </div>
       </div>
-      <div class="chan-list">
-        {% for ch in net.channels | sort(attribute='name') %}
-        <div class="chan-row">
-          <a href="/{{ net.name }}/{{ ch.name[1:] }}/">{{ ch.name }}</a>
-          <span class="cu">{{ ch.users }} users</span>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
+    </a>
     {% endfor %}
   </div>
   {% else %}

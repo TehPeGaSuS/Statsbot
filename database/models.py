@@ -255,6 +255,14 @@ def init_db():
             PRIMARY KEY (network, channel, mentioned)
         );
 
+        CREATE TABLE IF NOT EXISTS karma (
+            network     TEXT NOT NULL,
+            channel     TEXT NOT NULL COLLATE NOCASE,
+            nick        TEXT NOT NULL COLLATE NOCASE,
+            score       INTEGER DEFAULT 0,
+            PRIMARY KEY (network, channel, nick)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_nicks_lookup ON nicks(nick, network, channel);
         CREATE INDEX IF NOT EXISTS idx_stats_nick   ON stats(nick_id);
         CREATE INDEX IF NOT EXISTS idx_quotes_chan  ON quotes(network, channel);
@@ -1028,8 +1036,8 @@ def incr_nick_ref(network: str, channel: str, mentioned: str, by_nick: str):
     with get_conn() as conn:
         conn.execute(
             """INSERT INTO nick_refs(network,channel,mentioned,by_nick,count) VALUES(?,?,?,?,1)
-               ON CONFLICT(network,channel,mentioned) DO UPDATE SET count=count+1, by_nick=excluded.by_nick""",
-            (network, channel, mentioned.lower(), by_nick)
+               ON CONFLICT(network,channel,mentioned) DO UPDATE SET count=count+1, by_nick=excluded.by_nick, mentioned=excluded.mentioned""",
+            (network, channel, mentioned, by_nick)
         )
 
 def get_top_nick_refs(network: str, channel: str, limit: int = 10) -> List[Dict]:
@@ -1063,3 +1071,49 @@ def get_example(nick_id: int, kind: str) -> Optional[str]:
             (nick_id,)
         ).fetchone()
         return row[0] if row else None
+
+# ─── Karma ────────────────────────────────────────────────────────────────────
+
+def change_karma(network: str, channel: str, nick: str, delta: int):
+    """Increment or decrement karma for a nick (+1 or -1)."""
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO karma(network,channel,nick,score) VALUES(?,?,?,?)
+               ON CONFLICT(network,channel,nick) DO UPDATE SET score=score+?""",
+            (network, channel, nick, delta, delta)
+        )
+
+
+def get_karma_top(network: str, channel: str, limit: int = 10) -> List[Dict]:
+    """Return top karma nicks (highest score first)."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT nick, score FROM karma
+               WHERE network=? AND channel=? AND score != 0
+               ORDER BY score DESC LIMIT ?""",
+            (network, channel, limit)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_karma_bottom(network: str, channel: str, limit: int = 5) -> List[Dict]:
+    """Return bottom karma nicks (lowest score first)."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT nick, score FROM karma
+               WHERE network=? AND channel=? AND score != 0
+               ORDER BY score ASC LIMIT ?""",
+            (network, channel, limit)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_karma_nick(network: str, channel: str, nick: str) -> int:
+    """Return karma score for a single nick, 0 if unknown."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT score FROM karma WHERE network=? AND channel=? AND nick=? COLLATE NOCASE",
+            (network, channel, nick)
+        ).fetchone()
+        return row["score"] if row else 0
+
