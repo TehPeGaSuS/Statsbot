@@ -146,6 +146,21 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
     now_str      = datetime.now().strftime("%Y-%m-%d %H:%M")
     now_long     = format_date_long(datetime.now(), lang)
     t_gen        = t("page_generated_on", lang, date=now_long)
+    # Channel switcher — links to sibling channels on same network
+    from database.models import get_channels_for_network
+    sibling_chans = [c for c in get_channels_for_network(network)
+                     if c.lower() != channel.lower()]
+    if sibling_chans:
+        links = " ".join(
+            f'<a href="/{network}/{c[1:]}/" '
+            f'style="font-size:.78rem;color:var(--blue);padding:.2rem .6rem;'
+            f'border:1px solid var(--border);border-radius:12px;'
+            f'text-decoration:none">{c}</a>'
+            for c in sibling_chans
+        )
+        chan_switcher = f'<div style="display:flex;gap:.4rem;flex-wrap:wrap">{links}</div>'
+    else:
+        chan_switcher = ""
     # t_period built after days_tracked is known — set below
 
     # Earliest first_seen across all nicks gives us the tracking start date
@@ -387,7 +402,10 @@ b {{ color: var(--cyan); }}
 </head>
 <body>
 <div class="page-header">
-  <a href="/">← All networks</a>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.4rem">
+    <a href="/{network}/">← {network}</a>
+    {chan_switcher}
+  </div>
   <h1>{channel} <span style="color:var(--muted);font-size:1rem">on {network}</span>
     <span id="live-count">●</span>
   </h1>

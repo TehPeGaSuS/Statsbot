@@ -154,10 +154,13 @@ def network_stats(network: str):
 
     channels.sort(key=lambda c: c["words"], reverse=True)
 
+    from database.models import get_enabled_networks
+    all_networks = [n["name"] for n in get_enabled_networks()]
     return render_template_string(NETWORK_TMPL,
         network=network,
         host=host,
         channels=channels,
+        all_networks=all_networks,
         title=web_cfg.get("title", "IRC Stats"),
         project_url=web_cfg.get("project_url", "https://github.com/TehPeGaSuS/Statsbot"),
         now=datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -317,12 +320,28 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahom
   .container { padding: 0 .7rem; }
   .header { padding: 1rem; }
   .chan-grid { grid-template-columns: 1fr; }
+  .nav-row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; }
+  .net-switcher { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .net-switcher a { font-size:.78rem; color:var(--blue); padding:.2rem .6rem;
+    border:1px solid var(--border); border-radius:12px; text-decoration:none; }
+  .net-switcher a:hover { border-color:var(--blue); }
 }
 </style>
 </head>
 <body>
 <div class="header">
-  <a href="/">← All networks</a>
+  <div class="nav-row">
+    <a href="/">← All networks</a>
+    {% if all_networks|length > 1 %}
+    <div class="net-switcher">
+      {% for n in all_networks %}
+        {% if n != network %}
+          <a href="/{{ n }}/">{{ n }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
   <h1>{{ network }}</h1>
   <div class="meta">{{ host }}</div>
 </div>
