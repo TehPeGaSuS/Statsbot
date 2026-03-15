@@ -40,7 +40,7 @@ class Sensors:
         self._last_speaker: dict = {}
         # Nick list cache for reference detection: {(network,channel): (ts, [nicks])}
         self._nick_cache: dict = {}
-        self._nick_cache_ttl = 300  # seconds
+        self._nick_cache_ttl = 60   # seconds — refresh known nicks every minute
         self.log_wordstats = config.get("stats", {}).get("log_wordstats", True)
         self.quote_freq = config.get("stats", {}).get("quote_frequency", 5)
         self.kick_context = config.get("stats", {}).get("kick_context", 5)
@@ -138,11 +138,13 @@ class Sensors:
         if _time.time() - _cached_ts > self._nick_cache_ttl:
             with _gc() as _c:
                 _known = [r["nick"] for r in _c.execute(
-                    "SELECT n.nick FROM nicks n JOIN stats st ON st.nick_id=n.id"
-                    " WHERE n.network=? AND n.channel=? AND st.words>0 AND st.period=0",
+                    "SELECT nick FROM nicks WHERE network=? AND channel=?",
                     (self.network, channel)
                 ).fetchall()]
             self._nick_cache[_cache_key] = (_time.time(), _known)
+        # Always include the current speaker in _known — they're definitely present
+        if nick not in _known and not any(n.lower() == nick.lower() for n in _known):
+            _known = list(_known) + [nick]
         for mentioned in find_nick_refs(text, _known):
             if mentioned.lower() != nick.lower():
                 incr_nick_ref(self.network, channel, mentioned, nick)
@@ -257,6 +259,9 @@ class Sensors:
     # ─── JOIN ────────────────────────────────────────────────────────────────
 
     def on_join(self, nick: str, host: str, channel: str, is_bot: bool = False):
+        # Invalidate nick cache so the new joiner is picked up immediately
+        self._nick_cache.pop((self.network, channel), None)
+
         # Create entry for ALL joining nicks so minutes tracking is accurate.
         # Silent nicks (0 words/lines) are filtered from display by get_top.
         if is_ignored(nick, self.network, host, channel):
