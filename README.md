@@ -1,7 +1,7 @@
-# ircstats
+# Statsbot
 
 A modern IRC statistics bot inspired by [pisg](https://pisg.github.io/), built
-for the 21st century. Instead of parsing log files after the fact, ircstats
+for the 21st century. Instead of parsing log files after the fact, Statsbot
 connects to IRC as a bot, collects statistics in real time, and serves a
 live web dashboard — no log files, no cron jobs, no static HTML generation.
 
@@ -10,12 +10,12 @@ live web dashboard — no log files, no cron jobs, no static HTML generation.
 
 ---
 
-## Why ircstats instead of pisg?
+## Why Statsbot instead of pisg?
 
-| | pisg | ircstats |
+| | pisg | Statsbot |
 |---|---|---|
 | Data source | Parse log files | Live IRC connection |
-| Setup | Configure bot logging + cron + pisg | Just run ircstats |
+| Setup | Configure bot logging + cron + pisg | Just run Statsbot |
 | Log format support | 30+ parsers to maintain | Not needed |
 | Output | Static HTML, regenerated periodically | Live web server |
 | Stats periods | One fixed window | All-time, today, week, month |
@@ -77,8 +77,8 @@ option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
 
 ```bash
 # 1. Clone
-git clone https://github.com/yourusername/ircstats.git
-cd ircstats
+git clone https://github.com/TehPeGaSuS/Statsbot.git
+cd Statsbot
 
 # 2. Create and activate a virtualenv
 python3 -m venv .venv
@@ -199,15 +199,15 @@ user, requires root to install).
 ### User unit (recommended)
 
 ```ini
-# ~/.config/systemd/user/ircstats.service
+# ~/.config/systemd/user/statsbot.service
 [Unit]
-Description=ircstats IRC statistics bot
+Description=Statsbot IRC statistics bot
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/ircstats
-ExecStart=%h/ircstats/.venv/bin/python main.py
+WorkingDirectory=%h/Statsbot
+ExecStart=%h/Statsbot/.venv/bin/python main.py
 Restart=on-failure
 RestartSec=30
 Environment=PYTHONUNBUFFERED=1
@@ -219,35 +219,35 @@ WantedBy=default.target
 ```bash
 # Install and start
 systemctl --user daemon-reload
-systemctl --user enable --now ircstats
+systemctl --user enable --now statsbot
 
 # Optional: keep running after logout (requires root once)
 loginctl enable-linger $USER
 
 # Useful commands
-systemctl --user status ircstats
-journalctl --user -u ircstats -f
+systemctl --user status statsbot
+journalctl --user -u statsbot -f
 ```
 
 `%h` expands to your home directory. Adjust `WorkingDirectory` and
-`ExecStart` if you cloned ircstats somewhere other than `~/ircstats`.
+`ExecStart` if you cloned Statsbot somewhere other than `~/Statsbot`.
 
 ### System unit
 
-Use this if you want ircstats to run as a dedicated system user
-(e.g. `ircstats`) rather than your own account.
+Use this if you want Statsbot to run as a dedicated system user
+(e.g. `statsbot`) rather than your own account.
 
 ```ini
-# /etc/systemd/system/ircstats.service
+# /etc/systemd/system/statsbot.service
 [Unit]
-Description=ircstats IRC statistics bot
+Description=Statsbot IRC statistics bot
 After=network.target
 
 [Service]
 Type=simple
-User=ircstats
-WorkingDirectory=/opt/ircstats
-ExecStart=/opt/ircstats/.venv/bin/python main.py
+User=statsbot
+WorkingDirectory=/opt/statsbot
+ExecStart=/opt/statsbot/.venv/bin/python main.py
 Restart=on-failure
 RestartSec=30
 Environment=PYTHONUNBUFFERED=1
@@ -258,16 +258,16 @@ WantedBy=multi-user.target
 
 ```bash
 # Create a dedicated user (no login shell, no home directory)
-sudo useradd -r -s /usr/sbin/nologin -d /opt/ircstats ircstats
-sudo mkdir -p /opt/ircstats
-sudo chown ircstats:ircstats /opt/ircstats
+sudo useradd -r -s /usr/sbin/nologin -d /opt/statsbot statsbot
+sudo mkdir -p /opt/statsbot
+sudo chown statsbot:statsbot /opt/statsbot
 
 # Install and start (as root)
 sudo systemctl daemon-reload
-sudo systemctl enable --now ircstats
+sudo systemctl enable --now statsbot
 
 # Logs
-sudo journalctl -u ircstats -f
+sudo journalctl -u statsbot -f
 ```
 
 ---
@@ -275,7 +275,7 @@ sudo journalctl -u ircstats -f
 ## Project structure
 
 ```
-ircstats/
+Statsbot/
 ├── main.py                  # Entry point, --setup wizard
 ├── config/
 │   └── config.yml           # All configuration

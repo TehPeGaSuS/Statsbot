@@ -112,6 +112,7 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
     avg_cpl      = f"{totals['letters'] / totals['lines']:.1f}" if totals["lines"] else "0"
     period_names = ["all-time", "today", "this week", "this month"]
     title        = web.get("title", "IRC Stats")
+    project_url  = web.get("project_url", "https://github.com/TehPeGaSuS/Statsbot")
     maintainer   = pisg.get("Maintainer", "")
     now_str      = datetime.now().strftime("%Y-%m-%d %H:%M")
 
@@ -261,7 +262,7 @@ b {{ color: var(--cyan); }}
 </head>
 <body>
 <div class="page-header">
-  <a href="/">← all networks</a>
+  <a href="/">← All networks</a>
   <h1>{channel} <span style="color:var(--muted);font-size:1rem">on {network}</span>
     <span id="live-count">●</span>
   </h1>
@@ -720,12 +721,12 @@ b {{ color: var(--cyan); }}
   <b>Avg chars/line:</b> {avg_cpl}<br>
   <b>Topics set:</b> {topic_count} times<br>
   <br>Stats for <b>{channel}</b> on <b>{network}</b>{by_str} &mdash;
-  generated {now_str} by <a href="https://github.com/you/ircstats" style="color:var(--blue)">ircstats</a>
+  generated {now_str} by <a href="{project_url}" style="color:var(--blue)">Statsbot</a>
   inspired by <a href="http://pisg.sourceforge.net/" style="color:var(--blue)">pisg</a>
 </div>''')
 
     # ── Footer ────────────────────────────────────────────────────────────────
-    h(f'<div class="footer">ircstats — inspired by pisg by Morten Brix Pedersen and others</div>')
+    h(f'<div class="footer"><a href="{project_url}" style="color:var(--muted)">Statsbot</a> — inspired by pisg by Morten Brix Pedersen and others</div>')
     h('</div>') # /container
 
     # ── JavaScript ───────────────────────────────────────────────────────────

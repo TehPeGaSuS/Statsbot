@@ -77,6 +77,7 @@ web:
   port: 8033
   public_url: ""            # e.g. https://stats.yourserver.org — used by !stats
   title: "IRC Stats"
+  project_url: "https://github.com/TehPeGaSuS/Statsbot"  # link shown in page footers
   topnr: 30                 # number of users in top lists
 
 commands:

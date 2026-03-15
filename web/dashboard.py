@@ -112,6 +112,7 @@ def index():
         total_lines=total_lines,
         total_channels=total_channels,
         title=web_cfg.get("title", "IRC Stats"),
+        project_url=web_cfg.get("project_url", "https://github.com/TehPeGaSuS/Statsbot"),
         now=datetime.now().strftime("%Y-%m-%d %H:%M"),
     )
 
@@ -158,6 +159,7 @@ def network_stats(network: str):
         host=host,
         channels=channels,
         title=web_cfg.get("title", "IRC Stats"),
+        project_url=web_cfg.get("project_url", "https://github.com/TehPeGaSuS/Statsbot"),
         now=datetime.now().strftime("%Y-%m-%d %H:%M"),
     )
 
@@ -250,7 +252,7 @@ body { background: #0d0d1a; color: #c8d3f5; font-family: 'Segoe UI', Tahoma, mon
 </head>
 <body>
 <div class="header">
-  <a href="/">← all networks</a>
+  <a href="/">← All networks</a>
   <h1>{{ network }}</h1>
   <div class="meta">{{ host }}</div>
 </div>
@@ -270,7 +272,7 @@ body { background: #0d0d1a; color: #c8d3f5; font-family: 'Segoe UI', Tahoma, mon
   <p style="color:#565f89;text-align:center;padding:3rem 0">No channels tracked on this network yet.</p>
   {% endif %}
 </div>
-<div class="footer">ircstats &mdash; inspired by stats.mod by G'Quann / Florian Sander</div>
+<div class="footer"><a href="{{ project_url }}" style="color:#3d4a6b">Statsbot</a> &mdash; inspired by stats.mod by G'Quann / Florian Sander</div>
 </body>
 </html>"""
 
@@ -380,7 +382,7 @@ body { background: #0d0d1a; color: #c8d3f5; font-family: 'Segoe UI', Tahoma, mon
 
 </div>
 
-<div class="footer">ircstats &mdash; inspired by stats.mod by G'Quann / Florian Sander</div>
+<div class="footer"><a href="{{ project_url }}" style="color:#3d4a6b">Statsbot</a> &mdash; inspired by stats.mod by G'Quann / Florian Sander</div>
 </body>
 </html>"""
 
@@ -471,7 +473,7 @@ body { background: #0d0d1a; color: #c8d3f5;
 <body>
 
 <div class="header">
-  <a href="/">← all channels</a>
+  <a href="/">← All channels</a>
   <h1>{{ channel }}  <span style="color:#565f89;font-size:1rem">on {{ network }}</span></h1>
   <div class="meta">{{ total_users }} tracked{% if active_users < total_users %} · {{ active_users }} active{% endif %} · peak {{ peak }} · generated {{ now }}</div>
 </div>
@@ -649,7 +651,7 @@ body { background: #0d0d1a; color: #c8d3f5;
 </div><!-- /container -->
 
 <div class="footer">
-  ircstats — inspired by stats.mod by G'Quann / Florian Sander &nbsp;·&nbsp; {{ now }}
+  <a href="{{ project_url }}" style="color:#565f89">Statsbot</a> — inspired by stats.mod by G'Quann / Florian Sander &nbsp;·&nbsp; {{ now }}
 </div>
 
 <script>
