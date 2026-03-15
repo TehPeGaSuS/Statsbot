@@ -66,9 +66,9 @@ def extract_words(text: str, min_length: int = 3) -> List[str]:
     tokens = text.split()
     words = []
     for token in tokens:
-        word = token.strip('.,!?;:"\'-()[]{}/@#$%^&*~`<>|\\')
+        word = token.strip('.,!?;:"\'\'-()[]{}/@#$%^&*~`<>|\\\\')
         word_lower = word.lower()
-        # Filter: must be at least min_length chars, no digits-only, no IRC commands
+        # Filter: must be at least min_length chars, no digits-only
         # Pass original casing — DB stores lowercase key, display_word tracks original
         if len(word_lower) >= max(min_length, 1) and not word_lower.isdigit():
             words.append(word)

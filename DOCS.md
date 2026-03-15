@@ -44,6 +44,12 @@ See [PM commands](#irc-commands) for runtime management.
 
 ## Network settings
 
+> **`config.yml` is a seed file, not the source of truth.**
+> On first run, networks and channels from `config.yml` are inserted into the
+> database (`INSERT OR IGNORE`). After that the database wins. Add, remove, or
+> modify networks and channels at runtime using [PM commands](#irc-commands)
+> — no restart required.
+
 ```yaml
 networks:
   - name: "libera"                  # Internal name — used in URLs and DB
@@ -294,6 +300,33 @@ networks:
 | Command | Description |
 |---------|-------------|
 | `set page [#channel] <url>` | Override the stats URL returned by `!stats` |
+
+**Network management** (requires auth):
+
+| Command | Description |
+|---------|-------------|
+| `nets` | List all networks in the database with host, port, SSL status |
+| `chans` | List channels tracked on the current network |
+| `addnet -name <n> -host <host> -port <port> [-ssl\|-plaintext]` | Add a new network and connect immediately. TLS is the default — pass `-plaintext` to disable. |
+| `delnet -name <n>` | Disconnect a network and permanently delete **all** its stats |
+| `addchan [-network <net>] #channel` | Join and start tracking a channel. `-network` is optional if you're already on that network. |
+| `delchan [-network <net>] #channel` | Part a channel and permanently delete **all** its stats |
+
+> **Destructive operations:** `delnet` and `delchan` cascade-delete all stats,
+> quotes, URLs, topics, kick logs, karma, and hourly data for that
+> network/channel. There is no undo.
+
+**Examples:**
+```
+addnet -name SwiftIRC -host irc.swiftirc.net -port 6697
+addnet -name Rizon -host irc.rizon.net -port 6667 -plaintext
+delnet -name SwiftIRC
+
+addchan #general                        (on current network)
+addchan -network SwiftIRC #general      (on a different network)
+delchan #general
+delchan -network SwiftIRC #general
+```
 
 ---
 

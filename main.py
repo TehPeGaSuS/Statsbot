@@ -15,6 +15,10 @@ import threading
 
 import yaml
 
+# Global asyncio queue for runtime reload signals
+# Web thread and PM commands post events here; the async loop consumes them
+reload_queue: asyncio.Queue = None
+
 
 def load_config(path: str) -> dict:
     with open(path) as f:
@@ -97,9 +101,10 @@ def main():
     db_path = config.get("database", {}).get("path", "data/stats.db")
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
-    from database.models import init_db, set_db_path
+    from database.models import init_db, set_db_path, seed_from_config
     set_db_path(db_path)
     init_db()
+    seed_from_config(config)  # config.yml seeds DB on first run; DB wins on conflict
 
     if args.setup:
         run_setup(db_path)
@@ -121,54 +126,34 @@ def main():
     from bot.connector import IRCConnector
     from bot.scheduler import Scheduler
     from web.dashboard import run_dashboard, set_config, register_connector
+    from database.models import get_enabled_networks, get_channels_for_network
 
-    networks = config.get("networks", [])
-    if not networks:
-        log.error("No networks configured in config.yml!")
+    global reload_queue
+    reload_queue = asyncio.Queue()
+
+    db_networks = get_enabled_networks()
+    if not db_networks:
+        log.error("No enabled networks in database!")
         sys.exit(1)
+
+    # Convert DB rows to the dict shape connectors expect
+    def db_net_to_cfg(n: dict) -> dict:
+        cfg = dict(n)
+        cfg["channels"] = get_channels_for_network(n["name"])
+        cfg["ssl"] = bool(n["ssl"])
+        if n.get("sasl_user") and n.get("sasl_pass"):
+            cfg["sasl"] = {"username": n["sasl_user"], "password": n["sasl_pass"]}
+        if n.get("nickserv_pass"):
+            cfg["nickserv_password"] = n["nickserv_pass"]
+        return cfg
+
+    networks = [db_net_to_cfg(n) for n in db_networks]
 
     # Shared auth manager — one instance handles all networks
     auth = AuthManager()
 
     connectors = []
     sensors_list = []
-
-    for net_cfg in networks:
-        network_name = net_cfg["name"]
-        sensors = Sensors(config, network_name)
-        sensors_list.append(sensors)
-
-        def make_send(connector_ref):
-            def send_fn(channel, text):
-                connector_ref.send_msg(channel, text)
-            return send_fn
-
-        def make_pm_send(connector_ref):
-            def pm_send_fn(nick, text):
-                connector_ref.send_notice(nick, text)
-            return pm_send_fn
-
-        placeholder_send = [None]
-        placeholder_pm = [None]
-
-        cmd_handler = CommandHandler(
-            config, network_name,
-            lambda ch, tx: placeholder_send[0] and placeholder_send[0](ch, tx),
-            auth_manager=auth
-        )
-        pm_handler = PMCommandHandler(
-            network_name, auth,
-            lambda nick, tx: placeholder_pm[0] and placeholder_pm[0](nick, tx),
-            config
-        )
-
-        connector = IRCConnector(config, net_cfg, sensors, cmd_handler,
-                                  pm_handler=pm_handler)
-        placeholder_send[0] = connector.send_msg
-        placeholder_pm[0] = connector.send_notice
-        pm_handler.connectors = [connector]
-        connectors.append(connector)
-
     scheduler = Scheduler(sensors_list, connectors, config)
 
     if config.get("web", {}).get("enabled", True):
@@ -181,15 +166,82 @@ def main():
         )
         web_thread.start()
         log.info("Web dashboard thread started.")
-        for connector in connectors:
-            register_connector(connector)
+
+    def make_connector(net_cfg: dict):
+        """Instantiate a connector + all its handlers for a network dict."""
+        network_name = net_cfg["name"]
+        sensors = Sensors(config, network_name)
+        sensors_list.append(sensors)
+        _send_ref = [None]
+        _pm_ref   = [None]
+        cmd_h = CommandHandler(
+            config, network_name,
+            lambda ch, tx: _send_ref[0] and _send_ref[0](ch, tx),
+            auth_manager=auth
+        )
+        pm_h = PMCommandHandler(
+            network_name, auth,
+            lambda nick, tx: _pm_ref[0] and _pm_ref[0](nick, tx),
+            config
+        )
+        conn = IRCConnector(config, net_cfg, sensors, cmd_h, pm_handler=pm_h)
+        conn.reload_queue = reload_queue
+        _send_ref[0] = conn.send_msg
+        _pm_ref[0]   = conn.send_notice
+        pm_h.connectors = [conn]
+        return conn
 
     async def run_all():
+        active: dict = {}  # name -> (connector, task)
+
+        async def start_connector(net_cfg: dict):
+            conn = make_connector(net_cfg)
+            connectors.append(conn)
+            if config.get("web", {}).get("enabled", True):
+                register_connector(conn)
+            task = asyncio.create_task(
+                auto_reconnect(conn), name=f"irc-{conn.network}"
+            )
+            active[net_cfg["name"]] = (conn, task)
+
         tasks = [asyncio.create_task(scheduler.run(), name="scheduler")]
-        for connector in connectors:
-            tasks.append(asyncio.create_task(
-                auto_reconnect(connector), name=f"irc-{connector.host}"
-            ))
+        for net_cfg in networks:
+            await start_connector(net_cfg)
+            tasks.append(active[net_cfg["name"]][1])
+
+        async def reload_consumer():
+            """Watch reload_queue for add/remove/reload events from web or PM."""
+            while True:
+                event = await reload_queue.get()
+                try:
+                    action = event.get("action")
+                    if action == "add_network":
+                        net_cfg = event["net_cfg"]
+                        if net_cfg["name"] not in active:
+                            await start_connector(net_cfg)
+                            log.info(f"Reload: connected new network {net_cfg['name']}")
+                    elif action == "remove_network":
+                        name = event["name"]
+                        if name in active:
+                            conn, task = active.pop(name)
+                            task.cancel()
+                            await conn.disconnect()
+                            log.info(f"Reload: disconnected network {name}")
+                    elif action == "add_channel":
+                        name = event["network"]
+                        chan = event["channel"]
+                        if name in active:
+                            await active[name][0].join_channel(chan)
+                    elif action == "remove_channel":
+                        name = event["network"]
+                        chan = event["channel"]
+                        if name in active:
+                            await active[name][0].part_channel(chan)
+                except Exception as e:
+                    log.error(f"Reload consumer error: {e}", exc_info=True)
+
+        tasks.append(asyncio.create_task(reload_consumer(), name="reload-consumer"))
+
         try:
             await asyncio.gather(*tasks)
         except KeyboardInterrupt:

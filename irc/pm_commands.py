@@ -63,6 +63,13 @@ class PMCommandHandler:
             "set":      lambda: self._cmd_set(nick, args),
             "rehash":   lambda: self._cmd_rehash(nick),
             "help":     lambda: self._cmd_help(nick),
+            "addchan":  lambda: self._cmd_addchan(nick, args),
+            "delchan":  lambda: self._cmd_delchan(nick, args),
+            "addnet":   lambda: self._cmd_addnet(nick, args),
+            "delnet":   lambda: self._cmd_delnet(nick, args),
+            "reload":   lambda: self._cmd_reload(nick),
+            "nets":     lambda: self._cmd_nets(nick),
+            "chans":    lambda: self._cmd_chans(nick),
         }
 
         handler = handlers.get(cmd)
@@ -297,10 +304,173 @@ class PMCommandHandler:
     # ─── Rehash ───────────────────────────────────────────────────────────────
 
     def _cmd_rehash(self, nick: str):
+        """Alias for reload."""
+        self._cmd_reload(nick)
+
+    # ─── Network / Channel management ────────────────────────────────────────
+
+    def _require_auth(self, nick: str) -> bool:
         if not self.auth.is_authed(self.network, nick):
-            self.send(nick, "Not identified.")
+            self.send(nick, "Not identified. Use: identify <master_nick> <password>")
+            return False
+        return True
+
+    def _post_event(self, event: dict) -> bool:
+        """Post an event to the asyncio reload queue via any connector."""
+        conn = next((c for c in self.connectors if c.network == self.network), None)
+        q = getattr(conn, "reload_queue", None) if conn else None
+        if q is None:
+            return False
+        try:
+            q.put_nowait(event)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def _parse_flags(args: str) -> dict:
+        """Parse -flag value style arguments.
+        Boolean flags (-ssl, -plaintext) get value True.
+        Returns {"flags": {name: value}, "positional": [list]}.
+        """
+        tokens = args.split()
+        flags = {}
+        positional = []
+        i = 0
+        while i < len(tokens):
+            if tokens[i].startswith("-"):
+                key = tokens[i][1:].lower()
+                # Next token is value only if it doesn't start with -
+                if i + 1 < len(tokens) and not tokens[i + 1].startswith("-"):
+                    flags[key] = tokens[i + 1]
+                    i += 2
+                else:
+                    flags[key] = True   # boolean flag
+                    i += 1
+            else:
+                positional.append(tokens[i])
+                i += 1
+        return {"flags": flags, "positional": positional}
+
+    def _cmd_addchan(self, nick: str, args: str):
+        """addchan [-network <net>] #channel"""
+        if not self._require_auth(nick): return
+        parsed = self._parse_flags(args)
+        network = parsed["flags"].get("network", self.network)
+        chan = (parsed["positional"][0]
+                if parsed["positional"]
+                else parsed["flags"].get("channel", ""))
+        if not chan or not chan.startswith("#"):
+            self.send(nick, "Usage: addchan [-network <net>] #channel")
             return
-        self.send(nick, "Rehash not yet implemented — restart the bot to reload config.")
+        from database.models import add_channel
+        add_channel(network, chan)
+        self._post_event({"action": "add_channel", "network": network, "channel": chan})
+        self.send(nick, f"Added and joining {chan} on {network}.")
+
+    def _cmd_delchan(self, nick: str, args: str):
+        """delchan [-network <net>] #channel"""
+        if not self._require_auth(nick): return
+        parsed = self._parse_flags(args)
+        network = parsed["flags"].get("network", self.network)
+        chan = (parsed["positional"][0]
+                if parsed["positional"]
+                else parsed["flags"].get("channel", ""))
+        if not chan or not chan.startswith("#"):
+            self.send(nick, "Usage: delchan [-network <net>] #channel")
+            return
+        from database.models import delete_channel
+        delete_channel(network, chan)
+        self._post_event({"action": "remove_channel", "network": network, "channel": chan})
+        self.send(nick, f"Parted {chan} on {network} and deleted all its stats.")
+
+    def _cmd_addnet(self, nick: str, args: str):
+        """addnet -name <n> -host <host> -port <port> [-ssl|-plaintext]
+        -ssl is the default. Use -plaintext to disable TLS."""
+        if not self._require_auth(nick): return
+        parsed = self._parse_flags(args)
+        flags  = parsed["flags"]
+        name     = flags.get("name", "")
+        host     = flags.get("host", "")
+        port_val = str(flags.get("port", ""))
+        missing  = [f"-{f}" for f, v in [("name", name), ("host", host), ("port", port_val)]
+                    if not v]
+        if missing:
+            self.send(nick, f"Missing required flag(s): {', '.join(missing)}")
+            self.send(nick, "Usage: addnet -name <n> -host <host> -port <port> [-ssl|-plaintext]")
+            return
+        if not port_val.isdigit():
+            self.send(nick, f"Invalid port: {port_val!r} — must be a number.")
+            return
+        port = int(port_val)
+        if not (1 <= port <= 65535):
+            self.send(nick, f"Port {port} out of range (1-65535).")
+            return
+        # Default to SSL unless -plaintext is explicitly given
+        ssl = "plaintext" not in flags
+        from database.models import add_network
+        ok = add_network(name, host, port, ssl)
+        if not ok:
+            self.send(nick, f"Network {name!r} already exists.")
+            return
+        bot_cfg = self.cfg.get("bot", {})
+        net_cfg = {
+            "name": name, "host": host, "port": port, "ssl": ssl,
+            "nick":     bot_cfg.get("nick",     "statsbot"),
+            "altnick":  bot_cfg.get("altnick",  "statsbot_"),
+            "ident":    bot_cfg.get("ident",    "statsbot"),
+            "realname": bot_cfg.get("realname", "IRC Stats Bot"),
+            "channels": [], "cmd_prefix": "!",
+        }
+        self._post_event({"action": "add_network", "net_cfg": net_cfg})
+        ssl_tag = "SSL" if ssl else "plaintext"
+        self.send(nick, f"Network {name} ({host}:{port} {ssl_tag}) added and connecting.")
+        self.send(nick, f"Use: addchan -network {name} #channel  to start tracking.")
+
+    def _cmd_delnet(self, nick: str, args: str):
+        """delnet -name <n>"""
+        if not self._require_auth(nick): return
+        parsed = self._parse_flags(args)
+        name = (parsed["flags"].get("name", "")
+                or (parsed["positional"][0] if parsed["positional"] else ""))
+        if not name:
+            self.send(nick, "Usage: delnet -name <n>")
+            return
+        if name == self.network:
+            self.send(nick, "Cannot delete the network you are currently connected on.")
+            return
+        from database.models import delete_network
+        delete_network(name)
+        self._post_event({"action": "remove_network", "name": name})
+        self.send(nick, f"Network {name} removed and all its stats deleted.")
+
+    def _cmd_reload(self, nick: str):
+        if not self._require_auth(nick): return
+        self.send(nick, "Changes apply immediately — no reload needed.")
+
+    def _cmd_nets(self, nick: str):
+        """List all networks in the DB."""
+        if not self._require_auth(nick): return
+        from database.models import get_all_networks
+        nets = get_all_networks()
+        if not nets:
+            self.send(nick, "No networks in database.")
+            return
+        self.send(nick, f"Networks ({len(nets)}):")
+        for n in nets:
+            ssl_tag = " [SSL]" if n["ssl"] else ""
+            status  = "" if n["enabled"] else " [DISABLED]"
+            self.send(nick, f"  {n['name']} — {n['host']}:{n['port']}{ssl_tag}{status}")
+
+    def _cmd_chans(self, nick: str):
+        """List channels tracked on this network."""
+        if not self._require_auth(nick): return
+        from database.models import get_channels_for_network
+        chans = get_channels_for_network(self.network, enabled_only=False)
+        if not chans:
+            self.send(nick, f"No channels tracked on {self.network}.")
+            return
+        self.send(nick, f"Channels on {self.network}: {' '.join(chans)}")
 
     # ─── Help ─────────────────────────────────────────────────────────────────
 
@@ -309,11 +479,17 @@ class PMCommandHandler:
             "ircstats PM commands:",
             "  identify <master_nick> <password>  — authenticate",
             "  logout  |  whoami  |  status",
-            "  ignore add [#chan] <pattern>        — network-wide if no #chan",
+            "  ignore add [#chan] <pattern>",
             "  ignore del [#chan] <pattern>",
             "  ignore list [#chan]",
             "  master add <nick>  |  master del <nick>  |  master list",
-            "  set page [#chan] <url>              — URL for !stats command",
+            "  set page [#chan] <url>",
+            "  nets                                       — list all networks",
+            "  chans                                      — list channels on this network",
+            "  addchan [-network <net>] #channel          — join and track a channel",
+            "  delchan [-network <net>] #channel          — part and delete channel stats",
+            "  addnet -name <n> -host <host> -port <port> [-ssl|-plaintext]  (TLS by default)",
+            "  delnet -name <n>                           — remove network and all stats",
         ]
         for line in lines:
             self.send(nick, line)

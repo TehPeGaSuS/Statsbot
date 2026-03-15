@@ -280,6 +280,31 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_quotes_chan  ON quotes(network, channel);
         CREATE INDEX IF NOT EXISTS idx_urls_chan    ON urls(network, channel);
         CREATE INDEX IF NOT EXISTS idx_chanlog_chan ON chanlog(network, channel, ts);
+
+        -- Bot network registry (DB is source of truth; config.yml only seeds)
+        CREATE TABLE IF NOT EXISTS networks (
+            name         TEXT PRIMARY KEY,
+            host         TEXT NOT NULL,
+            port         INTEGER DEFAULT 6667,
+            ssl          INTEGER DEFAULT 0,
+            nick         TEXT,
+            altnick      TEXT,
+            ident        TEXT,
+            realname     TEXT,
+            sasl_user    TEXT,
+            sasl_pass    TEXT,
+            nickserv_pass TEXT,
+            cmd_prefix   TEXT DEFAULT '!',
+            enabled      INTEGER DEFAULT 1
+        );
+
+        -- Bot channel registry
+        CREATE TABLE IF NOT EXISTS bot_channels (
+            network  TEXT NOT NULL,
+            channel  TEXT NOT NULL COLLATE NOCASE,
+            enabled  INTEGER DEFAULT 1,
+            PRIMARY KEY (network, channel)
+        );
         """)
     _migrate()
     import logging as _log
@@ -328,6 +353,7 @@ def _migrate():
             if column not in existing:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}")
                 print(f"Migration: added {table}.{column}")
+
 
 
 # ─── Nick Management ────────────────────────────────────────────────────────
@@ -1149,3 +1175,176 @@ def get_karma_nick(network: str, channel: str, nick: str) -> int:
         ).fetchone()
         return row["score"] if row else 0
 
+
+# ─── Network / Channel Registry ──────────────────────────────────────────────
+
+def seed_from_config(config: dict) -> None:
+    """Seed networks and bot_channels from config.yml (INSERT OR IGNORE — DB wins)."""
+    with get_conn() as conn:
+        for net in config.get("networks", []):
+            conn.execute(
+                """INSERT OR IGNORE INTO networks
+                   (name, host, port, ssl, nick, altnick, ident, realname,
+                    sasl_user, sasl_pass, nickserv_pass, cmd_prefix, enabled)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1)""",
+                (
+                    net["name"], net["host"],
+                    net.get("port", 6667),
+                    1 if net.get("ssl", False) else 0,
+                    net.get("nick"), net.get("altnick"),
+                    net.get("ident"), net.get("realname"),
+                    net.get("sasl", {}).get("username"),
+                    net.get("sasl", {}).get("password"),
+                    net.get("nickserv_password"),
+                    net.get("cmd_prefix", "!"),
+                )
+            )
+            for chan in net.get("channels", []):
+                conn.execute(
+                    "INSERT OR IGNORE INTO bot_channels (network, channel, enabled) VALUES (?,?,1)",
+                    (net["name"], chan)
+                )
+
+
+def get_all_networks() -> List[Dict]:
+    with get_conn() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM networks ORDER BY name"
+        ).fetchall()]
+
+
+def get_enabled_networks() -> List[Dict]:
+    with get_conn() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM networks WHERE enabled=1 ORDER BY name"
+        ).fetchall()]
+
+
+def get_network(name: str) -> Optional[Dict]:
+    with get_conn() as conn:
+        r = conn.execute("SELECT * FROM networks WHERE name=?", (name,)).fetchone()
+        return dict(r) if r else None
+
+
+def add_network(name: str, host: str, port: int = 6667, ssl: bool = False,
+                nick: str = None, altnick: str = None, ident: str = None,
+                realname: str = None, cmd_prefix: str = "!") -> bool:
+    """Add a new network. Returns True if inserted, False if already exists."""
+    with get_conn() as conn:
+        try:
+            conn.execute(
+                """INSERT INTO networks
+                   (name, host, port, ssl, nick, altnick, ident, realname, cmd_prefix, enabled)
+                   VALUES (?,?,?,?,?,?,?,?,?,1)""",
+                (name, host, port, 1 if ssl else 0, nick, altnick, ident, realname, cmd_prefix)
+            )
+            return True
+        except Exception:
+            return False
+
+
+def update_network(name: str, **kwargs) -> None:
+    """Update network fields. Accepted keys match column names."""
+    allowed = {"host", "port", "ssl", "nick", "altnick", "ident", "realname",
+               "sasl_user", "sasl_pass", "nickserv_pass", "cmd_prefix", "enabled"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return
+    set_clause = ", ".join(f"{k}=?" for k in fields)
+    with get_conn() as conn:
+        conn.execute(f"UPDATE networks SET {set_clause} WHERE name=?",
+                     list(fields.values()) + [name])
+
+
+def delete_network(name: str) -> None:
+    """Delete a network and ALL its stats data."""
+    with get_conn() as conn:
+        # Cascade delete all stats for every nick on this network
+        conn.execute("DELETE FROM stats WHERE nick_id IN "
+                     "(SELECT id FROM nicks WHERE network=?)", (name,))
+        conn.execute("DELETE FROM wordstats WHERE network=?", (name,))
+        conn.execute("DELETE FROM channel_words WHERE network=?", (name,))
+        conn.execute("DELETE FROM quotes WHERE network=?", (name,))
+        conn.execute("DELETE FROM urls WHERE network=?", (name,))
+        conn.execute("DELETE FROM topics WHERE network=?", (name,))
+        conn.execute("DELETE FROM kick_log WHERE network=?", (name,))
+        conn.execute("DELETE FROM hourly_activity WHERE nick_id IN "
+                     "(SELECT id FROM nicks WHERE network=?)", (name,))
+        conn.execute("DELETE FROM hourly_users WHERE network=?", (name,))
+        conn.execute("DELETE FROM peaks WHERE network=?", (name,))
+        conn.execute("DELETE FROM nick_refs WHERE network=?", (name,))
+        conn.execute("DELETE FROM smiley_freq WHERE network=?", (name,))
+        conn.execute("DELETE FROM karma WHERE network=?", (name,))
+        conn.execute("DELETE FROM chanlog WHERE network=?", (name,))
+        conn.execute("DELETE FROM channel_config WHERE network=?", (name,))
+        conn.execute("DELETE FROM nicks WHERE network=?", (name,))
+        conn.execute("DELETE FROM bot_channels WHERE network=?", (name,))
+        conn.execute("DELETE FROM networks WHERE name=?", (name,))
+
+
+def get_channels_for_network(network: str, enabled_only: bool = True) -> List[str]:
+    with get_conn() as conn:
+        q = "SELECT channel FROM bot_channels WHERE network=?"
+        if enabled_only:
+            q += " AND enabled=1"
+        return [r[0] for r in conn.execute(q, (network,)).fetchall()]
+
+
+def add_channel(network: str, channel: str) -> bool:
+    """Add a channel to a network. Returns True if inserted."""
+    with get_conn() as conn:
+        try:
+            conn.execute(
+                "INSERT INTO bot_channels (network, channel, enabled) VALUES (?,?,1)",
+                (network, channel)
+            )
+            return True
+        except Exception:
+            # Already exists — re-enable it
+            conn.execute(
+                "UPDATE bot_channels SET enabled=1 WHERE network=? AND channel=?",
+                (network, channel)
+            )
+            return False
+
+
+def delete_channel(network: str, channel: str) -> None:
+    """Delete a channel and ALL its stats data."""
+    with get_conn() as conn:
+        conn.execute("DELETE FROM stats WHERE nick_id IN "
+                     "(SELECT id FROM nicks WHERE network=? AND channel=?)",
+                     (network, channel))
+        conn.execute("DELETE FROM wordstats WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM channel_words WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM quotes WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM urls WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM topics WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM kick_log WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM hourly_activity WHERE nick_id IN "
+                     "(SELECT id FROM nicks WHERE network=? AND channel=?)",
+                     (network, channel))
+        conn.execute("DELETE FROM hourly_users WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM peaks WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM nick_refs WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM smiley_freq WHERE nick_id IN "
+                     "(SELECT id FROM nicks WHERE network=? AND channel=?)",
+                     (network, channel))
+        conn.execute("DELETE FROM karma WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM chanlog WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM channel_config WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM nicks WHERE network=? AND channel=?",
+                     (network, channel))
+        conn.execute("DELETE FROM bot_channels WHERE network=? AND channel=?",
+                     (network, channel))

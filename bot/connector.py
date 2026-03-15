@@ -78,6 +78,7 @@ class IRCConnector:
         self._sasl_authed  = False       # SASL completed
         self._auth_done    = False       # any auth completed, safe to run on_connect
         self._ghost_sent   = False       # already sent GHOST this session
+        self.reload_queue  = None        # set by main.py after construction
         self._reclaim_nick = False       # waiting to reclaim primary nick after ghost
 
     # ─── Send ─────────────────────────────────────────────────────────────
@@ -434,6 +435,18 @@ class IRCConnector:
             raw = cmd.replace("{nick}", self._current_nick)
             self.send_raw(raw)
             log.info(f"on_connect: {raw}")
+
+    async def join_channel(self, channel: str):
+        """JOIN a channel live and add it to the tracked list."""
+        if channel not in self.channels:
+            self.channels.append(channel)
+        self.send_raw(f"JOIN {channel}")
+
+    async def part_channel(self, channel: str):
+        """PART a channel live and remove it from the tracked list."""
+        if channel in self.channels:
+            self.channels.remove(channel)
+        self.send_raw(f"PART {channel} :Removed by admin")
 
     async def disconnect(self):
         self._connected = False

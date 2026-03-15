@@ -57,6 +57,8 @@ option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
 - **Peak users** with date
 - **Live user count** badge, updates every 30 seconds
 - **Multi-network** — connect to Libera, Undernet, PTirc simultaneously
+- **Runtime network management** — add/remove networks and channels live via PM
+  commands, no restart required; `config.yml` seeds the DB on first run only
 - **Op/voice/halfop stats** — who gave ops, who got deopped, who hands out voice;
   pisg-style prose sentences; `ShowOps`, `ShowVoice`, `ShowHalfops` toggles
 - **Fully clickable cards** on the landing and network pages
@@ -147,6 +149,12 @@ See **[DOCS.md](DOCS.md)** for the complete reference.
 | `master add <nick>` | Add master (bot asks for password interactively) |
 | `master del <nick>` / `master list` | Manage masters |
 | `set page [#chan] <url>` | Override `!stats` URL for a channel |
+| `nets` | List all networks (host, port, SSL status) |
+| `chans` | List channels tracked on the current network |
+| `addnet -name <n> -host <host> -port <port> [-ssl\|-plaintext]` | Add network and connect immediately (TLS by default) |
+| `delnet -name <n>` | Remove network and delete all its stats |
+| `addchan [-network <net>] #channel` | Join and track a channel |
+| `delchan [-network <net>] #channel` | Part channel and delete all its stats |
 
 ---
 
