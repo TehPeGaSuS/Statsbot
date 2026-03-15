@@ -485,7 +485,7 @@ b {{ color: var(--cyan); }}
             pct1 = f"{c1/l1*100:.1f}"
             pct2 = f"{cdata[ranked[1]][0]/cdata[ranked[1]][1]*100:.1f}" if len(ranked) > 1 else None
             ex = nick_stats.get(n1, {}).get("caps_ex", None)
-            ex_fmt = f"<{n1}> {ex}" if ex else None
+            ex_fmt = f"&lt;{n1}&gt; {ex}" if ex else None
             if float(pct1) >= 10:
                 text = f"The loudest one was <b>{n1}</b>, who yelled {pct1}% of the time!"
                 sub  = f"Another old yeller was <b>{ranked[1]}</b>, who shouted {pct2}% of the time." if pct2 else None
@@ -649,7 +649,8 @@ b {{ color: var(--cyan); }}
             pct1f = f"{fdata[ranked_f[0]]*100:.1f}"
             text = f"<b>{ranked_f[0]}</b> has quite a potty mouth. {pct1f}% of their words were foul language."
             sub  = f"<b>{ranked_f[1]}</b> also makes sailors blush, {fdata[ranked_f[1]]*100:.1f}% of the time." if len(ranked_f) > 1 else None
-            ex   = nick_stats.get(ranked_f[0], {}).get("foul_ex", None)
+            _fex = nick_stats.get(ranked_f[0], {}).get("foul_ex", None)
+            ex   = f"&lt;{ranked_f[0]}&gt; {_fex}" if _fex else None
             hicell(text, sub, example=ex)
         else:
             _bignum_row("Nobody is foul-mouthed here! Remarkable.")
