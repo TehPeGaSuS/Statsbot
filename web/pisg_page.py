@@ -126,7 +126,7 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
     def section(title_str):
         h(f'<h2 class="section-title">{title_str}</h2>')
     def hicell(content, small=None, example=None):
-        ex_html = f'<br><span class="small example"><b>For example:</b> {example}</span>' if example else ""
+        ex_html = f'<br><span class="small"><b>For example, like this:</b><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{example}</span>' if example else ""
         extra = f'<br><span class="small">{small}</span>' if small else ""
         h(f'<tr><td class="hicell">{content}{extra}{ex_html}</td></tr>')
     # ── Page header ───────────────────────────────────────────────────────────
@@ -323,7 +323,7 @@ b {{ color: var(--cyan); }}
   .tabs {{ gap: .3rem; }}
   .tab {{ padding: .3rem .7rem; font-size: .78rem; }}
   .tscroll > table {{ font-size: .8rem; }}
-  .quote-cell {{ display: none; }}
+
 }}
 
 /* Live user count badge */
@@ -471,8 +471,8 @@ b {{ color: var(--cyan); }}
             ranked = sorted(qdata, key=lambda n: qdata[n][0]/qdata[n][1], reverse=True)
             n1, (q1, l1) = ranked[0], qdata[ranked[0]]
             pct1 = f"{q1/l1*100:.1f}"
-            text = f"Is <b>{n1}</b> stupid or just asking too many questions? {pct1}% of their lines were questions!"
-            sub  = f"<b>{ranked[1]}</b> didn't know that much either with {qdata[ranked[1]][0]/qdata[ranked[1]][1]*100:.1f}% questions." if len(ranked) > 1 else None
+            text = f"Is <b>{n1}</b> a little bit slower than the rest, or just asking too many questions? {pct1}% of lines contained a question!"
+            sub  = f"<b>{ranked[1]}</b> didn't know that much either. {qdata[ranked[1]][0]/qdata[ranked[1]][1]*100:.1f}% of their lines were questions." if len(ranked) > 1 else None
             _bignum_row(text, sub)
 
     # Shouting (CAPS)
@@ -483,18 +483,25 @@ b {{ color: var(--cyan); }}
             ranked = sorted(cdata, key=lambda n: cdata[n][0]/cdata[n][1], reverse=True)
             n1, (c1, l1) = ranked[0], cdata[ranked[0]]
             pct1 = f"{c1/l1*100:.1f}"
-            text = f"The loudest one was <b>{n1}</b>, who yelled {pct1}% of the time!"
-            sub  = f"Another old yeller was <b>{ranked[1]}</b>, who shouted {cdata[ranked[1]][0]/cdata[ranked[1]][1]*100:.1f}% of the time." if len(ranked) > 1 else None
+            pct2 = f"{cdata[ranked[1]][0]/cdata[ranked[1]][1]*100:.1f}" if len(ranked) > 1 else None
             ex = nick_stats.get(n1, {}).get("caps_ex", None)
-            hicell(text, sub, example=ex)
+            ex_fmt = f"<{n1}> {ex}" if ex else None
+            if float(pct1) >= 10:
+                text = f"The loudest one was <b>{n1}</b>, who yelled {pct1}% of the time!"
+                sub  = f"Another old yeller was <b>{ranked[1]}</b>, who shouted {pct2}% of the time." if pct2 else None
+            else:
+                text = f"It seems that <b>{n1}</b>'s shift-key is hanging: {pct1}% of the time they wrote UPPERCASE."
+                sub  = f"<b>{ranked[1]}</b> just forgot to deactivate their Caps-Lock. They wrote UPPERCASE {pct2}% of the time." if pct2 else None
+            hicell(text, sub, example=ex_fmt)
 
     # Violent
     if pisg.get("ShowBigNumbers", True) and qualified:
         vdata = {n: nick_stats[n].get("violent",0) for n in qualified if nick_stats[n].get("violent",0) > 0}
         if vdata:
             ranked = sorted(vdata, key=vdata.get, reverse=True)
-            text = f"<b>{ranked[0]}</b> is a very aggressive person. They attacked others <b>{vdata[ranked[0]]}</b> times."
-            sub  = f"<b>{ranked[1]}</b> can't control their aggressions either, attacking <b>{vdata[ranked[1]]}</b> times." if len(ranked) > 1 else None
+            _vc = vdata[ranked[0]]
+            text = f"<b>{ranked[0]}</b> is a very aggressive person. They attacked others <b>{_vc}</b> {'time' if _vc == 1 else 'times'}."
+            sub  = f"<b>{ranked[1]}</b> can't control their aggressions, either. They picked on others <b>{vdata[ranked[1]]}</b> times." if len(ranked) > 1 else None
             ex = nick_stats.get(ranked[0], {}).get("violent_ex", None)
             hicell(text, sub, example=ex)
             # Attacked victims
@@ -502,7 +509,8 @@ b {{ color: var(--cyan); }}
             if atat:
                 av = sorted(atat, key=atat.get, reverse=True)
                 ax = nick_stats.get(av[0], {}).get("attacked_ex", None)
-                atext = f"Poor <b>{av[0]}</b>, nobody likes them. They were attacked <b>{atat[av[0]]}</b> times."
+                _ac = atat[av[0]]
+                atext = f"Poor <b>{av[0]}</b>, nobody likes them. They were attacked <b>{_ac}</b> {'time' if _ac == 1 else 'times'}."
                 asub  = f"<b>{av[1]}</b> seems to be unliked too. They got beaten <b>{atat[av[1]]}</b> times." if len(av) > 1 else None
                 hicell(atext, asub, example=ax)
         else:
@@ -546,19 +554,33 @@ b {{ color: var(--cyan); }}
             ch_avg   = sum(ldata.values()) / len(ldata)
             _bignum_row(
                 f"<b>{longest}</b> wrote the longest lines, averaging {ldata[longest]:.1f} letters per line.",
-                f"Channel average was {ch_avg:.1f} letters per line."
+                f"#channel average was {ch_avg:.1f} letters per line.".replace("#channel", channel)
             )
             if longest != shortest:
+                # Find second shortest for "tight-lipped too" sub
+                sorted_short = sorted(ldata, key=ldata.get)
+                short_sub = (f"<b>{sorted_short[1]}</b> was tight-lipped, too, "
+                             f"averaging {ldata[sorted_short[1]]:.1f} characters."
+                             if len(sorted_short) > 1 and sorted_short[1] != longest else None)
                 _bignum_row(
-                    f"<b>{shortest}</b> wrote the shortest lines, averaging {ldata[shortest]:.1f} characters per line."
+                    f"<b>{shortest}</b> wrote the shortest lines, averaging {ldata[shortest]:.1f} characters per line.",
+                    short_sub
                 )
 
-    # Words per line (big number)
+    # Words total + wpl big numbers
     if qualified:
+        wdata_total = {n: nick_stats[n].get("words", 0) for n in qualified if nick_stats[n].get("words", 0) > 0}
+        if wdata_total:
+            top_words_n = sorted(wdata_total, key=wdata_total.get, reverse=True)
+            tw1 = top_words_n[0]
+            sub_words = (f"{tw1}'s faithful follower, <b>{top_words_n[1]}</b>, "
+                         f"didn't speak so much: {wdata_total[top_words_n[1]]:,} words."
+                         if len(top_words_n) > 1 else None)
+            _bignum_row(f"<b>{tw1}</b> spoke a total of {wdata_total[tw1]:,} words!", sub_words)
         wpl_data = {n: nick_stats[n].get("words", 0) / max(nick_stats[n].get("lines", 1), 1)
                     for n in qualified if nick_stats[n].get("words", 0) > 0}
         if wpl_data:
-            best_wpl  = max(wpl_data, key=wpl_data.get)
+            best_wpl   = max(wpl_data, key=wpl_data.get)
             ch_avg_wpl = total_words / total_lines if total_lines else 0
             _bignum_row(
                 f"<b>{best_wpl}</b> wrote an average of {wpl_data[best_wpl]:.2f} words per line.",
@@ -570,7 +592,8 @@ b {{ color: var(--cyan); }}
         mdata = {n: nick_stats[n].get("monologues",0) for n in qualified if nick_stats[n].get("monologues",0) > 0}
         if mdata:
             ranked = sorted(mdata, key=mdata.get, reverse=True)
-            text = f"<b>{ranked[0]}</b> talks to themselves a lot. They wrote over 5 lines in a row <b>{mdata[ranked[0]]}</b> times!"
+            _mc = mdata[ranked[0]]
+            text = f"<b>{ranked[0]}</b> talks to themselves a lot. They wrote over 5 lines in a row <b>{_mc}</b> {'time' if _mc == 1 else 'times'}!"
             sub  = f"Another lonely one was <b>{ranked[1]}</b>, who managed to hit {mdata[ranked[1]]} times." if len(ranked) > 1 else None
             _bignum_row(text, sub)
 
@@ -588,7 +611,8 @@ b {{ color: var(--cyan); }}
         kt = get_top(network, channel, "kicks", period, 3)
         kt = [r for r in kt if r["value"] > 0]
         if kt:
-            text = f"<b>{kt[0]['nick']}</b> wasn't very popular, getting kicked {kt[0]['value']} times!"
+            _kv = kt[0]['value']
+            text = f"<b>{kt[0]['nick']}</b> wasn't very popular, getting kicked {_kv} {'time' if _kv == 1 else 'times'}!"
             sub  = f"<b>{kt[1]['nick']}</b> seemed to be hated too: {kt[1]['value']} kicks." if len(kt) > 1 else None
             _bignum_row(text, sub)
 
@@ -608,7 +632,8 @@ b {{ color: var(--cyan); }}
         ac = get_top(network, channel, "actions", period, 3)
         ac = [r for r in ac if r["value"] > 0]
         if ac:
-            text = f"<b>{ac[0]['nick']}</b> always lets us know what they're doing: {ac[0]['value']} actions!"
+            _acv = ac[0]['value']
+            text = f"<b>{ac[0]['nick']}</b> always lets us know what they're doing: {_acv} {'action' if _acv == 1 else 'actions'}!"
             sub  = f"Also, <b>{ac[1]['nick']}</b> tells us what's up with {ac[1]['value']} actions." if len(ac) > 1 else None
             ax = nick_stats.get(ac[0]["nick"], {}).get("action_ex", None)
             hicell(text, sub, example=ax)
@@ -634,7 +659,8 @@ b {{ color: var(--cyan); }}
         jn = get_top(network, channel, "joins", period, 1)
         jn = [r for r in jn if r["value"] > 0]
         if jn:
-            _bignum_row(f"<b>{jn[0]['nick']}</b> couldn't decide whether to stay or go. {jn[0]['value']} joins during this period!")
+            _jv = jn[0]['value']
+            _bignum_row(f"<b>{jn[0]['nick']}</b> couldn't decide whether to stay or go. {_jv} {'join' if _jv == 1 else 'joins'} during this period!")
 
     h('</table>')
 
@@ -770,15 +796,20 @@ b {{ color: var(--cyan); }}
               f'<td class="small">{u.get("nick","")}</td><td class="small">{_ago(u["ts"])}</td></tr>')
         h('</tbody></table></div>')
 
-    # ── Recent kicks ──────────────────────────────────────────────────────────
+    # ── Recent kicks — pisg-style prose with example line ───────────────────
     if recent_kicks:
-        h('<div class="tscroll"><table class="info-table"><thead><tr><th>Victim</th><th>Kicked by</th><th>Reason</th><th>When</th></tr></thead><tbody>')
+        h('<table class="bignums">')
         for k in recent_kicks:
-            h(f'<tr><td style="color:var(--red)">{k["victim"]}</td>'
-              f'<td style="color:var(--green)">{k["kicker"]}</td>'
-              f'<td class="small">{(k["reason"] or "")[:50]}</td>'
-              f'<td class="small">{_ago(k["ts"])}</td></tr>')
-        h('</tbody></table></div>')
+            victim  = k["victim"]
+            kicker  = k["kicker"]
+            reason  = (k["reason"] or "").strip()
+            when    = _ago(k["ts"])
+            text    = f"<b>{victim}</b> wasn't very popular, getting kicked by <b>{kicker}</b> {when}!"
+            example = f"*** {victim} was kicked by {kicker}"
+            if reason:
+                example += f" ({reason})"
+            hicell(text, example=example)
+        h('</table>')
 
     # ── Ops / Voice / Halfops ─────────────────────────────────────────────────
     show_ops     = pisg.get("ShowOps",     True)
