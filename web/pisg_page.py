@@ -807,7 +807,7 @@ b {{ color: var(--cyan); }}
     if pisg.get("ShowMru", True) and recent_urls:
         section(t("section_most_ref_urls", lang))
         h('<div class="tscroll"><table class="info-table"><thead><tr>'
-          f'<th>{t("col_url",lang)}</th><th>{t("col_number_of_uses",lang)}</th><th>{t("col_last_by",lang)}</th><th>When</th>'
+          f'<th>{t("col_url",lang)}</th><th>{t("col_number_of_uses",lang)}</th><th>{t("col_last_by",lang)}</th><th>{t("col_when",lang)}</th>'
           '</tr></thead><tbody>')
         for u in recent_urls:
             url = u["url"]
