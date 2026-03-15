@@ -1348,3 +1348,54 @@ def delete_channel(network: str, channel: str) -> None:
                      (network, channel))
         conn.execute("DELETE FROM bot_channels WHERE network=? AND channel=?",
                      (network, channel))
+
+def delete_nick_stats(network: str, pattern: str, channel: str = None) -> int:
+    """Delete all stats for nicks matching pattern (fnmatch-style * wildcard).
+    If channel is given (and not '*'), only deletes stats for that channel.
+    Returns number of nicks deleted."""
+    import fnmatch
+    with get_conn() as conn:
+        if channel and channel != "*":
+            rows = conn.execute(
+                "SELECT id, nick FROM nicks WHERE network=? AND channel=? COLLATE NOCASE",
+                (network, channel)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT id, nick FROM nicks WHERE network=?",
+                (network,)
+            ).fetchall()
+        matches = [r for r in rows if fnmatch.fnmatch(r["nick"].lower(), pattern.lower())]
+        if not matches:
+            return 0
+        for r in matches:
+            nid = r["id"]
+            conn.execute("DELETE FROM stats WHERE nick_id=?", (nid,))
+            conn.execute("DELETE FROM wordstats WHERE nick_id=?", (nid,))
+            conn.execute("DELETE FROM quotes WHERE nick_id=?", (nid,))
+            conn.execute("DELETE FROM hourly_activity WHERE nick_id=?", (nid,))
+            conn.execute("DELETE FROM smiley_freq WHERE nick_id=?", (nid,))
+            conn.execute("DELETE FROM nicks WHERE id=?", (nid,))
+        # Also clean channel-level tables that match by nick name
+        nick_names = [r["nick"] for r in matches]
+        ch_filter = (network, channel) if channel and channel != "*" else (network,)
+        for nick_name in nick_names:
+            if channel and channel != "*":
+                conn.execute(
+                    "DELETE FROM nick_refs WHERE network=? AND channel=? AND mentioned=? COLLATE NOCASE",
+                    (network, channel, nick_name)
+                )
+                conn.execute(
+                    "DELETE FROM karma WHERE network=? AND channel=? AND nick=? COLLATE NOCASE",
+                    (network, channel, nick_name)
+                )
+            else:
+                conn.execute(
+                    "DELETE FROM nick_refs WHERE network=? AND mentioned=? COLLATE NOCASE",
+                    (network, nick_name)
+                )
+                conn.execute(
+                    "DELETE FROM karma WHERE network=? AND nick=? COLLATE NOCASE",
+                    (network, nick_name)
+                )
+        return len(matches)

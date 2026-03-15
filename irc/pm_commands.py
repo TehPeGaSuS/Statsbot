@@ -144,14 +144,15 @@ class PMCommandHandler:
             return
 
         if subcmd in ("add", "del"):
-            rest = parts[1:]
+            rest = [p for p in parts[1:] if p != "--purge"]
+            purge = "--purge" in parts
             if not rest:
-                self.send(nick, f"Usage: ignore {subcmd} [#channel] <pattern>")
+                self.send(nick, f"Usage: ignore {subcmd} [#channel] <pattern> [--purge]")
                 return
             # If first arg starts with #, it's a channel
             if rest[0].startswith("#"):
                 if len(rest) < 2:
-                    self.send(nick, f"Usage: ignore {subcmd} #channel <pattern>")
+                    self.send(nick, f"Usage: ignore {subcmd} #channel <pattern> [--purge]")
                     return
                 channel = rest[0]
                 pattern = rest[1]
@@ -160,18 +161,52 @@ class PMCommandHandler:
                 pattern = rest[0]
 
             if subcmd == "add":
-                self._ignore_add(nick, channel, pattern)
+                self._ignore_add(nick, channel, pattern, purge=purge)
             else:
                 self._ignore_del(nick, channel, pattern)
             return
 
+        if subcmd == "purge":
+            rest = parts[1:]
+            if not rest:
+                self.send(nick, "Usage: ignore purge [#channel] <pattern>")
+                return
+            if rest[0].startswith("#"):
+                if len(rest) < 2:
+                    self.send(nick, "Usage: ignore purge #channel <pattern>")
+                    return
+                channel = rest[0]
+                pattern = rest[1]
+            else:
+                channel = None
+                pattern = rest[0]
+            self._ignore_purge(nick, channel, pattern)
+            return
+
         self.send(nick, "Usage: ignore add|del|list [#channel] <pattern>")
 
-    def _ignore_add(self, nick: str, channel: str, pattern: str):
-        from database.models import add_ignore
+    def _ignore_purge(self, nick: str, channel: str, pattern: str):
+        """Delete stats for nicks matching pattern without touching the ignore list."""
+        from database.models import delete_nick_stats
+        count = delete_nick_stats(self.network, pattern, channel=channel)
+        scope = channel if channel else "network-wide"
+        if count:
+            self.send(nick, f"Purged stats for {count} nick(s) matching {pattern!r} ({scope}).")
+        else:
+            self.send(nick, f"No stats found for {pattern!r} ({scope}).")
+
+    def _ignore_add(self, nick: str, channel: str, pattern: str, purge: bool = False):
+        from database.models import add_ignore, delete_nick_stats
         add_ignore(pattern, self.network, channel=channel, added_by=nick)
         scope = channel if channel != "*" else "network-wide"
         self.send(nick, f"Ignored {pattern} ({scope}).")
+        if purge:
+            chan = channel if channel != "*" else None
+            count = delete_nick_stats(self.network, pattern, channel=chan)
+            if count:
+                self.send(nick, f"Purged stats for {count} nick(s) matching {pattern!r}.")
+            else:
+                self.send(nick, f"No existing stats found for {pattern!r}.")
 
     def _ignore_del(self, nick: str, channel: str, pattern: str):
         from database.models import del_ignore
@@ -499,7 +534,8 @@ class PMCommandHandler:
             "ircstats PM commands:",
             "  identify <master_nick> <password>  — authenticate",
             "  logout  |  whoami  |  status",
-            "  ignore add [#chan] <pattern>",
+            "  ignore add [#chan] <pattern> [--purge]  (--purge also deletes existing stats)",
+            "  ignore purge [#chan] <pattern>           (delete stats without changing ignore list)",
             "  ignore del [#chan] <pattern>",
             "  ignore list [#chan]",
             "  master add <nick>  |  master del <nick>  |  master list",
