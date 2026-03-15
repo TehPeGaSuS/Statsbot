@@ -527,7 +527,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahom
 
 <div class="header">
   <h1>📊 {{ title }}</h1>
-  <div class="sub">updated {{ now }}</div>
+  <div class="sub">Updated {{ now }}</div>
 </div>
 
 <div class="container">
