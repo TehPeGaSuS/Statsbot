@@ -389,8 +389,9 @@ b {{ color: var(--cyan); }}
     h('</div>')
 
     # ── Activity by hour ──────────────────────────────────────────────────────
-    section("Most active times")
-    h(f'<div class="chart-wrap"><canvas id="hourChart"></canvas></div>')
+    if pisg.get("ShowActiveTimes", True):
+        section("Most active times")
+        h(f'<div class="chart-wrap"><canvas id="hourChart"></canvas></div>')
 
     # ── Main nick table ───────────────────────────────────────────────────────
     section("Most active nicks")
@@ -497,18 +498,37 @@ b {{ color: var(--cyan); }}
                  for n in qualified if nick_stats[n].get("caps",0) > 0}
         if cdata:
             ranked = sorted(cdata, key=lambda n: cdata[n][0]/cdata[n][1], reverse=True)
+
+            # Entry 1 — loudest / most caps (rank 1 and 2 as sub)
             n1, (c1, l1) = ranked[0], cdata[ranked[0]]
             pct1 = f"{c1/l1*100:.1f}"
-            pct2 = f"{cdata[ranked[1]][0]/cdata[ranked[1]][1]*100:.1f}" if len(ranked) > 1 else None
-            ex = nick_stats.get(n1, {}).get("caps_ex", None)
-            ex_fmt = f"&lt;{n1}&gt; {ex}" if ex else None
+            ex1  = nick_stats.get(n1, {}).get("caps_ex", None)
+            ex1_fmt = f"&lt;{n1}&gt; {ex1}" if ex1 else None
             if float(pct1) >= 10:
-                text = f"The loudest one was <b>{n1}</b>, who yelled {pct1}% of the time!"
-                sub  = f"Another old yeller was <b>{ranked[1]}</b>, who shouted {pct2}% of the time." if pct2 else None
-            else:
-                text = f"It seems that <b>{n1}</b>'s shift-key is hanging: {pct1}% of the time they wrote UPPERCASE."
-                sub  = f"<b>{ranked[1]}</b> just forgot to deactivate their Caps-Lock. They wrote UPPERCASE {pct2}% of the time." if pct2 else None
-            hicell(text, sub, example=ex_fmt)
+                text1 = f"The loudest one was <b>{n1}</b>, who yelled {pct1}% of the time!"
+                sub1  = None
+                if len(ranked) > 1:
+                    p2 = f"{cdata[ranked[1]][0]/cdata[ranked[1]][1]*100:.1f}"
+                    sub1 = f"Another <i>old yeller</i> was <b>{ranked[1]}</b>, who shouted {p2}% of the time!"
+                hicell(text1, sub1, example=ex1_fmt)
+
+            # Entry 2 — shift-key / Caps-Lock (rank 1 if low %, otherwise rank 2+)
+            # Show for the first nick whose % < 10, or rank 2 if rank 1 was already shown above
+            caps_low = [n for n in ranked if cdata[n][0]/cdata[n][1]*100 < 10]
+            # If rank1 was shown as "loudest", show shift-key entry for rank2 onwards
+            shift_candidates = ranked[1:] if float(pct1) >= 10 else ranked
+            if shift_candidates:
+                ns = shift_candidates[0]
+                ps = f"{cdata[ns][0]/cdata[ns][1]*100:.1f}"
+                exs = nick_stats.get(ns, {}).get("caps_ex", None)
+                exs_fmt = f"&lt;{ns}&gt; {exs}" if exs else None
+                text2 = f"It seems that <b>{ns}</b>'s shift-key is hanging: {ps}% of the time they wrote UPPERCASE."
+                sub2  = None
+                if len(shift_candidates) > 1:
+                    ns2 = shift_candidates[1]
+                    ps2 = f"{cdata[ns2][0]/cdata[ns2][1]*100:.1f}"
+                    sub2 = f"<b>{ns2}</b> just forgot to deactivate their Caps-Lock. They wrote UPPERCASE {ps2}% of the time."
+                hicell(text2, sub2, example=exs_fmt)
 
     # Violent
     if pisg.get("ShowBigNumbers", True) and qualified:
@@ -603,33 +623,20 @@ b {{ color: var(--cyan); }}
                 f"Channel average was {ch_avg_wpl:.2f} words per line."
             )
 
-    # Monologues
-    if pisg.get("ShowBigNumbers", True) and qualified:
-        mdata = {n: nick_stats[n].get("monologues",0) for n in qualified if nick_stats[n].get("monologues",0) > 0}
-        if mdata:
-            ranked = sorted(mdata, key=mdata.get, reverse=True)
-            _mc = mdata[ranked[0]]
-            text = f"<b>{ranked[0]}</b> talks to themselves a lot. They wrote over 5 lines in a row <b>{_mc}</b> {'time' if _mc == 1 else 'times'}!"
-            sub  = f"Another lonely one was <b>{ranked[1]}</b>, who managed to hit {mdata[ranked[1]]} times." if len(ranked) > 1 else None
-            _bignum_row(text, sub)
-
     h('</table>')
 
     # ── Other numbers ─────────────────────────────────────────────────────────
     section("Other interesting numbers")
     h('<table class="bignums">')
 
-    # Got kicked
+    # Got kicked (victim)
     if pisg.get("ShowBigNumbers", True):
-        kdata = {nick_stats[n]["nick"] if "nick" in nick_stats.get(n,{}) else n:
-                 nick_stats[n].get("kicks",0) for n in nick_stats if nick_stats[n].get("kicks",0) > 0}
-        # Actually get from top
         kt = get_top(network, channel, "kicks", period, 3)
         kt = [r for r in kt if r["value"] > 0]
         if kt:
-            _kv = kt[0]['value']
+            _kv = kt[0]["value"]
             text = f"<b>{kt[0]['nick']}</b> wasn't very popular, getting kicked {_kv} {'time' if _kv == 1 else 'times'}!"
-            sub  = f"<b>{kt[1]['nick']}</b> seemed to be hated too: {kt[1]['value']} kicks." if len(kt) > 1 else None
+            sub  = f"<b>{kt[1]['nick']}</b> seemed to be hated too with {kt[1]['value']} kicks." if len(kt) > 1 else None
             _bignum_row(text, sub)
 
     # Most kicks given
@@ -637,24 +644,98 @@ b {{ color: var(--cyan); }}
         kg = get_top(network, channel, "kick_given", period, 3)
         kg = [r for r in kg if r["value"] > 0]
         if kg:
-            text = f"<b>{kg[0]['nick']}</b> is either insane or just a fair op, kicking {kg[0]['value']} people!"
+            _kg0v = kg[0]["value"]
+            text = f"<b>{kg[0]['nick']}</b> is either insane or just a fair op, kicking a total of {_kg0v} {'person' if _kg0v == 1 else 'people'}!"
             sub  = f"{kg[0]['nick']}'s faithful follower, <b>{kg[1]['nick']}</b>, kicked about {kg[1]['value']} people." if len(kg) > 1 else None
             _bignum_row(text, sub)
         else:
             _bignum_row("Nice opers here, no one got kicked!")
+
+    # Ops given / taken (pisg order: given then taken)
+    show_ops     = pisg.get("ShowOps",     True)
+    show_voice   = pisg.get("ShowVoice",   False)  # pisg default: disabled
+    show_halfops = pisg.get("ShowHalfops", False)  # pisg default: disabled
+
+    def _get_opvoice_top(stat, limit=3):
+        return get_top(network, channel, stat, 0, limit)
+
+    if show_ops:
+        og = [r for r in _get_opvoice_top("op_given", 3) if r["value"] > 0]
+        ot = [r for r in _get_opvoice_top("op_taken", 3) if r["value"] > 0]
+        if og:
+            _ogv = og[0]["value"]
+            text = f"<b>{og[0]['nick']}</b> donated {_ogv} {'op' if _ogv == 1 else 'ops'} in the channel..."
+            sub  = f"<b>{og[1]['nick']}</b> was also generous with ops, giving {og[1]['value']} times." if len(og) > 1 else None
+            hicell(text, sub)
+        if ot:
+            _otv = ot[0]["value"]
+            text = f"<b>{ot[0]['nick']}</b> is the channel's deop machine, removing ops from <b>{_otv}</b> {'person' if _otv == 1 else 'people'}."
+            sub  = f"<b>{ot[1]['nick']}</b> also took ops away {ot[1]['value']} times." if len(ot) > 1 else None
+            hicell(text, sub)
+        elif og:
+            hicell(f"Wow, no op was taken on {channel}!")
+
+    if show_halfops:
+        hog = [r for r in _get_opvoice_top("halfop_given", 3) if r["value"] > 0]
+        hot = [r for r in _get_opvoice_top("halfop_taken", 3) if r["value"] > 0]
+        if hog:
+            _hv = hog[0]["value"]
+            text = f"<b>{hog[0]['nick']}</b> donated {_hv} {'halfop' if _hv == 1 else 'halfops'} in the channel..."
+            sub  = f"<b>{hog[1]['nick']}</b> also gave halfops {hog[1]['value']} times." if len(hog) > 1 else None
+            hicell(text, sub)
+        if hot:
+            _htv = hot[0]["value"]
+            text = f"<b>{hot[0]['nick']}</b> took halfops away {_htv} {'time' if _htv == 1 else 'times'}."
+            hicell(text)
+        elif hog:
+            hicell(f"Wow, no halfop was taken on {channel}!")
+
+    if show_voice:
+        vg = [r for r in _get_opvoice_top("voice_given", 3) if r["value"] > 0]
+        vt = [r for r in _get_opvoice_top("voice_taken", 3) if r["value"] > 0]
+        if vg:
+            _vgv = vg[0]["value"]
+            text = f"<b>{vg[0]['nick']}</b> is very generous with voice, handing it out <b>{_vgv}</b> {'time' if _vgv == 1 else 'times'}."
+            sub  = f"<b>{vg[1]['nick']}</b> was also quite vocal about giving voice, {vg[1]['value']} times." if len(vg) > 1 else None
+            hicell(text, sub)
+        if vt:
+            _vtv = vt[0]["value"]
+            text = f"<b>{vt[0]['nick']}</b> took voice away <b>{_vtv}</b> {'time' if _vtv == 1 else 'times'} — someone had to."
+            sub  = f"<b>{vt[1]['nick']}</b> also silenced people {vt[1]['value']} times." if len(vt) > 1 else None
+            hicell(text, sub)
+        elif vg:
+            hicell(f"Wow, no voice was taken on {channel}!")
 
     # Most actions
     if pisg.get("ShowBigNumbers", True):
         ac = get_top(network, channel, "actions", period, 3)
         ac = [r for r in ac if r["value"] > 0]
         if ac:
-            _acv = ac[0]['value']
+            _acv = ac[0]["value"]
             text = f"<b>{ac[0]['nick']}</b> always lets us know what they're doing: {_acv} {'action' if _acv == 1 else 'actions'}!"
             sub  = f"Also, <b>{ac[1]['nick']}</b> tells us what's up with {ac[1]['value']} actions." if len(ac) > 1 else None
-            ax = nick_stats.get(ac[0]["nick"], {}).get("action_ex", None)
+            ax   = nick_stats.get(ac[0]["nick"], {}).get("action_ex", None)
             hicell(text, sub, example=ax)
         else:
             _bignum_row("No actions in this channel!")
+
+    # Monologues
+    if pisg.get("ShowBigNumbers", True) and qualified:
+        mdata = {n: nick_stats[n].get("monologues",0) for n in qualified if nick_stats[n].get("monologues",0) > 0}
+        if mdata:
+            ranked = sorted(mdata, key=mdata.get, reverse=True)
+            _mc  = mdata[ranked[0]]
+            text = f"<b>{ranked[0]}</b> talks to themselves a lot. They wrote over 5 lines in a row <b>{_mc}</b> {'time' if _mc == 1 else 'times'}!"
+            sub  = f"Another lonely one was <b>{ranked[1]}</b>, who managed to hit {mdata[ranked[1]]} times." if len(ranked) > 1 else None
+            _bignum_row(text, sub)
+
+    # Most joins
+    if pisg.get("ShowBigNumbers", True):
+        jn = get_top(network, channel, "joins", period, 1)
+        jn = [r for r in jn if r["value"] > 0]
+        if jn:
+            _jv = jn[0]["value"]
+            _bignum_row(f"<b>{jn[0]['nick']}</b> couldn't decide whether to stay or go. {_jv} {'join' if _jv == 1 else 'joins'} during this period!")
 
     # Most foul
     if pisg.get("ShowBigNumbers", True) and qualified:
@@ -663,30 +744,20 @@ b {{ color: var(--cyan); }}
         if fdata:
             ranked_f = sorted(fdata, key=fdata.get, reverse=True)
             pct1f = f"{fdata[ranked_f[0]]*100:.1f}"
-            text = f"<b>{ranked_f[0]}</b> has quite a potty mouth. {pct1f}% of their words were foul language."
-            sub  = f"<b>{ranked_f[1]}</b> also makes sailors blush, {fdata[ranked_f[1]]*100:.1f}% of the time." if len(ranked_f) > 1 else None
-            _fex = nick_stats.get(ranked_f[0], {}).get("foul_ex", None)
-            ex   = f"&lt;{ranked_f[0]}&gt; {_fex}" if _fex else None
+            text  = f"<b>{ranked_f[0]}</b> has quite a potty mouth. {pct1f}% of their words were foul language."
+            sub   = f"<b>{ranked_f[1]}</b> also makes sailors blush, {fdata[ranked_f[1]]*100:.1f}% of the time." if len(ranked_f) > 1 else None
+            _fex  = nick_stats.get(ranked_f[0], {}).get("foul_ex", None)
+            ex    = f"&lt;{ranked_f[0]}&gt; {_fex}" if _fex else None
             hicell(text, sub, example=ex)
         else:
             _bignum_row("Nobody is foul-mouthed here! Remarkable.")
 
-    # Most joins
-    if pisg.get("ShowBigNumbers", True):
-        jn = get_top(network, channel, "joins", period, 1)
-        jn = [r for r in jn if r["value"] > 0]
-        if jn:
-            _jv = jn[0]['value']
-            _bignum_row(f"<b>{jn[0]['nick']}</b> couldn't decide whether to stay or go. {_jv} {'join' if _jv == 1 else 'joins'} during this period!")
+    h('</table>')  # close Other interesting numbers + ops/voice bignums
 
-    h('</table>')
-
-    # ── Most active by hour — pisg-style 4-band table ───────────────────────
+    # ── Most active nicks by hour ─────────────────────────────────────────────
     if pisg.get("ShowMostActiveByHour", True):
-        # Fetch lines per nick per hour, aggregate into 4 bands
-        # Band 0: 0-5, Band 1: 6-11, Band 2: 12-17, Band 3: 18-23
         bands = [(0,5,"0-5"), (6,11,"6-11"), (12,17,"12-17"), (18,23,"18-23")]
-        nick_band_lines = {}  # {nick: [band0, band1, band2, band3]}
+        nick_band_lines = {}
         with get_conn() as conn:
             rows_hr = conn.execute("""
                 SELECT n.nick, ha.hour, ha.lines
@@ -695,28 +766,21 @@ b {{ color: var(--cyan); }}
                 WHERE n.network=? AND n.channel=?
             """, (network, channel)).fetchall()
         for r in rows_hr:
-            nick = r["nick"]
-            hour = r["hour"]
-            lines = r["lines"]
-            if nick not in nick_band_lines:
-                nick_band_lines[nick] = [0, 0, 0, 0]
+            rnick = r["nick"]; hour = r["hour"]; rlines = r["lines"]
+            if rnick not in nick_band_lines:
+                nick_band_lines[rnick] = [0, 0, 0, 0]
             for bi, (lo, hi, _) in enumerate(bands):
                 if lo <= hour <= hi:
-                    nick_band_lines[nick][bi] += lines
+                    nick_band_lines[rnick][bi] += rlines
                     break
-
         if nick_band_lines:
-            # For each band, rank nicks by lines in that band
-            n_rows = pisg.get("ActiveNicks", 25)
+            n_bh_rows = pisg.get("ActiveNicksByHour", 10)
             band_ranked = []
             for bi in range(4):
                 ranked = sorted(nick_band_lines.keys(),
                                 key=lambda n: nick_band_lines[n][bi], reverse=True)
                 ranked = [(n, nick_band_lines[n][bi]) for n in ranked if nick_band_lines[n][bi] > 0]
-                band_ranked.append(ranked[:n_rows])
-
-            n_bh_rows = pisg.get("ActiveNicksByHour", 10)
-            band_ranked = [b[:n_bh_rows] for b in band_ranked]
+                band_ranked.append(ranked[:n_bh_rows])
             max_rows = max(len(b) for b in band_ranked)
             if max_rows > 0:
                 section("Most active nicks by hour")
@@ -730,18 +794,18 @@ b {{ color: var(--cyan); }}
                     h(f'<tr><td class="rank{rank_cls}">{i+1}</td>')
                     for bi in range(4):
                         if i < len(band_ranked[bi]):
-                            nick, cnt = band_ranked[bi][i]
-                            h(f'<td class="byhour-cell">{nick}<span class="cnt">- {cnt}</span></td>')
+                            bnick, bcnt = band_ranked[bi][i]
+                            h(f'<td class="byhour-cell">{bnick}<span class="cnt">- {bcnt}</span></td>')
                         else:
                             h('<td></td>')
                     h('</tr>')
                 h('</tbody></table></div>')
 
-    # ── Most used words ────────────────────────────────────────────────────────
-    if top_words_ch:
+    # ── Most used words ───────────────────────────────────────────────────────
+    if pisg.get("ShowMuw", True) and top_words_ch:
         section("Most used words")
         h('<div class="tscroll"><table class="info-table"><thead><tr>')
-        h('<th class="rank">#</th><th>Word</th><th>Uses</th><th>Last used by</th>')
+        h('<th class="rank">#</th><th>Word</th><th>Number of Uses</th><th>Last Used by</th>')
         h('</tr></thead><tbody>')
         for i_w, w in enumerate(top_words_ch):
             last = w.get("last_used_by") or ""
@@ -751,19 +815,34 @@ b {{ color: var(--cyan); }}
               f'<td class="small">{last}</td></tr>')
         h('</tbody></table></div>')
 
+    # ── Most referenced nicks ─────────────────────────────────────────────────
+    if pisg.get("ShowMrn", True) and nick_refs:
         section("Most referenced nicks")
-        h('<div class="tscroll"><table class="info-table"><thead><tr><th class="rank">#</th><th>Nick</th><th>Times mentioned</th><th>Last by</th></tr></thead><tbody>')
+        h('<div class="tscroll"><table class="info-table"><thead><tr>'
+          '<th class="rank">#</th><th>Nick</th><th>Number of Uses</th><th>Last by</th>'
+          '</tr></thead><tbody>')
         for i, r in enumerate(nick_refs):
             h(f'<tr><td class="rank">{i+1}</td><td class="nick-name">{r["mentioned"]}</td>'
               f'<td class="val">{r["count"]}</td><td class="small">{r.get("by_nick","")}</td></tr>')
         h('</tbody></table></div>')
 
-    # ── Karma leaderboard ────────────────────────────────────────────────────
+    # ── Smiley frequency ──────────────────────────────────────────────────────
+    if pisg.get("ShowSmileys", True) and top_smileys:
+        section("Smileys :-)")
+        h('<div class="tscroll"><table class="info-table"><thead><tr>'
+          '<th class="rank">#</th><th>Smiley</th><th>Uses</th><th>Top user</th>'
+          '</tr></thead><tbody>')
+        for i, r in enumerate(top_smileys):
+            h(f'<tr><td class="rank">{i+1}</td><td style="font-size:1.1rem">{r["smiley"]}</td>'
+              f'<td class="val">{r["total"]}</td><td class="small">{r.get("top_user","")}</td></tr>')
+        h('</tbody></table></div>')
+
+    # ── Karma ─────────────────────────────────────────────────────────────────
     if pisg.get("ShowKarma", True) and (karma_top or karma_bottom):
         section("Karma")
-        h('<div class="tscroll"><table class="info-table"><thead><tr>')
-        h('<th class="rank">#</th><th>Nick</th><th>Score</th></tr></thead><tbody>')
-        # Top positive karma
+        h('<div class="tscroll"><table class="info-table"><thead><tr>'
+          '<th class="rank">#</th><th>Nick</th><th>Score</th>'
+          '</tr></thead><tbody>')
         for i, r in enumerate(karma_top):
             score = r["score"]
             colour = "var(--green)" if score > 0 else "var(--red)"
@@ -771,49 +850,31 @@ b {{ color: var(--cyan); }}
             h(f'<tr><td class="rank">{i+1}</td>'
               f'<td class="nick-name">{r["nick"]}</td>'
               f'<td class="val" style="color:{colour}">{sign}{score}</td></tr>')
-        # Bottom (only if not already in top)
         top_nicks = {r["nick"].lower() for r in karma_top}
-        extras = [r for r in karma_bottom if r["nick"].lower() not in top_nicks]
-        for r in extras:
-            score = r["score"]
-            h(f'<tr><td class="rank">—</td>'
-              f'<td class="nick-name">{r["nick"]}</td>'
-              f'<td class="val" style="color:var(--red)">{score}</td></tr>')
+        for r in karma_bottom:
+            if r["nick"].lower() not in top_nicks:
+                score = r["score"]
+                h(f'<tr><td class="rank">—</td>'
+                  f'<td class="nick-name">{r["nick"]}</td>'
+                  f'<td class="val" style="color:var(--red)">{score}</td></tr>')
         h('</tbody></table></div>')
 
-    # ── Smiley frequency table ────────────────────────────────────────────────
-    if pisg.get("ShowSmileys", True) and top_smileys:
-        section("Smileys :-)")
-        h('<div class="tscroll"><table class="info-table"><thead><tr><th class="rank">#</th><th>Smiley</th><th>Uses</th><th>Top user</th></tr></thead><tbody>')
-        for i, r in enumerate(top_smileys):
-            h(f'<tr><td class="rank">{i+1}</td><td style="font-size:1.1rem">{r["smiley"]}</td>'
-              f'<td class="val">{r["total"]}</td><td class="small">{r.get("top_user","")}</td></tr>')
-        h('</tbody></table></div>')
-
-    # ── Latest topics ─────────────────────────────────────────────────────────
-    if recent_topics:
-        section("Latest topics")
-        h('<div>')
-        for t in recent_topics:
-            h(f'<div class="topic-row">'
-              f'<div class="topic-text">"{t["topic"]}"</div>'
-              f'<div class="topic-meta">set by {t["set_by"]} · {_ago(t["ts"])}</div>'
-              f'</div>')
-        h('</div>')
-
-    # ── Recent URLs ───────────────────────────────────────────────────────────
+    # ── Most referenced URLs ──────────────────────────────────────────────────
     if pisg.get("ShowMru", True) and recent_urls:
         section("Most referenced URLs")
-        h('<div class="tscroll"><table class="info-table"><thead><tr><th>URL</th><th>Uses</th><th>Last by</th><th>When</th></tr></thead><tbody>')
+        h('<div class="tscroll"><table class="info-table"><thead><tr>'
+          '<th>URL</th><th>Number of Uses</th><th>Last by</th><th>When</th>'
+          '</tr></thead><tbody>')
         for u in recent_urls:
             url = u["url"]
             disp = url[:70] + "…" if len(url) > 70 else url
             h(f'<tr><td><a href="{url}" target="_blank" rel="noopener" style="color:var(--blue)">{disp}</a></td>'
               f'<td class="val">{u.get("count", 1)}</td>'
-              f'<td class="small">{u.get("nick","")}</td><td class="small">{_ago(u["ts"])}</td></tr>')
+              f'<td class="small">{u.get("nick","")}</td>'
+              f'<td class="small">{_ago(u["ts"])}</td></tr>')
         h('</tbody></table></div>')
 
-    # ── Recent kicks — pisg-style prose with example line ───────────────────
+    # ── Recent kicks (pisg-style prose) ──────────────────────────────────────
     if recent_kicks:
         h('<table class="bignums">')
         for k in recent_kicks:
@@ -828,131 +889,16 @@ b {{ color: var(--cyan); }}
             hicell(text, example=example)
         h('</table>')
 
-    # ── Ops / Voice / Halfops ─────────────────────────────────────────────────
-    show_ops     = pisg.get("ShowOps",     True)
-    show_voice   = pisg.get("ShowVoice",   True)
-    show_halfops = pisg.get("ShowHalfops", True)
-
-    def _get_opvoice_top(stat, limit=3):
-        return get_top(network, channel, stat, 0, limit)
-
-    if show_ops or show_voice or show_halfops:
-        _has_ops     = show_ops     and any(r["value"] > 0 for r in _get_opvoice_top("op_given"))
-        _has_voice   = show_voice   and any(r["value"] > 0 for r in _get_opvoice_top("voice_given"))
-        _has_halfops = show_halfops and any(r["value"] > 0 for r in _get_opvoice_top("halfop_given"))
-
-        if _has_ops or _has_voice or _has_halfops:
-            section("Ops, voice and halfops")
-            h('<table class="bignums">')
-            # ── Ops ───────────────────────────────────────────────────────
-            if _has_ops:
-                og = [r for r in _get_opvoice_top("op_given",  3) if r["value"] > 0]
-                ot = [r for r in _get_opvoice_top("op_taken",  3) if r["value"] > 0]
-                gr = [r for r in _get_opvoice_top("op_got",    3) if r["value"] > 0]
-                dr = [r for r in _get_opvoice_top("deop_got",  3) if r["value"] > 0]
-
-                if og:
-                    text = (f"<b>{og[0]['nick']}</b> is either insane or just a fair op, "
-                            f"giving ops to <b>{og[0]['value']}</b> people!")
-                    sub  = (f"<b>{og[1]['nick']}</b> is also quite op-happy, "
-                            f"handing out ops <b>{og[1]['value']}</b> times."
-                            if len(og) > 1 else None)
-                    hicell(text, sub)
-
-                if ot:
-                    text = (f"<b>{ot[0]['nick']}</b> is the channel's deop machine, "
-                            f"removing ops from <b>{ot[0]['value']}</b> people.")
-                    sub  = (f"<b>{ot[1]['nick']}</b> also took ops away "
-                            f"<b>{ot[1]['value']}</b> times."
-                            if len(ot) > 1 else None)
-                    hicell(text, sub)
-
-                if gr:
-                    text = (f"<b>{gr[0]['nick']}</b> is a popular one — "
-                            f"they were given ops <b>{gr[0]['value']}</b> times.")
-                    sub  = (f"<b>{gr[1]['nick']}</b> was also trusted with ops "
-                            f"<b>{gr[1]['value']}</b> times."
-                            if len(gr) > 1 else None)
-                    hicell(text, sub)
-
-                if dr:
-                    text = (f"Poor <b>{dr[0]['nick']}</b> — they got deopped "
-                            f"<b>{dr[0]['value']}</b> times!")
-                    sub  = (f"<b>{dr[1]['nick']}</b> also suffered "
-                            f"<b>{dr[1]['value']}</b> deops."
-                            if len(dr) > 1 else None)
-                    hicell(text, sub)
-
-            # ── Halfops ───────────────────────────────────────────────────
-            if _has_halfops:
-                hog = [r for r in _get_opvoice_top("halfop_given",   3) if r["value"] > 0]
-                hot = [r for r in _get_opvoice_top("halfop_taken",   3) if r["value"] > 0]
-                hgr = [r for r in _get_opvoice_top("halfop_got",     3) if r["value"] > 0]
-                hdr = [r for r in _get_opvoice_top("dehalfop_got",   3) if r["value"] > 0]
-
-                if hog:
-                    text = (f"<b>{hog[0]['nick']}</b> dishes out halfops generously — "
-                            f"<b>{hog[0]['value']}</b> times so far.")
-                    sub  = (f"<b>{hog[1]['nick']}</b> also gave halfops "
-                            f"<b>{hog[1]['value']}</b> times."
-                            if len(hog) > 1 else None)
-                    hicell(text, sub)
-
-                if hot:
-                    text = (f"<b>{hot[0]['nick']}</b> took halfops away "
-                            f"<b>{hot[0]['value']}</b> times.")
-                    hicell(text)
-
-                if hgr:
-                    text = (f"<b>{hgr[0]['nick']}</b> received halfops "
-                            f"<b>{hgr[0]['value']}</b> times.")
-                    hicell(text)
-
-                if hdr:
-                    text = (f"<b>{hdr[0]['nick']}</b> had their halfops removed "
-                            f"<b>{hdr[0]['value']}</b> times.")
-                    hicell(text)
-
-            # ── Voice ─────────────────────────────────────────────────────
-            if _has_voice:
-                vg = [r for r in _get_opvoice_top("voice_given",  3) if r["value"] > 0]
-                vt = [r for r in _get_opvoice_top("voice_taken",  3) if r["value"] > 0]
-                vr = [r for r in _get_opvoice_top("voice_got",    3) if r["value"] > 0]
-                dv = [r for r in _get_opvoice_top("devoice_got",  3) if r["value"] > 0]
-
-                if vg:
-                    text = (f"<b>{vg[0]['nick']}</b> is very generous with voice, "
-                            f"handing it out <b>{vg[0]['value']}</b> times.")
-                    sub  = (f"<b>{vg[1]['nick']}</b> was also quite vocal about giving voice, "
-                            f"<b>{vg[1]['value']}</b> times."
-                            if len(vg) > 1 else None)
-                    hicell(text, sub)
-
-                if vt:
-                    text = (f"<b>{vt[0]['nick']}</b> took voice away "
-                            f"<b>{vt[0]['value']}</b> times — someone had to.")
-                    sub  = (f"<b>{vt[1]['nick']}</b> also silenced people "
-                            f"<b>{vt[1]['value']}</b> times."
-                            if len(vt) > 1 else None)
-                    hicell(text, sub)
-
-                if vr:
-                    text = (f"<b>{vr[0]['nick']}</b> was voiced "
-                            f"<b>{vr[0]['value']}</b> times — they must have something to say.")
-                    sub  = (f"<b>{vr[1]['nick']}</b> also got voice "
-                            f"<b>{vr[1]['value']}</b> times."
-                            if len(vr) > 1 else None)
-                    hicell(text, sub)
-
-                if dv:
-                    text = (f"<b>{dv[0]['nick']}</b> got devoiced "
-                            f"<b>{dv[0]['value']}</b> times. Ouch.")
-                    sub  = (f"<b>{dv[1]['nick']}</b> also lost voice "
-                            f"<b>{dv[1]['value']}</b> times."
-                            if len(dv) > 1 else None)
-                    hicell(text, sub)
-
-            h('</table>')
+    # ── Latest topics ─────────────────────────────────────────────────────────
+    if pisg.get("ShowTopics", True) and recent_topics:
+        section("Latest topics")
+        h('<div>')
+        for t in recent_topics:
+            h(f'<div class="topic-row">'
+              f'<div class="topic-text">"{t["topic"]}"</div>'
+              f'<div class="topic-meta">set by {t["set_by"]} · {_ago(t["ts"])}</div>'
+              f'</div>')
+        h('</div>')
 
     # ── Legend ────────────────────────────────────────────────────────────────
     if pisg.get("ShowLegend", True):
