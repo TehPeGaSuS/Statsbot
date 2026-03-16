@@ -34,13 +34,12 @@ jobs:
 
       - name: Smoke test
         run: |
-          # verify the app imports and DB initialises cleanly
           python -c "
           from database.models import set_db_path, init_db
           set_db_path('/tmp/ci_test.db')
           init_db()
           from bot.parser import parse_message
-          from bot.auth import hash_password, _verify_password
-          assert _verify_password('test', hash_password('test'))
+          from bot.auth import hash_password, verify_password
+          assert verify_password('test', hash_password('test'))
           print('OK')
           "
