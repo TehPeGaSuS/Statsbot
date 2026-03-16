@@ -492,10 +492,10 @@ class PMCommandHandler:
         lang = next((p for p in positional if not p.startswith("#")), "")
         if not chan or not lang:
             self.send(nick, f"Usage: setlang [-network <net>] #channel <lang>")
-            self.send(nick, f"Supported: {", ".join(SUPPORTED)}")
+            self.send(nick, "Supported: " + ", ".join(SUPPORTED))
             return
         if not set_lang(network, chan, lang):
-            self.send(nick, f"Unsupported language {lang!r}. Supported: {", ".join(SUPPORTED)}")
+            self.send(nick, f"Unsupported language {lang!r}. Supported: " + ", ".join(SUPPORTED))
             return
         self.send(nick, f"Language for {chan} on {network} set to {lang}.")
 
