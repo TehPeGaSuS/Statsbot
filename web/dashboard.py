@@ -784,36 +784,6 @@ body { background: var(--bg); color: var(--text);
     {% endfor %}
   </div>
 
-  <!-- Summary cards: value on top, label below -->
-  <div class="summary">
-    <div class="summary-item">
-      <div class="sv">{{ total_users }}</div>
-      <div class="sl">users</div>
-    </div>
-    <div class="summary-item">
-      <div class="sv">{{ peak }}</div>
-      <div class="sl">peak users{% if peak_at %} · {{ peak_at | datefmt }}{% endif %}</div>
-    </div>
-    {% set tw = tops.get('words', []) | selectattr('value', '>', 0) | list %}
-    <div class="summary-item">
-      <div class="sv">{{ tw[0]['nick'] if tw else '—' }}</div>
-      <div class="sl">top talker</div>
-    </div>
-    {% set ts_ = tops.get('smileys', []) | selectattr('value', '>', 0) | list %}
-    <div class="summary-item">
-      <div class="sv">{{ ts_[0]['nick'] if ts_ else '—' }}</div>
-      <div class="sl">happiest :)</div>
-    </div>
-    {% set tsd = tops.get('sad', []) | selectattr('value', '>', 0) | list %}
-    <div class="summary-item">
-      <div class="sv">{{ tsd[0]['nick'] if tsd else '—' }}</div>
-      <div class="sl">saddest :(</div>
-    </div>
-    <div class="summary-item">
-      <div class="sv">{{ top_minutes[0]['nick'] if top_minutes else '—' }}</div>
-      <div class="sl">most online</div>
-    </div>
-  </div>
 
   <!-- Activity heatmap -->
   <div class="section">
