@@ -432,16 +432,7 @@ b {{ color: var(--cyan); }}
     top_sad_nick    = [r for r in top_sad_nick    if r["value"] > 0]
     top_mins_nick   = [r for r in top_mins_nick   if r["value"] > 0]
 
-    h('<div class="summary-strip">')
-    h(f'<div class="s-card"><div class="sv" id="users-card">{total_users}</div><div class="sl">{t("summary_users", lang)}</div></div>')
-    _peak_label = (f'{t("summary_peak_users", lang)} · {_ts_date(peak_data["peak_at"])}'
-                  if peak_data["peak_at"] else t("summary_peak_users", lang))
-    h(f'<div class="s-card"><div class="sv">{peak_data["peak"]}</div><div class="sl">{_peak_label}</div></div>')
-    h(f'<div class="s-card"><div class="sv">{top_words_nick[0]["nick"] if top_words_nick else "—"}</div><div class="sl">{t("summary_top_talker", lang)}</div></div>')
-    h(f'<div class="s-card"><div class="sv">{top_smiles_nick[0]["nick"] if top_smiles_nick else "—"}</div><div class="sl">{t("summary_happiest", lang)}</div></div>')
-    h(f'<div class="s-card"><div class="sv">{top_sad_nick[0]["nick"] if top_sad_nick else "—"}</div><div class="sl">{t("summary_saddest", lang)}</div></div>')
-    h(f'<div class="s-card"><div class="sv">{top_mins_nick[0]["nick"] if top_mins_nick else "—"}</div><div class="sl">{t("summary_most_online", lang)}</div></div>')
-    h('</div>')
+
 
     # ── Activity by hour ──────────────────────────────────────────────────────
     if pisg.get("ShowActiveTimes", True):
