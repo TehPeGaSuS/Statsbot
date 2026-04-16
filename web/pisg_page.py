@@ -35,6 +35,19 @@ def _pct(num: int, denom: int) -> str:
     return f"{num / denom * 100:.1f}"
 
 
+import re as _re
+_IRC_COLOR_RE = _re.compile(r'\x03(?:\d{1,2}(?:,\d{1,2})?)?')
+_IRC_FORMAT_RE = _re.compile(r'[\x02\x04\x0f\x11\x16\x1d\x1e\x1f]')
+
+def strip_irc(text: str) -> str:
+    """Strip mIRC colour codes and formatting characters from a string."""
+    if not text:
+        return text
+    text = _IRC_COLOR_RE.sub('', text)
+    text = _IRC_FORMAT_RE.sub('', text)
+    return text
+
+
 def build_page(network: str, channel: str, period: int, config: dict) -> str:
     """Build the full pisg-style HTML page and return it as a string."""
     from database.models import (
@@ -598,23 +611,35 @@ b {{ color: var(--cyan); }}
                 hicell(text2, sub2, example=exs_fmt)
 
     # Violent
-    if pisg.get("ShowBigNumbers", True) and qualified:
-        vdata = {n: nick_stats[n].get("violent",0) for n in qualified if nick_stats[n].get("violent",0) > 0}
-        if vdata:
-            ranked = sorted(vdata, key=vdata.get, reverse=True)
-            _vc = vdata[ranked[0]]
-            text = t("bignums_violent" if _vc == 1 else "bignums_violent_plural", lang, nick=f"<b>{ranked[0]}</b>", count=f"<b>{_vc}</b>")
-            sub  = t("bignums_violent_sub", lang, nick=f"<b>{ranked[1]}</b>", count=f"<b>{vdata[ranked[1]]}</b>") if len(ranked) > 1 else None
-            ex = nick_stats.get(ranked[0], {}).get("violent_ex", None)
+    if pisg.get("ShowBigNumbers", True):
+        vt = get_top(network, channel, "violent", period, 3)
+        vt = [r for r in vt if r["value"] > 0]
+        if vt:
+            _vc = vt[0]["value"]
+            text = t("bignums_violent" if _vc == 1 else "bignums_violent_plural", lang, nick=f"<b>{vt[0]['nick']}</b>", count=f"<b>{_vc}</b>")
+            sub  = t("bignums_violent_sub", lang, nick=f"<b>{vt[1]['nick']}</b>", count=f"<b>{vt[1]['value']}</b>") if len(vt) > 1 else None
+            with get_conn() as _vconn:
+                _vrow = _vconn.execute(
+                    "SELECT s.violent_ex FROM stats s JOIN nicks n ON n.id=s.nick_id "
+                    "WHERE n.nick=? AND n.network=? AND n.channel=? AND s.period=?",
+                    (vt[0]["nick"], network, channel, period)
+                ).fetchone()
+            ex = strip_irc(_vrow["violent_ex"]) if _vrow and _vrow["violent_ex"] else None
             hicell(text, sub, example=ex)
             # Attacked victims
-            atat = {n: nick_stats[n].get("attacked", 0) for n in qualified if nick_stats[n].get("attacked", 0) > 0}
-            if atat:
-                av = sorted(atat, key=atat.get, reverse=True)
-                ax = nick_stats.get(av[0], {}).get("attacked_ex", None)
-                _ac = atat[av[0]]
-                atext = t("bignums_attacked" if _ac == 1 else "bignums_attacked_plural", lang, nick=f"<b>{av[0]}</b>", count=f"<b>{_ac}</b>")
-                asub  = t("bignums_attacked_sub", lang, nick=f"<b>{av[1]}</b>", count=f"<b>{atat[av[1]]}</b>") if len(av) > 1 else None
+            at = get_top(network, channel, "attacked", period, 3)
+            at = [r for r in at if r["value"] > 0]
+            if at:
+                _ac = at[0]["value"]
+                atext = t("bignums_attacked" if _ac == 1 else "bignums_attacked_plural", lang, nick=f"<b>{at[0]['nick']}</b>", count=f"<b>{_ac}</b>")
+                asub  = t("bignums_attacked_sub", lang, nick=f"<b>{at[1]['nick']}</b>", count=f"<b>{at[1]['value']}</b>") if len(at) > 1 else None
+                with get_conn() as _aconn:
+                    _arow = _aconn.execute(
+                        "SELECT s.attacked_ex FROM stats s JOIN nicks n ON n.id=s.nick_id "
+                        "WHERE n.nick=? AND n.network=? AND n.channel=? AND s.period=?",
+                        (at[0]["nick"], network, channel, period)
+                    ).fetchone()
+                ax = strip_irc(_arow["attacked_ex"]) if _arow and _arow["attacked_ex"] else None
                 hicell(atext, asub, example=ax)
         else:
             _bignum_row(t("bignums_violent_nobody", lang))
@@ -825,8 +850,9 @@ b {{ color: var(--cyan); }}
                 _twhen = t("time_yesterday_at", lang, time=_tdt.strftime("%H:%M"))
             else:
                 _twhen = ""
+            _topic_clean = strip_irc(_tp["topic"] or "")
             h(f'<tr>'
-              f'<td class="topic-text" style="font-style:italic">{_tp["topic"]}</td>'
+              f'<td class="topic-text" style="font-style:italic">{_topic_clean}</td>'
               f'<td style="font-weight:bold;white-space:nowrap">{_twhen} by {_tp["set_by"]}</td>'
               f'</tr>')
         _tc = len(recent_topics)
