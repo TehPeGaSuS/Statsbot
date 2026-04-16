@@ -223,7 +223,7 @@ msgid "bignums_happy_sub"
 msgstr "{nick} isn't a sad person either, smiling {pct}% of the time."
 
 msgid "bignums_happy_nobody"
-msgstr "Nobody smiles in this channel! Cheer up guys and girls."
+msgstr "Nobody smiles in this channel! Cheer up, everyone."
 
 msgid "bignums_sad"
 msgstr "{nick} seems to be sad at the moment: {pct}% of their lines contained sad faces. :("

@@ -177,31 +177,31 @@ msgid "bignums_caps_loud_sub"
 msgstr "Un autre grand crieur était {nick}, qui a hurlé {pct}% du temps !"
 
 msgid "bignums_caps_shift"
-msgstr "Il semble que la touche Maj de {nick} soit coincée : {pct}% du temps en MAJUSCULES."
+msgstr "La touche Maj de {nick} semble coincée : {pct}% du temps écrit en MAJUSCULES."
 
 msgid "bignums_caps_shift_sub"
-msgstr "{nick} a oublié de désactiver le Verr. Maj. Il a écrit en MAJUSCULES {pct}% du temps."
+msgstr "{nick} a oublié de désactiver le Verr. Maj. Et a écrit en MAJUSCULES {pct}% du temps."
 
 msgid "bignums_violent"
-msgstr "{nick} est une personne très agressive. Il a attaqué les autres {count} fois."
+msgstr "{nick} est une personne très agressive. A attaqué les autres {count} fois."
 
 msgid "bignums_violent_plural"
-msgstr "{nick} est une personne très agressive. Il a attaqué les autres {count} fois."
+msgstr "{nick} est une personne très agressive. A attaqué les autres {count} fois."
 
 msgid "bignums_violent_sub"
-msgstr "{nick} ne peut pas non plus contrôler ses agressions. Il a attaqué les autres {count} fois."
+msgstr "{nick} ne peut pas non plus contrôler ses agressions. A attaqué les autres {count} fois."
 
 msgid "bignums_violent_nobody"
 msgstr "Personne n'a frappé qui que ce soit. Tout le monde a été sympathique."
 
 msgid "bignums_attacked"
-msgstr "Pauvre {nick}, personne ne l'aime. Il a été attaqué {count} fois."
+msgstr "Pauvre {nick}, personne ne l'aime. A été attaqué·e {count} fois."
 
 msgid "bignums_attacked_plural"
-msgstr "Pauvre {nick}, personne ne l'aime. Il a été attaqué {count} fois."
+msgstr "Pauvre {nick}, personne ne l'aime. A été attaqué·e {count} fois."
 
 msgid "bignums_attacked_sub"
-msgstr "{nick} semble aussi mal-aimé. Il a été battu {count} fois."
+msgstr "{nick} semble aussi peu apprécié·e. A pris {count} coups."
 
 msgid "for_example"
 msgstr "Par exemple, comme ceci :"
@@ -336,10 +336,10 @@ msgid "other_voice_none_taken"
 msgstr "Aucun voice n'a été retiré sur {channel} !"
 
 msgid "other_actions"
-msgstr "{nick} nous dit toujours ce qu'il fait : {count} action !"
+msgstr "{nick} nous dit toujours ce qu'il·elle fait : {count} action !"
 
 msgid "other_actions_plural"
-msgstr "{nick} nous dit toujours ce qu'il fait : {count} actions !"
+msgstr "{nick} nous dit toujours ce qu'il·elle fait : {count} actions !"
 
 msgid "other_actions_sub"
 msgstr "En outre, {nick} nous dit ce qui se passe avec {count} actions."
@@ -348,13 +348,13 @@ msgid "other_actions_nobody"
 msgstr "Aucune action dans ce canal !"
 
 msgid "other_monologues"
-msgstr "{nick} se parle beaucoup à lui-même. Il a écrit plus de 5 lignes d'affilée {count} fois !"
+msgstr "{nick} se parle beaucoup à soi-même. A écrit plus de 5 lignes d'affilée {count} fois !"
 
 msgid "other_monologues_plural"
-msgstr "{nick} se parle beaucoup à lui-même. Il a écrit plus de 5 lignes d'affilée {count} fois !"
+msgstr "{nick} se parle beaucoup à soi-même. A écrit plus de 5 lignes d'affilée {count} fois !"
 
 msgid "other_monologues_sub"
-msgstr "Un autre solitaire était {nick}, qui a réussi {count} fois."
+msgstr "Une autre personne solitaire était {nick}, qui a réussi {count} fois."
 
 msgid "other_joins"
 msgstr "{nick} n'arrivait pas à décider de rester ou de partir. {count} entrée durant cette période !"

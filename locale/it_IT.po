@@ -180,7 +180,7 @@ msgid "bignums_caps_shift"
 msgstr "Sembra che il tasto Maiusc di {nick} sia bloccato: il {pct}% del tempo ha scritto in MAIUSCOLO."
 
 msgid "bignums_caps_shift_sub"
-msgstr "{nick} si è dimenticato di disattivare il Bloc Maiusc. Ha scritto in MAIUSCOLO il {pct}% del tempo."
+msgstr "{nick} si è dimenticato/a di disattivare il Bloc Maiusc. Ha scritto in MAIUSCOLO il {pct}% del tempo."
 
 msgid "bignums_violent"
 msgstr "{nick} è una persona molto aggressiva. Ha attaccato gli altri {count} volta."
@@ -195,13 +195,13 @@ msgid "bignums_violent_nobody"
 msgstr "Nessuno ha picchiato nessuno. Tutti sono stati amichevoli."
 
 msgid "bignums_attacked"
-msgstr "Povero {nick}, a nessuno piace. È stato attaccato {count} volta."
+msgstr "Poveretto/a {nick}, a nessuno piace. È stato/a attaccato/a {count} volta."
 
 msgid "bignums_attacked_plural"
-msgstr "Povero {nick}, a nessuno piace. È stato attaccato {count} volte."
+msgstr "Poveretto/a {nick}, a nessuno piace. È stato/a attaccato/a {count} volte."
 
 msgid "bignums_attacked_sub"
-msgstr "Anche {nick} sembra non essere amato. È stato battuto {count} volte."
+msgstr "Anche {nick} sembra non essere apprezzato/a. Ha preso {count} botte."
 
 msgid "for_example"
 msgstr "Per esempio, così:"
@@ -348,10 +348,10 @@ msgid "other_actions_nobody"
 msgstr "Nessuna azione in questo canale!"
 
 msgid "other_monologues"
-msgstr "{nick} parla molto da solo. Ha scritto più di 5 righe di fila {count} volta!"
+msgstr "{nick} parla molto da solo/a. Ha scritto più di 5 righe di fila {count} volta!"
 
 msgid "other_monologues_plural"
-msgstr "{nick} parla molto da solo. Ha scritto più di 5 righe di fila {count} volte!"
+msgstr "{nick} parla molto da solo/a. Ha scritto più di 5 righe di fila {count} volte!"
 
 msgid "other_monologues_sub"
 msgstr "Un altro solitario era {nick}, che ci è riuscito {count} volte."

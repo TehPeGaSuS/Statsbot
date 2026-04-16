@@ -171,10 +171,10 @@ msgid "bignums_questions_sub"
 msgstr "{nick} também não sabia muito. {pct}% das suas linhas eram perguntas."
 
 msgid "bignums_caps_loud"
-msgstr "O mais barulhento foi {nick}, que gritou {pct}% do tempo!"
+msgstr "Quem mais barulho fez foi {nick}, que gritou {pct}% do tempo!"
 
 msgid "bignums_caps_loud_sub"
-msgstr "Outro gritalhão foi {nick}, que berrou {pct}% do tempo!"
+msgstr "Outro/a gritalhão/ã foi {nick}, que berrou {pct}% do tempo!"
 
 msgid "bignums_caps_shift"
 msgstr "Parece que a tecla Shift de {nick} está encravada: {pct}% do tempo escreveu em MAIÚSCULAS."
@@ -195,10 +195,10 @@ msgid "bignums_violent_nobody"
 msgstr "Ninguém bateu em ninguém. Toda a gente foi simpática."
 
 msgid "bignums_attacked"
-msgstr "Coitado de {nick}, ninguém gosta. Foi atacado {count} vez."
+msgstr "Coitado/a de {nick}, ninguém gosta. Foi atacado/a {count} vez."
 
 msgid "bignums_attacked_plural"
-msgstr "Coitado de {nick}, ninguém gosta. Foi atacado {count} vezes."
+msgstr "Coitado/a de {nick}, ninguém gosta. Foi atacado/a {count} vezes."
 
 msgid "bignums_attacked_sub"
 msgstr "{nick} também não é muito popular. Apanhou {count} vezes."
@@ -234,7 +234,7 @@ msgid "bignums_shortest_lines"
 msgstr "{nick} escreveu as linhas mais curtas, com uma média de {avg} caracteres por linha."
 
 msgid "bignums_shortest_lines_sub"
-msgstr "{nick} também foi lacónico, com uma média de {avg} caracteres."
+msgstr "{nick} também foi lacónico/a, com uma média de {avg} caracteres."
 
 msgid "bignums_words_total"
 msgstr "{nick} disse um total de {count} palavras!"
@@ -255,13 +255,13 @@ msgid "other_kicked_plural"
 msgstr "{nick} não era muito popular, levando {count} kicks!"
 
 msgid "other_kicked_sub"
-msgstr "{nick} também parecia ser odiado: recebeu {count} kicks."
+msgstr "{nick} também parecia ser odiado/a: recebeu {count} kicks."
 
 msgid "other_kicks_given"
-msgstr "{nick} está maluco ou é um op justo, dando kick a {count} pessoa!"
+msgstr "{nick} está louco/a ou é um op justo, dando kick a {count} pessoa!"
 
 msgid "other_kicks_given_plural"
-msgstr "{nick} está maluco ou é um op justo, dando kick a {count} pessoas!"
+msgstr "{nick} está louco/a ou é um op justo, dando kick a {count} pessoas!"
 
 msgid "other_kicks_given_sub"
 msgstr "O seguidor fiel de {nick}, {nick2}, deu kick a cerca de {count} pessoas."
@@ -348,13 +348,13 @@ msgid "other_actions_nobody"
 msgstr "Nenhuma acção neste canal!"
 
 msgid "other_monologues"
-msgstr "{nick} fala muito sozinho. Escreveu mais de 5 linhas seguidas {count} vez!"
+msgstr "{nick} fala muito sozinho/a. Escreveu mais de 5 linhas seguidas {count} vez!"
 
 msgid "other_monologues_plural"
-msgstr "{nick} fala muito sozinho. Escreveu mais de 5 linhas seguidas {count} vezes!"
+msgstr "{nick} fala muito sozinho/a. Escreveu mais de 5 linhas seguidas {count} vezes!"
 
 msgid "other_monologues_sub"
-msgstr "Outro solitário foi {nick}, que conseguiu {count} vezes."
+msgstr "Outra pessoa solitária foi {nick}, que conseguiu {count} vezes."
 
 msgid "other_joins"
 msgstr "{nick} não conseguia decidir se ficava ou ia. {count} entrada durante este período!"
