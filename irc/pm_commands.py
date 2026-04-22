@@ -533,8 +533,40 @@ class PMCommandHandler:
 
     @staticmethod
     def _paste(text: str, timeout: int = 6) -> str | None:
-        """Upload text to dpaste.org and return the URL, or None on failure."""
-        try:
+        """Upload text to a paste service and return the URL.
+
+        Tries multiple services in order, returns the first that works.
+        """
+        encoded = text.encode()
+
+        def try_ixio() -> str | None:
+            # ix.io accepts a plain POST with form field "f:1"
+            data = urllib.parse.urlencode({"f:1": text}).encode()
+            req = urllib.request.Request(
+                "http://ix.io",
+                data=data,
+                headers={"User-Agent": "Statsbot/2.0"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                url = r.read().decode().strip()
+                return url if url.startswith("http") else None
+
+        def try_pastrs() -> str | None:
+            # paste.rs: raw POST body, returns bare URL
+            req = urllib.request.Request(
+                "https://paste.rs",
+                data=encoded,
+                headers={
+                    "Content-Type": "text/plain",
+                    "User-Agent": "Statsbot/2.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                url = r.read().decode().strip()
+                return url if url.startswith("http") else None
+
+        def try_dpaste() -> str | None:
+            # dpaste.org: form POST
             data = urllib.parse.urlencode({
                 "content": text,
                 "syntax": "text",
@@ -545,13 +577,20 @@ class PMCommandHandler:
                 data=data,
                 headers={"User-Agent": "Statsbot/2.0"},
             )
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                url = resp.read().decode().strip().strip('"')
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                url = r.read().decode().strip().strip('"')
                 return url if url.startswith("http") else None
-        except Exception as exc:
-            log.warning("help paste failed: %s", exc)
-            return None
 
+        for backend in (try_ixio, try_pastrs, try_dpaste):
+            try:
+                url = backend()
+                if url:
+                    return url
+            except Exception as exc:
+                log.debug("paste backend %s failed: %s", backend.__name__, exc)
+
+        log.warning("all paste backends failed")
+        return None
     def _cmd_help(self, nick: str):
         lines = [
             "ircstats PM command reference",
