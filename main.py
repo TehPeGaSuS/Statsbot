@@ -138,6 +138,7 @@ def main():
 
     # Convert DB rows to the dict shape connectors expect
     def db_net_to_cfg(n: dict) -> dict:
+        import json as _json
         cfg = dict(n)
         cfg["channels"] = get_channels_for_network(n["name"])
         cfg["ssl"] = bool(n["ssl"])
@@ -145,6 +146,11 @@ def main():
             cfg["sasl"] = {"username": n["sasl_user"], "password": n["sasl_pass"]}
         if n.get("nickserv_pass"):
             cfg["nickserv_password"] = n["nickserv_pass"]
+        if n.get("server_pass"):
+            cfg["server_password"] = n["server_pass"]
+        cfg["ghost"] = bool(n.get("ghost"))
+        raw_oc = n.get("on_connect")
+        cfg["on_connect"] = _json.loads(raw_oc) if raw_oc else []
         return cfg
 
     networks = [db_net_to_cfg(n) for n in db_networks]
