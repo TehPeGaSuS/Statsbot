@@ -13,7 +13,8 @@ from typing import Callable, Optional, List
 
 log = logging.getLogger("connector")
 
-VERSION = "Statsbot/2.0 (github.com/TehPeGaSuS/Statsbot)"
+#VERSION = "Statsbot/2.0 (github.com/TehPeGaSuS/Statsbot)"
+VERSION = "WeeChat 4.9.0"
 
 # IRC message parser
 MSG_RE = re.compile(
