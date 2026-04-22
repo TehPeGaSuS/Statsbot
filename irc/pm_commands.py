@@ -601,12 +601,11 @@ class PMCommandHandler:
             if url:
                 send(nick, f"Command reference: {url}")
             else:
-                for line in lines:
-                    send(nick, line)
+                send(nick, "Could not reach pastebin — try again in a moment.")
 
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             loop.run_in_executor(None, _do_paste)
         except RuntimeError:
-            # No running loop (e.g. during tests) — fall back to direct call
+            # No running loop (e.g. during tests) — call directly
             _do_paste()
