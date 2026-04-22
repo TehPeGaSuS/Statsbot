@@ -589,10 +589,24 @@ class PMCommandHandler:
             "  delchan [-network <net>] #channel      — part and delete ALL channel stats (no undo)",
         ]
         text = "\n".join(lines)
-        url = self._paste(text)
-        if url:
-            self.send(nick, f"Command reference: {url}")
-        else:
-            # Pastebin unavailable — fall back to inline
-            for line in lines:
-                self.send(nick, line)
+
+        # _paste() does a blocking HTTP request. We're called from inside the
+        # asyncio read loop, so we must offload it to a thread to avoid stalling
+        # the bot. Fire-and-forget: the callback sends the reply when done.
+        import asyncio
+        send = self.send
+
+        def _do_paste():
+            url = PMCommandHandler._paste(text)
+            if url:
+                send(nick, f"Command reference: {url}")
+            else:
+                for line in lines:
+                    send(nick, line)
+
+        try:
+            loop = asyncio.get_event_loop()
+            loop.run_in_executor(None, _do_paste)
+        except RuntimeError:
+            # No running loop (e.g. during tests) — fall back to direct call
+            _do_paste()
