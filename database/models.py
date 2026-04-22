@@ -4,6 +4,7 @@ SQLite schema and all DB operations for ircstats.
 Tracks per-nick (not per-mask) stats, mirroring stats.mod's stat types.
 """
 
+import json
 import sqlite3
 import os
 import time
@@ -283,19 +284,22 @@ def init_db():
 
         -- Bot network registry (DB is source of truth; config.yml only seeds)
         CREATE TABLE IF NOT EXISTS networks (
-            name         TEXT PRIMARY KEY,
-            host         TEXT NOT NULL,
-            port         INTEGER DEFAULT 6667,
-            ssl          INTEGER DEFAULT 0,
-            nick         TEXT,
-            altnick      TEXT,
-            ident        TEXT,
-            realname     TEXT,
-            sasl_user    TEXT,
-            sasl_pass    TEXT,
+            name          TEXT PRIMARY KEY,
+            host          TEXT NOT NULL,
+            port          INTEGER DEFAULT 6667,
+            ssl           INTEGER DEFAULT 0,
+            nick          TEXT,
+            altnick       TEXT,
+            ident         TEXT,
+            realname      TEXT,
+            sasl_user     TEXT,
+            sasl_pass     TEXT,
             nickserv_pass TEXT,
-            cmd_prefix   TEXT DEFAULT '!',
-            enabled      INTEGER DEFAULT 1
+            server_pass   TEXT,
+            ghost         INTEGER DEFAULT 0,
+            on_connect    TEXT,
+            cmd_prefix    TEXT DEFAULT '!',
+            enabled       INTEGER DEFAULT 1
         );
 
         -- Bot channel registry
@@ -345,6 +349,9 @@ def _migrate():
         ("stats", "halfop_got",   "INTEGER DEFAULT 0"),
         ("stats", "dehalfop_got", "INTEGER DEFAULT 0"),
         ("urls",     "count",         "INTEGER DEFAULT 1"),
+        ("networks", "server_pass",   "TEXT"),
+        ("networks", "ghost",         "INTEGER DEFAULT 0"),
+        ("networks", "on_connect",    "TEXT"),
     ]
     with get_conn() as conn:
         for table, column, col_def in migrations:
@@ -1182,11 +1189,15 @@ def seed_from_config(config: dict) -> None:
     """Seed networks and bot_channels from config.yml (INSERT OR IGNORE — DB wins)."""
     with get_conn() as conn:
         for net in config.get("networks", []):
+            on_connect_json = (
+                json.dumps(net["on_connect"]) if net.get("on_connect") else None
+            )
             conn.execute(
                 """INSERT OR IGNORE INTO networks
                    (name, host, port, ssl, nick, altnick, ident, realname,
-                    sasl_user, sasl_pass, nickserv_pass, cmd_prefix, enabled)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1)""",
+                    sasl_user, sasl_pass, nickserv_pass, server_pass,
+                    ghost, on_connect, cmd_prefix, enabled)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)""",
                 (
                     net["name"], net["host"],
                     net.get("port", 6667),
@@ -1196,7 +1207,22 @@ def seed_from_config(config: dict) -> None:
                     net.get("sasl", {}).get("username"),
                     net.get("sasl", {}).get("password"),
                     net.get("nickserv_password"),
+                    net.get("server_password"),
+                    1 if net.get("ghost") else 0,
+                    on_connect_json,
                     net.get("cmd_prefix", "!"),
+                )
+            )
+            # Always sync mutable-from-config fields on restart
+            conn.execute(
+                """UPDATE networks SET
+                       server_pass=?, ghost=?, on_connect=?
+                   WHERE name=?""",
+                (
+                    net.get("server_password"),
+                    1 if net.get("ghost") else 0,
+                    on_connect_json,
+                    net["name"],
                 )
             )
             for chan in net.get("channels", []):
