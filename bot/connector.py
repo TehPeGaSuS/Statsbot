@@ -13,8 +13,7 @@ from typing import Callable, Optional, List
 
 log = logging.getLogger("connector")
 
-#VERSION = "Statsbot/2.0 (github.com/TehPeGaSuS/Statsbot)"
-VERSION = "WeeChat 4.9.0"
+VERSION = "Statsbot/2.0 (github.com/TehPeGaSuS/Statsbot)"
 
 # IRC message parser
 MSG_RE = re.compile(
@@ -197,12 +196,15 @@ class IRCConnector:
         elif command == "001":   # RPL_WELCOME
             log.info("Registered on server.")
             self._current_nick = self.nick
+            # Fire on_connect commands immediately — before any NickServ dance.
+            # This is intentional: some networks (e.g. DALnet) need raw commands
+            # sent right after registration rather than after services auth.
+            self._run_on_connect()
             # NickServ auth (if not using SASL)
             if not self._sasl_authed:
                 self._do_nickserv_auth()
-            # _auth_done is True when no auth is needed (set by _do_nickserv_auth).
-            # When auth IS pending, _on_auth_complete() is called by
-            # _handle_nickserv_notice once the server confirms identity.
+            # Join channels. _auth_done is set by _do_nickserv_auth() when no
+            # password is configured, or optimistically after sending IDENTIFY.
             if self._auth_done:
                 self._on_auth_complete()
 
@@ -449,16 +451,14 @@ class IRCConnector:
             self._current_nick = self.nick
 
     def _on_auth_complete(self):
-        """Called once auth is done (or confirmed not needed).
-        Joins all configured channels then fires on_connect commands.
-        Safe to call multiple times — guards against double-execution.
+        """Join all configured channels. on_connect already fired on 001.
+        Safe to call multiple times — guarded against double-execution.
         """
         if getattr(self, "_joined", False):
             return
         self._joined = True
         for chan in self.channels:
             self.send_raw(f"JOIN {chan}")
-        self._run_on_connect()
 
     def _run_on_connect(self):
         """Send configured on_connect commands."""
