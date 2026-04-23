@@ -1,6 +1,6 @@
 """
 database/models.py
-SQLite schema and all DB operations for ircstats.
+SQLite schema and all DB operations for Statsbot.
 Tracks per-nick (not per-mask) stats, mirroring stats.mod's stat types.
 """
 
