@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-main.py — ircstats entry point.
+main.py — Statsbot entry point.
 
 Usage:
     python main.py [--config config/config.yml] [--web-only] [--init-db] [--setup]
@@ -28,7 +28,7 @@ def load_config(path: str) -> dict:
 def setup_logging(config: dict):
     log_cfg = config.get("logging", {})
     level = getattr(logging, log_cfg.get("level", "INFO").upper(), logging.INFO)
-    log_file = log_cfg.get("file", "data/ircstats.log")
+    log_file = log_cfg.get("file", "data/statsbot.log")
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     handlers = [logging.StreamHandler(sys.stdout)]
     try:
@@ -47,7 +47,7 @@ def run_setup(db_path: str):
     from database.models import add_master_with_password, list_masters_global
     from bot.auth import hash_password
 
-    print("\nircstats setup wizard")
+    print("\nStatsbot setup wizard")
     print("=" * 40)
     existing = list_masters_global()
     if existing:
