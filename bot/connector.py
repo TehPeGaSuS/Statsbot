@@ -77,7 +77,6 @@ class IRCConnector:
         self._connected = False
         self._current_nick = self.nick
         self._sasl_authed  = False       # SASL completed
-        self._auth_done    = False       # any auth completed, safe to run on_connect
         self._ghost_sent   = False       # already sent GHOST this session
         self.reload_queue  = None        # set by main.py after construction
         self._reclaim_nick = False       # waiting to reclaim primary nick after ghost
@@ -184,7 +183,6 @@ class IRCConnector:
         elif command == "903":  # RPL_SASLSUCCESS
             log.info("SASL authentication successful.")
             self._sasl_authed = True
-            self._auth_done   = True
             self.send_raw("CAP END")
 
         elif command in ("904", "905"):  # ERR_SASLFAIL / ERR_SASLTOOLONG
@@ -197,28 +195,33 @@ class IRCConnector:
             # NickServ auth (if not using SASL)
             if not self._sasl_authed:
                 self._do_nickserv_auth()
-            # Join channels (after a brief delay to let auth settle)
+            # Join channels
             for chan in self.channels:
                 self.send_raw(f"JOIN {chan}")
-            # on_connect commands (if no auth pending)
-            if self._auth_done or (not self.net.get("sasl") and not self.net.get("nickserv_password")):
-                self._run_on_connect()
+            # on_connect commands fire immediately — independent of auth
+            self._run_on_connect()
 
         elif command == "433":  # ERR_NICKNAMEINUSE
-            if not self._ghost_sent and self.net.get("ghost") and (
-                    self.net.get("nickserv_password") or self.net.get("sasl", {}).get("password")):
-                # Try to ghost the primary nick
-                ns_pass = self.net.get("nickserv_password") or self.net.get("sasl", {}).get("password", "")
+            # Always fall back to altnick first so registration can complete
+            if self._current_nick != self.altnick:
                 self.send_raw(f"NICK {self.altnick}")
                 self._current_nick = self.altnick
-                self.send_raw(f"PRIVMSG NickServ :GHOST {self.nick} {ns_pass}")
+                log.warning(f"Nick {self.nick} in use — switched to {self.altnick}")
+
+            ns_pass = (self.net.get("nickserv_password") or
+                       (self.net.get("sasl") or {}).get("password", ""))
+            if not self._ghost_sent and self.net.get("ghost") and ns_pass:
+                # DALnet uses RELEASE; most other networks use GHOST.
+                # Send both so it works everywhere — services will ignore
+                # the one they don't understand.
+                ghost_cmd = self.net.get("ghost_command", "GHOST")
+                self.send_raw(f"PRIVMSG NickServ :{ghost_cmd} {self.nick} {ns_pass}")
+                if ghost_cmd.upper() != "RELEASE":
+                    # Also try RELEASE for DALnet-style Enforcer
+                    self.send_raw(f"PRIVMSG NickServ :RELEASE {self.nick} {ns_pass}")
                 self._ghost_sent   = True
                 self._reclaim_nick = True
-                log.info(f"Nick in use — sent GHOST for {self.nick}, using {self.altnick}")
-            else:
-                self._current_nick = self.altnick
-                self.send_raw(f"NICK {self.altnick}")
-                log.warning(f"Nick {self.nick} in use, switched to {self.altnick}")
+                log.info(f"Sent {ghost_cmd}+RELEASE for {self.nick} to reclaim after altnick")
 
         elif command == "353":  # RPL_NAMREPLY — initial member list
             # params: [me, =/@/*, channel, "nick1 nick2 ..."]
@@ -402,30 +405,35 @@ class IRCConnector:
         """Send NickServ IDENTIFY if configured."""
         ns_pass = self.net.get("nickserv_password")
         if not ns_pass:
-            self._auth_done = True
             return
         self.send_raw(f"PRIVMSG NickServ :IDENTIFY {self.nick} {ns_pass}")
         log.info("Sent NickServ IDENTIFY.")
-        # Mark done — some networks confirm, some don't. We run on_connect
-        # after a notice or after a short window via _handle_nickserv_notice.
 
     def _handle_nickserv_notice(self, text: str):
         """React to NickServ/services messages."""
         tl = text.lower()
-        # Ghost succeeded — reclaim primary nick
-        if self._reclaim_nick and any(w in tl for w in ("ghost", "killed", "disconnected", "is not online")):
-            log.info(f"Ghost confirmed. Reclaiming nick {self.nick}.")
+
+        # ── Nick reclaim after GHOST / RELEASE ────────────────────────────
+        if self._reclaim_nick and any(w in tl for w in (
+            # Standard / UnrealIRCd / InspIRCd GHOST
+            "ghost", "killed", "has been killed", "is not online",
+            "disconnected", "ghosted",
+            # DALnet RELEASE / Enforcer
+            "release", "released", "enforcer",
+        )):
+            log.info(f"Nick release confirmed. Reclaiming {self.nick}.")
             self.send_raw(f"NICK {self.nick}")
             self._reclaim_nick = False
             self._current_nick = self.nick
 
-        # Auth success signals
-        if any(w in tl for w in ("you are now identified", "you are already identified",
-                                  "password accepted", "now recognized", "logged in")):
-            if not self._auth_done:
-                log.info("NickServ: authentication confirmed.")
-                self._auth_done = True
-                self._run_on_connect()
+        # Auth notices — logged for info only, on_connect already fired on 001
+        if any(w in tl for w in (
+            "you are now identified", "you are already identified",
+            "password accepted", "now recognized", "logged in",
+            "you have been identified", "now logged in",
+            "password correct", "nick identified",
+        )):
+            log.info("NickServ: authentication confirmed.")
 
     def _run_on_connect(self):
         """Send configured on_connect commands."""

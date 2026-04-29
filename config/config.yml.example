@@ -25,9 +25,12 @@ networks:
     # NickServ IDENTIFY — legacy, works on most networks
     # nickserv_password: "your_password"
 
-    # Nick ghosting — if primary nick is taken, recover it via NickServ GHOST
-    # Requires nickserv_password (or sasl.password) to be set
+    # Nick ghosting — if primary nick is taken, switch to altnick and recover
+    # the primary nick via NickServ. Requires nickserv_password or sasl.password.
     # ghost: true
+    # ghost_command: "GHOST"   # Use "RELEASE" for DALnet (default: GHOST)
+    #                          # Both GHOST and RELEASE are always attempted;
+    #                          # this setting controls which is sent first.
 
     # Server password (for BNCs or private servers)
     # server_password: "your_password"
