@@ -314,7 +314,7 @@ h2.section-title {{ font-size: .8rem; color: var(--blue); text-transform: upperc
 
 /* Also active */
 .also-active {{ margin: .5rem 0 1.5rem; }}
-.also-active-title {{ color: var(--muted); font-style: italic; font-size: .85rem; margin-bottom: .4rem; }}
+.also-active-title {{ color: var(--blue); font-style: italic; font-size: .85rem; margin-bottom: .4rem; }}
 .also-active-table {{ width: 100%; border-collapse: separate; border-spacing: 3px; }}
 .also-active-table td {{ background: var(--bg2); border: 1px solid var(--border); border-radius: 5px;
     padding: .3rem .6rem; font-size: .82rem; width: calc(20% - 6px); }}
