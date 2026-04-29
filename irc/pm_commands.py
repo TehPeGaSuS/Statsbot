@@ -23,20 +23,17 @@ Commands:
 
 import logging
 import time
-import urllib.request
-import urllib.parse
 
 log = logging.getLogger("pm_commands")
 
 
 class PMCommandHandler:
     def __init__(self, network: str, auth_manager, send_fn, config: dict,
-                  connectors: list = None, config_path: str = None):
+                  connectors: list = None):
         self.network = network
         self.auth = auth_manager
         self.send = send_fn          # send(nick, text) — sends a NOTICE or PRIVMSG to nick
         self.cfg = config
-        self.config_path = config_path   # path to config.yml, used by rehash
         self.connectors = connectors or []
         # Pending master add flows: {nick_lower: {"step": 1, "target": master_nick}}
         self._pending_master_add: dict = {}
@@ -118,7 +115,7 @@ class PMCommandHandler:
             self.send(nick, "Not identified.")
             return
         from database.models import get_channels, count_users
-        lines = [f"Statsbot — network: {self.network}"]
+        lines = [f"ircstats — network: {self.network}"]
         for conn in self.connectors:
             chans = conn._channel_members
             for chan, members in chans.items():
@@ -346,83 +343,6 @@ class PMCommandHandler:
         """Alias for reload."""
         self._cmd_reload(nick)
 
-    def _cmd_reload(self, nick: str):
-        """Reload config.yml: upsert networks, connect new ones, disconnect removed ones."""
-        if not self._require_auth(nick): return
-
-        path = self.config_path
-        if not path:
-            self.send(nick, "Config path not set — cannot rehash.")
-            return
-
-        import yaml
-        try:
-            with open(path) as f:
-                new_cfg = yaml.safe_load(f)
-        except Exception as e:
-            self.send(nick, f"Failed to read config: {e}")
-            return
-
-        from database.models import seed_from_config, get_enabled_networks
-        from bot.connector import IRCConnector
-
-        # Remember which networks were active before the reload
-        old_names = {c.network for c in self.connectors}
-
-        # Sync DB with new config (upserts + disables removed networks)
-        seed_from_config(new_cfg)
-
-        # Work out what changed
-        new_names = {n["name"] for n in new_cfg.get("networks", [])}
-        to_connect = new_names - old_names
-        to_disconnect = old_names - new_names
-
-        # Update the live config dict in-place so all handlers see the new values
-        self.cfg.clear()
-        self.cfg.update(new_cfg)
-
-        added, removed = [], []
-
-        # Connect new networks
-        for net in new_cfg.get("networks", []):
-            if net["name"] not in to_connect:
-                continue
-            import json as _json
-            bot = new_cfg.get("bot", {})
-            net_cfg = {
-                "name":     net["name"],
-                "host":     net["host"],
-                "port":     net.get("port", 6667),
-                "ssl":      net.get("ssl", False),
-                "nick":     net.get("nick")     or bot.get("nick",     "statsbot"),
-                "altnick":  net.get("altnick")  or bot.get("altnick",  "statsbot_"),
-                "ident":    net.get("ident")     or bot.get("ident",    "statsbot"),
-                "realname": net.get("realname") or bot.get("realname", "IRC Stats Bot"),
-                "channels": net.get("channels", []),
-                "cmd_prefix": net.get("cmd_prefix", new_cfg.get("commands", {}).get("prefix", "!")),
-                "nickserv_password": net.get("nickserv_password"),
-                "server_password":   net.get("server_password"),
-                "ghost":      net.get("ghost", False),
-                "on_connect": net.get("on_connect", []),
-                "sasl":       net.get("sasl"),
-            }
-            self._post_event({"action": "add_network", "net_cfg": net_cfg})
-            added.append(net["name"])
-
-        # Disconnect removed networks
-        for name in to_disconnect:
-            self._post_event({"action": "remove_network", "name": name})
-            removed.append(name)
-
-        parts = []
-        if added:
-            parts.append(f"connecting: {', '.join(added)}")
-        if removed:
-            parts.append(f"disconnecting: {', '.join(removed)}")
-        if not parts:
-            parts.append("no network changes")
-        self.send(nick, f"Rehash done — {'; '.join(parts)}.")
-
     # ─── Network / Channel management ────────────────────────────────────────
 
     def _require_auth(self, nick: str) -> bool:
@@ -501,10 +421,47 @@ class PMCommandHandler:
         self.send(nick, f"Parted {chan} on {network} and deleted all its stats.")
 
     def _cmd_addnet(self, nick: str, args: str):
-        """addnet is no longer used — networks are managed via config.yml + rehash."""
+        """addnet -name <n> -host <host> -port <port> [-ssl|-plaintext]
+        -ssl is the default. Use -plaintext to disable TLS."""
         if not self._require_auth(nick): return
-        self.send(nick, "Networks are now managed via config.yml.")
-        self.send(nick, "Add the network there, then run: rehash")
+        parsed = self._parse_flags(args)
+        flags  = parsed["flags"]
+        name     = flags.get("name", "")
+        host     = flags.get("host", "")
+        port_val = str(flags.get("port", ""))
+        missing  = [f"-{f}" for f, v in [("name", name), ("host", host), ("port", port_val)]
+                    if not v]
+        if missing:
+            self.send(nick, f"Missing required flag(s): {', '.join(missing)}")
+            self.send(nick, "Usage: addnet -name <n> -host <host> -port <port> [-ssl|-plaintext]")
+            return
+        if not port_val.isdigit():
+            self.send(nick, f"Invalid port: {port_val!r} — must be a number.")
+            return
+        port = int(port_val)
+        if not (1 <= port <= 65535):
+            self.send(nick, f"Port {port} out of range (1-65535).")
+            return
+        # Default to SSL unless -plaintext is explicitly given
+        ssl = "plaintext" not in flags
+        from database.models import add_network
+        ok = add_network(name, host, port, ssl)
+        if not ok:
+            self.send(nick, f"Network {name!r} already exists.")
+            return
+        bot_cfg = self.cfg.get("bot", {})
+        net_cfg = {
+            "name": name, "host": host, "port": port, "ssl": ssl,
+            "nick":     bot_cfg.get("nick",     "statsbot"),
+            "altnick":  bot_cfg.get("altnick",  "statsbot_"),
+            "ident":    bot_cfg.get("ident",    "statsbot"),
+            "realname": bot_cfg.get("realname", "IRC Stats Bot"),
+            "channels": [], "cmd_prefix": "!",
+        }
+        self._post_event({"action": "add_network", "net_cfg": net_cfg})
+        ssl_tag = "SSL" if ssl else "plaintext"
+        self.send(nick, f"Network {name} ({host}:{port} {ssl_tag}) added and connecting.")
+        self.send(nick, f"Use: addchan -network {name} #channel  to start tracking.")
 
     def _cmd_delnet(self, nick: str, args: str):
         """delnet -name <n>"""
@@ -542,7 +499,9 @@ class PMCommandHandler:
             return
         self.send(nick, f"Language for {chan} on {network} set to {lang}.")
 
-
+    def _cmd_reload(self, nick: str):
+        if not self._require_auth(nick): return
+        self.send(nick, "Changes apply immediately — no reload needed.")
 
     def _cmd_nets(self, nick: str):
         """List all networks in the DB."""
@@ -570,120 +529,24 @@ class PMCommandHandler:
 
     # ─── Help ─────────────────────────────────────────────────────────────────
 
-    @staticmethod
-    def _paste(text: str, timeout: int = 6) -> str | None:
-        """Upload text to a paste service and return the URL.
-
-        Tries multiple services in order, returns the first that works.
-        """
-        encoded = text.encode()
-
-        def try_ixio() -> str | None:
-            # ix.io accepts a plain POST with form field "f:1"
-            data = urllib.parse.urlencode({"f:1": text}).encode()
-            req = urllib.request.Request(
-                "http://ix.io",
-                data=data,
-                headers={"User-Agent": "Statsbot/2.0"},
-            )
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                url = r.read().decode().strip()
-                return url if url.startswith("http") else None
-
-        def try_pastrs() -> str | None:
-            # paste.rs: raw POST body, returns bare URL
-            req = urllib.request.Request(
-                "https://paste.rs",
-                data=encoded,
-                headers={
-                    "Content-Type": "text/plain",
-                    "User-Agent": "Statsbot/2.0",
-                },
-            )
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                url = r.read().decode().strip()
-                return url if url.startswith("http") else None
-
-        def try_dpaste() -> str | None:
-            # dpaste.org: form POST
-            data = urllib.parse.urlencode({
-                "content": text,
-                "syntax": "text",
-                "expiry_days": 7,
-            }).encode()
-            req = urllib.request.Request(
-                "https://dpaste.org/api/",
-                data=data,
-                headers={"User-Agent": "Statsbot/2.0"},
-            )
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                url = r.read().decode().strip().strip('"')
-                return url if url.startswith("http") else None
-
-        for backend in (try_ixio, try_pastrs, try_dpaste):
-            try:
-                url = backend()
-                if url:
-                    return url
-            except Exception as exc:
-                log.debug("paste backend %s failed: %s", backend.__name__, exc)
-
-        log.warning("all paste backends failed")
-        return None
     def _cmd_help(self, nick: str):
         lines = [
-            "Statsbot PM command reference",
-            "=" * 36,
-            "",
-            "Auth:",
-            "  identify <master_nick> <password>     — authenticate",
-            "  logout                                — end your session",
-            "  whoami                                — show current identity",
-            "  status                                — connected channels and user counts",
-            "",
-            "Ignore management (requires auth):",
-            "  ignore add [#chan] <pattern>           — add ignore (network-wide if no #chan)",
-            "  ignore add [#chan] <pattern> --purge   — add ignore AND delete existing stats",
-            "  ignore del [#chan] <pattern>           — remove ignore",
-            "  ignore list [#chan]                    — list ignores",
-            "  ignore purge [#chan] <pattern>         — delete stats only (ignore list unchanged)",
-            "",
-            "Master management (requires auth):",
-            "  master add <nick>                      — add master (bot asks for password)",
-            "  master del <nick>                      — remove master",
-            "  master list                            — list all masters",
-            "",
-            "Configuration (requires auth):",
-            "  set page [#chan] <url>                 — override the URL returned by !stats",
-            "  setlang [-network <net>] #chan <lang>  — set channel language",
-            "    Supported: en_US  pt_PT  fr_FR  it_IT",
-            "",
-            "Network & channel management (requires auth):",
-            "  nets                                   — list all networks",
-            "  chans                                  — list channels on this network",
-            "  addnet -name <n> -host <h> -port <p> [-ssl|-plaintext]  (TLS is default)",
-            "  delnet -name <n>                       — remove network + ALL its stats (no undo)",
-            "  addchan [-network <net>] #channel      — join and start tracking",
-            "  delchan [-network <net>] #channel      — part and delete ALL channel stats (no undo)",
+            "ircstats PM commands:",
+            "  identify <master_nick> <password>  — authenticate",
+            "  logout  |  whoami  |  status",
+            "  ignore add [#chan] <pattern> [--purge]  (--purge also deletes existing stats)",
+            "  ignore purge [#chan] <pattern>           (delete stats without changing ignore list)",
+            "  ignore del [#chan] <pattern>",
+            "  ignore list [#chan]",
+            "  master add <nick>  |  master del <nick>  |  master list",
+            "  set page [#chan] <url>",
+            "  nets                                       — list all networks",
+            "  setlang [-network <net>] #channel <lang>     — set channel language (en_US/pt_PT/fr_FR/it_IT)",
+            "  chans                                      — list channels on this network",
+            "  addchan [-network <net>] #channel          — join and track a channel",
+            "  delchan [-network <net>] #channel          — part and delete channel stats",
+            "  addnet -name <n> -host <host> -port <port> [-ssl|-plaintext]  (TLS by default)",
+            "  delnet -name <n>                           — remove network and all stats",
         ]
-        text = "\n".join(lines)
-
-        # _paste() does a blocking HTTP request. We're called from inside the
-        # asyncio read loop, so we must offload it to a thread to avoid stalling
-        # the bot. Fire-and-forget: the callback sends the reply when done.
-        import asyncio
-        send = self.send
-
-        def _do_paste():
-            url = PMCommandHandler._paste(text)
-            if url:
-                send(nick, f"Command reference: {url}")
-            else:
-                send(nick, "Could not reach pastebin — try again in a moment.")
-
-        try:
-            loop = asyncio.get_running_loop()
-            loop.run_in_executor(None, _do_paste)
-        except RuntimeError:
-            # No running loop (e.g. during tests) — call directly
-            _do_paste()
+        for line in lines:
+            self.send(nick, line)

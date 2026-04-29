@@ -13,8 +13,6 @@ from typing import Callable, Optional, List
 
 log = logging.getLogger("connector")
 
-VERSION = "Statsbot/2.0 (github.com/TehPeGaSuS/Statsbot)"
-
 # IRC message parser
 MSG_RE = re.compile(
     r'^(?::(?P<prefix>[^\s]+)\s+)?'
@@ -196,17 +194,15 @@ class IRCConnector:
         elif command == "001":   # RPL_WELCOME
             log.info("Registered on server.")
             self._current_nick = self.nick
-            # Fire on_connect commands immediately — before any NickServ dance.
-            # This is intentional: some networks (e.g. DALnet) need raw commands
-            # sent right after registration rather than after services auth.
-            self._run_on_connect()
             # NickServ auth (if not using SASL)
             if not self._sasl_authed:
                 self._do_nickserv_auth()
-            # Join channels. _auth_done is set by _do_nickserv_auth() when no
-            # password is configured, or optimistically after sending IDENTIFY.
-            if self._auth_done:
-                self._on_auth_complete()
+            # Join channels (after a brief delay to let auth settle)
+            for chan in self.channels:
+                self.send_raw(f"JOIN {chan}")
+            # on_connect commands (if no auth pending)
+            if self._auth_done or (not self.net.get("sasl") and not self.net.get("nickserv_password")):
+                self._run_on_connect()
 
         elif command == "433":  # ERR_NICKNAMEINUSE
             if not self._ghost_sent and self.net.get("ghost") and (
@@ -381,22 +377,6 @@ class IRCConnector:
             target = params[0] if params else ""
             text = params[1] if len(params) > 1 else ""
 
-            # CTCP — must be checked before pm_handler / sensors routing.
-            # Requests arrive as PRIVMSG target :\x01COMMAND [args]\x01
-            if text.startswith("\x01") and text.endswith("\x01"):
-                ctcp_body = text[1:-1]
-                ctcp_cmd  = ctcp_body.split(" ", 1)[0].upper()
-                if ctcp_cmd == "VERSION":
-                    self.send_raw(f"NOTICE {nick} :\x01VERSION {VERSION}\x01")
-                    log.debug(f"CTCP VERSION reply sent to {nick}")
-                elif ctcp_cmd == "PING":
-                    # Echo the ping token back so lag checks work
-                    ping_arg = ctcp_body[5:] if len(ctcp_body) > 5 else ""
-                    self.send_raw(f"NOTICE {nick} :\x01PING{ping_arg}\x01")
-                    log.debug(f"CTCP PING reply sent to {nick}")
-                # All other CTCP types (TIME, FINGER, etc.) are silently ignored
-                return
-
             # PM to the bot — route to PM command handler
             if target.lower() == self._current_nick.lower():
                 if self.pm_handler:
@@ -419,46 +399,33 @@ class IRCConnector:
         return {c: list(m) for c, m in self._channel_members.items()}
 
     def _do_nickserv_auth(self):
-        """Send NickServ IDENTIFY if configured, then fire _on_auth_complete.
-
-        We send IDENTIFY and immediately proceed — channels join and on_connect
-        commands fire straight away. _handle_nickserv_notice handles ghost
-        separately (it doesn't depend on the join/on_connect sequencing).
-        Networks that require identification before joining (rare) should add
-        a short JOIN delay via on_connect or switch to SASL.
-        """
+        """Send NickServ IDENTIFY if configured."""
         ns_pass = self.net.get("nickserv_password")
         if not ns_pass:
             self._auth_done = True
             return
         self.send_raw(f"PRIVMSG NickServ :IDENTIFY {self.nick} {ns_pass}")
         log.info("Sent NickServ IDENTIFY.")
-        # Mark auth done optimistically — NickServ confirm may or may not arrive.
-        # Ghost handling still happens in _handle_nickserv_notice when we get the
-        # NickServ reply, independently of joins / on_connect.
-        self._auth_done = True
+        # Mark done — some networks confirm, some don't. We run on_connect
+        # after a notice or after a short window via _handle_nickserv_notice.
 
     def _handle_nickserv_notice(self, text: str):
         """React to NickServ/services messages."""
         tl = text.lower()
         # Ghost succeeded — reclaim primary nick
-        if self._reclaim_nick and any(w in tl for w in (
-                "ghost", "killed", "disconnected", "is not online",
-                "has been ghosted", "has been killed")):
+        if self._reclaim_nick and any(w in tl for w in ("ghost", "killed", "disconnected", "is not online")):
             log.info(f"Ghost confirmed. Reclaiming nick {self.nick}.")
             self.send_raw(f"NICK {self.nick}")
             self._reclaim_nick = False
             self._current_nick = self.nick
 
-    def _on_auth_complete(self):
-        """Join all configured channels. on_connect already fired on 001.
-        Safe to call multiple times — guarded against double-execution.
-        """
-        if getattr(self, "_joined", False):
-            return
-        self._joined = True
-        for chan in self.channels:
-            self.send_raw(f"JOIN {chan}")
+        # Auth success signals
+        if any(w in tl for w in ("you are now identified", "you are already identified",
+                                  "password accepted", "now recognized", "logged in")):
+            if not self._auth_done:
+                log.info("NickServ: authentication confirmed.")
+                self._auth_done = True
+                self._run_on_connect()
 
     def _run_on_connect(self):
         """Send configured on_connect commands."""

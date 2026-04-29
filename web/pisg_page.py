@@ -5,6 +5,7 @@ Called from dashboard.py channel_stats route.
 """
 
 import json
+import logging
 import time
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -107,10 +108,17 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
     sort_by  = "words" if pisg.get("SortByWords", True) else "lines"
     top_n    = pisg.get("ActiveNicks", 25)
     top_n2   = pisg.get("ActiveNicks2", 50)
-    all_rows = get_top(network, channel, sort_by, period, top_n2)
+    fetch_n  = top_n + top_n2
+    all_rows = get_top(network, channel, sort_by, period, fetch_n)
     all_rows = [r for r in all_rows if r["value"] > 0]
-    top_rows = all_rows[:top_n]
-    rest_rows = all_rows[top_n:top_n2]
+    top_rows  = all_rows[:top_n]
+    rest_rows = all_rows[top_n:top_n + top_n2]
+    logging.debug(
+        "pisg [%s/%s period=%s]: all_rows=%d top_rows=%d rest_rows=%d "
+        "(ActiveNicks=%d ActiveNicks2=%d fetch=%d)",
+        network, channel, period,
+        len(all_rows), len(top_rows), len(rest_rows), top_n, top_n2, fetch_n
+    )
 
     # Pull full stats for each nick in top table
     nick_stats = {}
@@ -549,7 +557,7 @@ b {{ color: var(--cyan); }}
             h(f'<span class="word-tag">{row["nick"]} ({v:,})</span>')
         h('</div>')
     # "By the way, there were X other nicks"
-    total_other = len(all_rows) - len(top_rows) - len(rest_rows)
+    total_other = total_users - len(top_rows) - len(rest_rows)
     if total_other > 0:
         h(f'<p class="small" style="margin:.5rem 0 1.5rem"><b>{t("by_the_way", lang, n=total_other)}</b></p>')
 

@@ -1,1 +1,1 @@
-# Statsbot
+# ircstats

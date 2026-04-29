@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-main.py — Statsbot entry point.
+main.py — ircstats entry point.
 
 Usage:
     python main.py [--config config/config.yml] [--web-only] [--init-db] [--setup]
@@ -28,7 +28,7 @@ def load_config(path: str) -> dict:
 def setup_logging(config: dict):
     log_cfg = config.get("logging", {})
     level = getattr(logging, log_cfg.get("level", "INFO").upper(), logging.INFO)
-    log_file = log_cfg.get("file", "data/statsbot.log")
+    log_file = log_cfg.get("file", "data/ircstats.log")
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     handlers = [logging.StreamHandler(sys.stdout)]
     try:
@@ -47,7 +47,7 @@ def run_setup(db_path: str):
     from database.models import add_master_with_password, list_masters_global
     from bot.auth import hash_password
 
-    print("\nStatsbot setup wizard")
+    print("\nircstats setup wizard")
     print("=" * 40)
     existing = list_masters_global()
     if existing:
@@ -138,7 +138,6 @@ def main():
 
     # Convert DB rows to the dict shape connectors expect
     def db_net_to_cfg(n: dict) -> dict:
-        import json as _json
         cfg = dict(n)
         cfg["channels"] = get_channels_for_network(n["name"])
         cfg["ssl"] = bool(n["ssl"])
@@ -146,11 +145,6 @@ def main():
             cfg["sasl"] = {"username": n["sasl_user"], "password": n["sasl_pass"]}
         if n.get("nickserv_pass"):
             cfg["nickserv_password"] = n["nickserv_pass"]
-        if n.get("server_pass"):
-            cfg["server_password"] = n["server_pass"]
-        cfg["ghost"] = bool(n.get("ghost"))
-        raw_oc = n.get("on_connect")
-        cfg["on_connect"] = _json.loads(raw_oc) if raw_oc else []
         return cfg
 
     networks = [db_net_to_cfg(n) for n in db_networks]
@@ -188,8 +182,7 @@ def main():
         pm_h = PMCommandHandler(
             network_name, auth,
             lambda nick, tx: _pm_ref[0] and _pm_ref[0](nick, tx),
-            config,
-            config_path=args.config,
+            config
         )
         conn = IRCConnector(config, net_cfg, sensors, cmd_h, pm_handler=pm_h)
         conn.reload_queue = reload_queue

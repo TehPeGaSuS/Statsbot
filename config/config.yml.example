@@ -76,6 +76,7 @@ web:
   public_url: ""            # e.g. https://stats.yourserver.org — used by !stats
   title: "IRC Stats"
   project_url: "https://github.com/TehPeGaSuS/Statsbot"  # link shown in page footers
+  topnr: 30                 # number of users in top lists
 
 commands:
   prefix: "!"
@@ -92,7 +93,7 @@ logging:
 pisg:
   # Main nick table
   ActiveNicks: 25              # rows in main top table (pisg: ActiveNicks)
-  ActiveNicks2: 50             # secondary "didn't make the top" list (pisg: ActiveNicks2)
+  ActiveNicks2: 10             # nicks in "These didn't make it to the top" list (pisg: ActiveNicks2)
   SortByWords: true            # sort by words (true) or lines (false) (pisg: SortByWords)
   ShowWords: true              # show word count column (pisg: ShowWords)
   ShowLines: true              # show line count column (pisg: ShowLines)
@@ -136,3 +137,5 @@ pisg:
   NickHistory: 5               # max nicks in most referenced nicks (pisg: NickHistory)
   SmileyHistory: 10            # max smileys in smiley table (pisg: SmileyHistory)
   ActiveNicksByHour: 10        # rows in most active by hour (pisg: ActiveNicksByHour)
+
+  # Page

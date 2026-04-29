@@ -1,6 +1,6 @@
-# Statsbot configuration reference
+# ircstats configuration reference
 
-This document covers all configuration options for Statsbot. Option names in
+This document covers all configuration options for ircstats. Option names in
 the `pisg:` section deliberately match [pisg](https://pisg.github.io/) so
 that anyone familiar with pisg can migrate without reading much.
 
@@ -218,6 +218,7 @@ web:
                      # If empty, falls back to http://localhost:PORT/
   title: "IRC Stats"
   project_url: "https://github.com/TehPeGaSuS/Statsbot"  # link shown in page footers
+  topnr: 30          # Users shown in landing page top lists
 ```
 
 The dashboard serves three pages:
@@ -264,14 +265,10 @@ networks:
 | Command | Description |
 |---------|-------------|
 | `!stats` | Link to stats page for this channel |
-| `!top` | Top 3 users by words — e.g. `Top talkers for #channel: #1 Alice (1234 words), #2 Bob (987 words) and #3 Carol (456 words)` |
+| `!top [n]` | Top N users by words, single line (default 3, max 10) |
 | `!quote [nick]` | Random quote, optionally from a specific nick |
 
-`!top` is rate-limited to 2 uses per user per 5 minutes.
-
 ### PM commands (`/msg statsbot <command>`)
-
-Send `help` to receive a full command reference posted to a pastebin link.
 
 **Authentication:**
 
@@ -282,30 +279,13 @@ Send `help` to receive a full command reference posted to a pastebin link.
 | `whoami` | Show your current identity |
 | `status` | Show connected channels and user counts |
 
-**Network management:**
-
-> `config.yml` is the source of truth for networks. Add or remove networks
-> there and run `rehash` to apply changes live. Networks removed from config
-> are **disabled** (stats preserved). Use `delnet` only to permanently purge
-> stats for a network already removed from config.
-
-| Command | Description |
-|---------|-------------|
-| `rehash` | Reload `config.yml`: connect new networks, disconnect removed ones |
-| `nets` | List all networks in the database with host, port, SSL status |
-| `chans` | List channels tracked on the current network |
-| `delnet -name <n>` | Permanently delete **all** stats for a network (no undo) |
-| `addchan [-network <net>] #channel` | Join and start tracking a channel. `-network` is optional if you're already on that network. |
-| `delchan [-network <net>] #channel` | Part a channel and permanently delete **all** its stats |
-
 **Ignore management** (requires auth):
 
 | Command | Description |
 |---------|-------------|
-| `ignore add [#channel] <pattern> [--purge]` | Add ignore. Omit `#channel` for network-wide. `--purge` also deletes existing stats for matching nicks. |
+| `ignore add [#channel] <pattern>` | Add ignore. Omit `#channel` for network-wide. |
 | `ignore del [#channel] <pattern>` | Remove ignore |
 | `ignore list [#channel]` | List ignores, optionally filtered by channel |
-| `ignore purge [#channel] <pattern>` | Delete stats for matching nicks without touching the ignore list |
 
 **Master management** (requires auth):
 
@@ -320,7 +300,17 @@ Send `help` to receive a full command reference posted to a pastebin link.
 | Command | Description |
 |---------|-------------|
 | `set page [#channel] <url>` | Override the stats URL returned by `!stats` |
-| `setlang [-network <net>] #channel <lang>` | Set per-channel language. Supported: `en_US` `pt_PT` `fr_FR` `it_IT` |
+
+**Network management** (requires auth):
+
+| Command | Description |
+|---------|-------------|
+| `nets` | List all networks in the database with host, port, SSL status |
+| `chans` | List channels tracked on the current network |
+| `addnet -name <n> -host <host> -port <port> [-ssl\|-plaintext]` | Add a new network and connect immediately. TLS is the default — pass `-plaintext` to disable. |
+| `delnet -name <n>` | Disconnect a network and permanently delete **all** its stats |
+| `addchan [-network <net>] #channel` | Join and start tracking a channel. `-network` is optional if you're already on that network. |
+| `delchan [-network <net>] #channel` | Part a channel and permanently delete **all** its stats |
 
 > **Destructive operations:** `delnet` and `delchan` cascade-delete all stats,
 > quotes, URLs, topics, kick logs, karma, and hourly data for that
@@ -328,22 +318,16 @@ Send `help` to receive a full command reference posted to a pastebin link.
 
 **Examples:**
 ```
-# Add a network — edit config.yml, then:
-rehash
-
-# Remove a network — remove it from config.yml, then:
-rehash
-# To also purge its stats:
+addnet -name SwiftIRC -host irc.swiftirc.net -port 6697
+addnet -name Rizon -host irc.rizon.net -port 6667 -plaintext
 delnet -name SwiftIRC
 
 addchan #general                        (on current network)
 addchan -network SwiftIRC #general      (on a different network)
 delchan #general
 delchan -network SwiftIRC #general
-
-setlang #lobby pt_PT
-setlang -network ptirc #help fr_FR
 ```
+
 ---
 
 ## pisg-style page options
@@ -422,7 +406,7 @@ The first nick mentioned after a violent word is recorded as the victim.
 Words considered foul language. Tracked as a percentage of total words.
 **Default:** `["ass", "fuck", "shit", "bitch", "cunt", "cock", "dick"]`
 
-> **Note:** In Statsbot, individual big number sub-sections (questions, CAPS,
+> **Note:** In ircstats, individual big number sub-sections (questions, CAPS,
 > violence, smiles, etc.) are all controlled by `ShowBigNumbers`. In pisg they
 > were always on when `ShowBigNumbers` was on. Future versions may add
 > individual toggles.
@@ -563,7 +547,7 @@ database:
 
 The database is SQLite — zero setup, zero dependencies beyond Python's
 built-in `sqlite3`. Schema migrations run automatically on startup so
-upgrading Statsbot never requires manual DB changes.
+upgrading ircstats never requires manual DB changes.
 
 ---
 
@@ -572,14 +556,14 @@ upgrading Statsbot never requires manual DB changes.
 ```yaml
 logging:
   level: "INFO"             # DEBUG, INFO, WARNING, ERROR
-  file: "data/statsbot.log"
+  file: "data/ircstats.log"
 ```
 
 ---
 
 ## Differences from pisg
 
-| Feature | pisg | Statsbot |
+| Feature | pisg | ircstats |
 |---------|------|----------|
 | Data source | Static log files | Live IRC bot (real-time) |
 | Log parsers | 30+ formats | Not needed — we receive events directly |

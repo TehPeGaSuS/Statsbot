@@ -57,9 +57,8 @@ option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
 - **Peak users** with date
 - **Live user count** badge, updates every 30 seconds
 - **Multi-network** — connect to Libera, Undernet, PTirc simultaneously
-- **Config-driven network management** — `config.yml` is the source of truth;
-  `rehash` applies changes live (connects new networks, disconnects removed ones)
-  without restarting the bot
+- **Runtime network management** — add/remove networks and channels live via PM
+  commands, no restart required; `config.yml` seeds the DB on first run only
 - **Op/voice/halfop stats** — who gave ops, who got deopped, who hands out voice;
   pisg-style prose sentences; `ShowOps`, `ShowVoice`, `ShowHalfops` toggles
 - **Fully clickable cards** on the landing and network pages
@@ -135,7 +134,7 @@ See **[DOCS.md](DOCS.md)** for the complete reference.
 | Command | Description |
 |---------|-------------|
 | `!stats` | Link to the stats page for this channel |
-| `!top` | Top 3 users by words |
+| `!top [n]` | Top N users by words (default 3, max 10) |
 | `!quote [nick]` | Random quote, optionally from a specific nick |
 
 ### PM commands (`/msg statsbot <command>`)
@@ -144,19 +143,16 @@ See **[DOCS.md](DOCS.md)** for the complete reference.
 |---------|-------------|
 | `identify <master> <password>` | Authenticate — works from any nick on any network |
 | `logout` / `whoami` / `status` | Session management |
-| `help` | Full command reference (posted to pastebin) |
-| `rehash` | Reload `config.yml` — connect new networks, disconnect removed ones |
-| `ignore add [#chan] <pattern> [--purge]` | Add ignore; `--purge` also deletes existing stats |
+| `ignore add [#chan] <pattern>` | Add ignore (network-wide if no `#chan`) |
 | `ignore del [#chan] <pattern>` | Remove ignore |
 | `ignore list [#chan]` | List ignores |
-| `ignore purge [#chan] <pattern>` | Delete stats without touching the ignore list |
 | `master add <nick>` | Add master (bot asks for password interactively) |
 | `master del <nick>` / `master list` | Manage masters |
 | `set page [#chan] <url>` | Override `!stats` URL for a channel |
-| `setlang [-network <net>] #chan <lang>` | Set channel language (`en_US` `pt_PT` `fr_FR` `it_IT`) |
 | `nets` | List all networks (host, port, SSL status) |
 | `chans` | List channels tracked on the current network |
-| `delnet -name <n>` | Purge all stats for a network removed from config |
+| `addnet -name <n> -host <host> -port <port> [-ssl\|-plaintext]` | Add network and connect immediately (TLS by default) |
+| `delnet -name <n>` | Remove network and delete all its stats |
 | `addchan [-network <net>] #channel` | Join and track a channel |
 | `delchan [-network <net>] #channel` | Part channel and delete all its stats |
 
