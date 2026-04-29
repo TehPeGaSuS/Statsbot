@@ -312,9 +312,17 @@ h2.section-title {{ font-size: .8rem; color: var(--blue); text-transform: upperc
 .bar-fill {{ height: 100%; border-radius: 3px;
              background: linear-gradient(90deg, var(--tab-act), var(--blue)); }}
 
-/* Also active */
-.also-active {{ color: var(--muted); font-size: .82rem; margin: .5rem 0 1.5rem; }}
-.also-active span {{ margin-right: .4rem; }}
+/* Also active — pisg-style "didn't make it to the top" table */
+.also-active-title {{ color: var(--muted); font-size: .82rem; font-style: italic;
+                      margin: 1rem 0 .4rem; }}
+table.also-active {{ width: 100%; border-collapse: collapse;
+                     margin: 0 0 .8rem; font-size: .8rem; }}
+table.also-active td.rankc10 {{ background: var(--bg2); border: 1px solid var(--border);
+                                 padding: .25rem .55rem; color: var(--fg);
+                                 white-space: nowrap; text-align: left;
+                                 width: 25%; }}
+table.also-active td.rankc10 span.cnt {{ color: var(--muted); margin-left: .25rem;
+                                          font-size: .72rem; }}
 
 /* Big numbers / hicell */
 table.bignums {{ width: 100%; border-collapse: collapse; margin-bottom: .5rem; }}
@@ -548,14 +556,26 @@ b {{ color: var(--cyan); }}
 
     h('</tbody></table></div>')
 
-    # "These didn't make the top"
+    # "These didn't make it to the top" — pisg-style 4-column table
     if rest_rows:
-        h(f'<div class="also-active"><i>{t("also_active", lang)}</i> ')
-        for row in rest_rows:
+        h(f'<div class="also-active-title"><b><i>{t("also_active", lang)}</i></b></div>')
+        h('<table class="also-active"><tbody>')
+        cols = 4
+        for i, row in enumerate(rest_rows):
+            if i % cols == 0:
+                h('<tr>')
             st = nick_stats.get(row["nick"], {})
             v  = st.get(sort_by, row["value"])
-            h(f'<span class="word-tag">{row["nick"]} ({v:,})</span>')
-        h('</div>')
+            h(f'<td class="rankc10"><span>{row["nick"]} <span class="cnt">({v:,})</span></span></td>')
+            if i % cols == cols - 1:
+                h('</tr>')
+        # pad final row with empty cells so widths stay even
+        rem = len(rest_rows) % cols
+        if rem:
+            for _ in range(cols - rem):
+                h('<td class="rankc10">&nbsp;</td>')
+            h('</tr>')
+        h('</tbody></table>')
     # "By the way, there were X other nicks"
     total_other = total_users - len(top_rows) - len(rest_rows)
     if total_other > 0:
