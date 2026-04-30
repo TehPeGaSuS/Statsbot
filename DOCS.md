@@ -206,12 +206,8 @@ stats:
 
   expire_days: 30           # Remove nicks not seen for X days (0 = never)
   log_wordstats: true       # Track word frequency per nick
-  min_word_length: 3        # Minimum chars for a word to be tracked in DB
-                             # (display filter is controlled by WordLength in pisg:)
   quote_frequency: 5        # Log every Nth message as a random quote.
                              # First message from any nick is always logged.
-  display_urls: 5           # How many recent URLs to show (also see UrlHistory)
-  display_kicks: 5          # How many recent kicks to show
   kick_context: 5           # Lines of channel context saved with each kick
 
   happy_smileys: [...]      # List of smileys counted as happy (smileys stat)
@@ -244,7 +240,6 @@ web:
                      # If empty, falls back to http://localhost:PORT/
   title: "IRC Stats"
   project_url: "https://github.com/TehPeGaSuS/Statsbot"  # link shown in page footers
-  topnr: 30          # Users shown in landing page top lists
 ```
 
 The dashboard serves three pages:
@@ -473,6 +468,10 @@ and by whom.
 Show the "Most referenced nicks" section — which nicks are mentioned most
 in conversation. Nick casing is preserved as it appears on IRC.
 **Default:** `true` — pisg default: true
+
+#### `ShowMuw`
+Show the "Most used words" section.
+**Default:** `true`
 
 #### `ShowMru`
 Show the "Most referenced URLs" section. URLs are deduplicated — repeated

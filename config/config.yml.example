@@ -41,11 +41,15 @@ networks:
     # realname: "Channel Stats"
     # ident: "chanstats"
 
-    # Commands sent after successful connect + auth ({nick} = current bot nick)
+    # Commands sent after 001 ({nick} = current bot nick)
     # on_connect:
     #   - "MODE {nick} +x"       # request cloak (Undernet, some others)
     #   - "UMODE2 +x"            # alternative (UnrealIRCd)
     #   - "MODE {nick} +B"       # set bot umode
+
+    # Channel join retries — if a join fails (banned, +i, +l, DALnet 437, etc.)
+    # join_retries: 5            # max attempts per channel (default: 5)
+    # join_retry_delay: 30       # seconds between attempts (default: 30)
 
 stats:
   # Nicks/masks permanently ignored — never tracked, never shown.
@@ -63,7 +67,6 @@ stats:
   expire_days: 30           # remove nicks unseen for X days (0 = never)
   log_wordstats: true       # track word frequency per nick
   quote_frequency: 5        # log every Nth message as a random quote
-  display_kicks: 5          # how many recent kicks to show
   kick_context: 5           # lines of context to save with each kick
 
   happy_smileys: [":-)", ":)", ";)", ";-)", "^_^", ":-D", ":-P", ":P", "=)", ";D",
@@ -79,7 +82,6 @@ web:
   public_url: ""            # e.g. https://stats.yourserver.org — used by !stats
   title: "IRC Stats"
   project_url: "https://github.com/TehPeGaSuS/Statsbot"  # link shown in page footers
-  topnr: 30                 # number of users in top lists
 
 commands:
   prefix: "!"
@@ -140,5 +142,3 @@ pisg:
   NickHistory: 5               # max nicks in most referenced nicks (pisg: NickHistory)
   SmileyHistory: 10            # max smileys in smiley table (pisg: SmileyHistory)
   ActiveNicksByHour: 10        # rows in most active by hour (pisg: ActiveNicksByHour)
-
-  # Page
