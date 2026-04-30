@@ -11,7 +11,7 @@ live web dashboard — no log files, no cron jobs, no static HTML generation.
 ---
 
 > [!NOTE]
-> Statsbot is feature-complete — but the door is always open.\
+> Statsbot is, pretty much, feature-complete — but the door is always open.\
 > After all these commits, Statsbot does everything PISG does, except it doesn't need log files,\
 > doesn't need a cron job, doesn't generate static HTML, and doesn't make you feel like it's 2003.\
 > It connects to IRC, watches what happens, and serves live stats — no logs, no hassle, no excuses.\
