@@ -10,6 +10,13 @@ live web dashboard — no log files, no cron jobs, no static HTML generation.
 
 ---
 
+> [!WARNING]
+> I'll be making some modifications to the `i18n` support, soon.\
+> If you want to submit translations, please wait a bit.\
+> I'll remove this warning as soon as I'm ready to accept translations.
+
+---
+
 > [!NOTE]
 > Statsbot is, pretty much, feature-complete — but the door is always open.\
 > After all these commits, Statsbot does everything PISG does, except it doesn't need log files,\
