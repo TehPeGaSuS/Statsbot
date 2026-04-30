@@ -243,6 +243,18 @@ def main():
                         chan = event["channel"]
                         if name in active:
                             await active[name][0].part_channel(chan)
+                    elif action == "join_channel":
+                        # Ad-hoc join (no DB change) — e.g. after a ban is lifted
+                        name = event["network"]
+                        chan = event["channel"]
+                        if name in active:
+                            await active[name][0].join_channel(chan)
+                    elif action == "part_channel":
+                        # Ad-hoc part (no DB change)
+                        name = event["network"]
+                        chan = event["channel"]
+                        if name in active:
+                            await active[name][0].part_channel(chan)
                 except Exception as e:
                     log.error(f"Reload consumer error: {e}", exc_info=True)
 

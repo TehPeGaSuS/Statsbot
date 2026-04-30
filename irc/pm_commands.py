@@ -65,6 +65,8 @@ class PMCommandHandler:
             "help":     lambda: self._cmd_help(nick),
             "addchan":  lambda: self._cmd_addchan(nick, args),
             "delchan":  lambda: self._cmd_delchan(nick, args),
+            "join":     lambda: self._cmd_join(nick, args),
+            "part":     lambda: self._cmd_part(nick, args),
             "addnet":   lambda: self._cmd_addnet(nick, args),
             "delnet":   lambda: self._cmd_delnet(nick, args),
             "reload":   lambda: self._cmd_reload(nick),
@@ -420,6 +422,43 @@ class PMCommandHandler:
         self._post_event({"action": "remove_channel", "network": network, "channel": chan})
         self.send(nick, f"Parted {chan} on {network} and deleted all its stats.")
 
+    def _cmd_join(self, nick: str, args: str):
+        """join [-network <net>] #channel
+        Re-join a configured channel (e.g. after a ban is lifted).
+        Does not modify the database — for permanent tracking use addchan."""
+        if not self._require_auth(nick): return
+        parsed = self._parse_flags(args)
+        network = parsed["flags"].get("network", self.network)
+        chan = (parsed["positional"][0]
+                if parsed["positional"]
+                else parsed["flags"].get("channel", ""))
+        if not chan or not chan[:1] in "#&!+":
+            self.send(nick, "Usage: join [-network <net>] #channel")
+            return
+        ok = self._post_event({"action": "join_channel", "network": network, "channel": chan})
+        if ok:
+            self.send(nick, f"Joining {chan} on {network}.")
+        else:
+            self.send(nick, f"Could not queue join for {network} (not connected?).")
+
+    def _cmd_part(self, nick: str, args: str):
+        """part [-network <net>] #channel
+        Leave a channel without removing it from the database."""
+        if not self._require_auth(nick): return
+        parsed = self._parse_flags(args)
+        network = parsed["flags"].get("network", self.network)
+        chan = (parsed["positional"][0]
+                if parsed["positional"]
+                else parsed["flags"].get("channel", ""))
+        if not chan or not chan[:1] in "#&!+":
+            self.send(nick, "Usage: part [-network <net>] #channel")
+            return
+        ok = self._post_event({"action": "part_channel", "network": network, "channel": chan})
+        if ok:
+            self.send(nick, f"Parting {chan} on {network}.")
+        else:
+            self.send(nick, f"Could not queue part for {network} (not connected?).")
+
     def _cmd_addnet(self, nick: str, args: str):
         """addnet -name <n> -host <host> -port <port> [-ssl|-plaintext]
         -ssl is the default. Use -plaintext to disable TLS."""
@@ -545,6 +584,8 @@ class PMCommandHandler:
             "  chans                                      — list channels on this network",
             "  addchan [-network <net>] #channel          — join and track a channel",
             "  delchan [-network <net>] #channel          — part and delete channel stats",
+            "  join    [-network <net>] #channel          — (re)join a channel without DB changes",
+            "  part    [-network <net>] #channel          — leave a channel without DB changes",
             "  addnet -name <n> -host <host> -port <port> [-ssl|-plaintext]  (TLS by default)",
             "  delnet -name <n>                           — remove network and all stats",
         ]
