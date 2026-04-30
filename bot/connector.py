@@ -191,6 +191,8 @@ class IRCConnector:
 
         elif command == "001":   # RPL_WELCOME
             log.info("Registered on server.")
+            log.info(f"[001] net config keys: {list(self.net.keys())}")
+            log.info(f"[001] on_connect value: {self.net.get('on_connect')!r}")
             self._current_nick = self.nick
             # NickServ auth (if not using SASL)
             if not self._sasl_authed:
@@ -438,12 +440,14 @@ class IRCConnector:
     def _run_on_connect(self):
         """Send configured on_connect commands."""
         cmds = self.net.get("on_connect") or []
+        log.info(f"[on_connect] network={self.network} cmds={cmds!r}")
         if not cmds:
+            log.info(f"[on_connect] no commands configured for {self.network} — skipping")
             return
         for cmd in cmds:
             raw = cmd.replace("{nick}", self._current_nick)
+            log.info(f"[on_connect] sending: {raw!r}")
             self.send_raw(raw)
-            log.info(f"on_connect: {raw}")
 
     async def join_channel(self, channel: str):
         """JOIN a channel live and add it to the tracked list."""

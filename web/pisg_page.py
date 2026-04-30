@@ -295,7 +295,7 @@ h2.section-title {{ font-size: .8rem; color: var(--blue); text-transform: upperc
 /* Main nick table */
 /* Responsive table wrapper — horizontal scroll on mobile, invisible on desktop */
 .tscroll {{ overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1rem; }}
-.tscroll > table {{ margin-bottom: 0; min-width: 480px; }}
+.tscroll > table {{ margin-bottom: 0; min-width: 640px; }}
 
 .nick-table {{ width: 100%; border-collapse: collapse; margin-bottom: 1rem; }}
 .nick-table th {{ background: var(--bg3); color: var(--blue); text-align: left;
@@ -315,12 +315,6 @@ h2.section-title {{ font-size: .8rem; color: var(--blue); text-transform: upperc
 /* Also active */
 .also-active {{ margin: .5rem 0 1.5rem; }}
 .also-active-title {{ color: var(--blue); font-style: italic; font-size: .85rem; margin-bottom: .4rem; }}
-.also-active-table {{ width: 100%; border-collapse: separate; border-spacing: 3px; }}
-.also-active-table td {{ background: var(--bg2); border: 1px solid var(--border); border-radius: 5px;
-    padding: .3rem .6rem; font-size: .82rem; width: calc(20% - 6px); }}
-.also-active-table td.empty {{ background: transparent; border-color: transparent; }}
-.also-active-table .anick {{ color: var(--fg); }}
-.also-active-table .acnt {{ color: var(--muted); font-size: .75rem; margin-left: .3rem; }}
 
 /* Big numbers / hicell */
 table.bignums {{ width: 100%; border-collapse: collapse; margin-bottom: .5rem; }}
@@ -556,20 +550,21 @@ b {{ color: var(--cyan); }}
 
     # "These didn't make the top"
     if rest_rows:
-        COLS = 5
+        rest_max = rest_rows[0]["value"] if rest_rows else 1
         h(f'<div class="also-active">')
         h(f'<div class="also-active-title"><i>{t("also_active", lang)}</i></div>')
-        h('<table class="also-active-table"><tbody>')
-        rows_chunks = [rest_rows[i:i+COLS] for i in range(0, len(rest_rows), COLS)]
-        for chunk in rows_chunks:
-            h('<tr>')
-            for row in chunk:
-                h(f'<td><span class="anick">{row["nick"]}</span><span class="acnt">({row["value"]:,})</span></td>')
-            # pad to full width
-            for _ in range(COLS - len(chunk)):
-                h('<td class="empty"></td>')
+        h('<div class="tscroll"><table class="nick-table"><thead><tr>')
+        h(f'<th class="rank">#</th><th>Nick</th><th>{t("col_number_of_lines" if sort_by == "lines" else "col_number_of_words", lang)}</th>')
+        h('</tr></thead><tbody>')
+        for i, row in enumerate(rest_rows):
+            pct = int(row["value"] / rest_max * 100) if rest_max else 0
+            h(f'<tr>')
+            h(f'<td class="rank">{top_n + i + 1}</td>')
+            h(f'<td><span class="nick-name">{row["nick"]}</span>')
+            h(f'<br><div class="bar-wrap"><div class="bar-fill" style="width:{pct}%"></div></div></td>')
+            h(f'<td class="val">{row["value"]:,}</td>')
             h('</tr>')
-        h('</tbody></table></div>')
+        h('</tbody></table></div></div>')
     # "By the way, there were X other nicks"
     total_other = total_users - len(top_rows) - len(rest_rows)
     if total_other > 0:
