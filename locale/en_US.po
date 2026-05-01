@@ -40,9 +40,6 @@ msgstr ""
 msgid "all-time"
 msgstr ""
 
-msgid "today"
-msgstr ""
-
 msgid "this week"
 msgstr ""
 

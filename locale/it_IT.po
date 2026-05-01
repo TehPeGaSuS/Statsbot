@@ -39,9 +39,6 @@ msgstr "Statistiche generali di {channel} — {total} nick diversi rappresentati
 msgid "all-time"
 msgstr "tutto"
 
-msgid "today"
-msgstr "oggi"
-
 msgid "this week"
 msgstr "questa settimana"
 

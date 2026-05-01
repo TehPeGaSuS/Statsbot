@@ -39,9 +39,6 @@ msgstr "Statistiques générales de {channel} — {total} pseudos différents re
 msgid "all-time"
 msgstr "tout"
 
-msgid "today"
-msgstr "aujourd'hui"
-
 msgid "this week"
 msgstr "cette semaine"
 
