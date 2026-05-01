@@ -424,3 +424,69 @@ msgstr ""
 msgid "{nick}'s random quote: \\\"{quote}\\\""
 msgstr ""
 
+
+msgid "{nick} is a sad person, kicked {count} time."
+msgstr ""
+
+msgid "{nick} is a sad person, kicked {count} times."
+msgstr ""
+
+msgid "{nick} is a fierce one, kicking {count} time."
+msgstr ""
+
+msgid "{nick} is a fierce one, kicking {count} times."
+msgstr ""
+
+msgid "{nick} is the channel's love machine, opping {count} other person."
+msgstr ""
+
+msgid "{nick} is the channel's love machine, opping {count} other people."
+msgstr ""
+
+msgid "{nick} is the channel destroyer, deopping {count} other person."
+msgstr ""
+
+msgid "{nick} is the channel destroyer, deopping {count} other people."
+msgstr ""
+
+msgid "{nick} likes to share half-ops, giving them out {count} time."
+msgstr ""
+
+msgid "{nick} likes to share half-ops, giving them out {count} times."
+msgstr ""
+
+msgid "{nick} took half-ops away {count} time."
+msgstr ""
+
+msgid "{nick} took half-ops away {count} times."
+msgstr ""
+
+msgid "{nick} gave voice {count} time."
+msgstr ""
+
+msgid "{nick} gave voice {count} times."
+msgstr ""
+
+msgid "{nick} silenced people {count} time."
+msgstr ""
+
+msgid "{nick} silenced people {count} times."
+msgstr ""
+
+msgid "{nick} always lets us know what they're doing: {count} action."
+msgstr ""
+
+msgid "{nick} always lets us know what they're doing: {count} actions."
+msgstr ""
+
+msgid "{nick} likes to talk to themselves: {count} monologue."
+msgstr ""
+
+msgid "{nick} likes to talk to themselves: {count} monologues."
+msgstr ""
+
+msgid "{nick} couldn't decide whether to stay or go: {count} join."
+msgstr ""
+
+msgid "{nick} couldn't decide whether to stay or go: {count} joins."
+msgstr ""
