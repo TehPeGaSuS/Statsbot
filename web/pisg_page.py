@@ -552,7 +552,8 @@ b {{ color: var(--cyan); }}
     if rest_rows:
         rest_max = rest_rows[0]["value"] if rest_rows else 1
         h(f'<div class="also-active">')
-        h(f'<div class="also-active-title"><i>{t("These didn't make it to the top:", lang)}</i></div>')
+        _also_active_label = t("These didn't make it to the top:", lang)
+        h(f'<div class="also-active-title"><i>{_also_active_label}</i></div>')
         h('<div class="tscroll"><table class="nick-table"><thead><tr>')
         h('<th class="rank">#</th><th>Nick</th>')
         if show_lines:    h(f'<th>{t("Number of lines", lang)}</th>')
