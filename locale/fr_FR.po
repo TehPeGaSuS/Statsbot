@@ -1,9 +1,6 @@
 # Statsbot — Français (France)
 msgid ""
-msgstr ""
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Language: fr_FR\n"
+msgstr "Content-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: fr_FR\nPlural-Forms: nplurals=2; plural=(n > 1);\n"
 
 # ── Date/time names ──────────────────────────────────────────────────────
 msgid "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
@@ -190,7 +187,9 @@ msgid "{nick} just forgot to deactivate their Caps-Lock. They wrote UPPERCASE {p
 msgstr "{nick} a oublié de désactiver le Verr. Maj. Et a écrit en MAJUSCULES {pct}% du temps."
 
 msgid "{nick} is a very aggressive person. They attacked others {count} time."
-msgstr "{nick} est une personne très agressive. A attaqué les autres {count} fois."
+msgid_plural "{nick} is a very aggressive person. They attacked others {count} times."
+msgstr[0] "{nick} est une personne très agressive. A attaqué les autres {count} fois."
+msgstr[1] ""
 
 msgid "{nick} is a very aggressive person. They attacked others {count} times."
 msgstr "{nick} est une personne très agressive. A attaqué les autres {count} fois."
@@ -256,28 +255,25 @@ msgid "Channel average was {avg} words per line."
 msgstr "La moyenne du canal était de {avg} mots par ligne."
 
 msgid "{nick} wasn't very popular, getting kicked {count} time!"
-msgstr "{nick} n'était pas très populaire, recevant {count} kick !"
-
-msgid "{nick} wasn't very popular, getting kicked {count} times!"
-msgstr "{nick} n'était pas très populaire, recevant {count} kicks !"
+msgid_plural "{nick} wasn't very popular, getting kicked {count} times!"
+msgstr[0] "{nick} n'était pas très populaire, recevant {count} kick !"
+msgstr[1] "{nick} n'était pas très populaire, recevant {count} kicks !"
 
 msgid "{nick} seemed to be hated too: {count} kicks were received."
 msgstr "{nick} semblait aussi être détesté : {count} kicks reçus."
 
 msgid "{nick} is either insane or just a fair op, kicking a total of {count} person!"
-msgstr "{nick} est soit fou, soit un op équitable, virant {count} personne !"
-
-msgid "{nick} is either insane or just a fair op, kicking a total of {count} people!"
-msgstr "{nick} est soit fou, soit un op équitable, virant {count} personnes !"
+msgid_plural "{nick} is either insane or just a fair op, kicking a total of {count} people!"
+msgstr[0] "{nick} est soit fou, soit un op équitable, virant {count} personne !"
+msgstr[1] "{nick} est soit fou, soit un op équitable, virant {count} personnes !"
 
 msgid "{nick}'s faithful follower, {nick2}, kicked about {count} people."
 msgstr "Le fidèle suiveur de {nick}, {nick2}, a viré environ {count} personnes."
 
 msgid "{nick} donated {count} op in the channel..."
-msgstr "{nick} a donné {count} op dans le canal..."
-
-msgid "{nick} donated {count} ops in the channel..."
-msgstr "{nick} a donné {count} ops dans le canal..."
+msgid_plural "{nick} donated {count} ops in the channel..."
+msgstr[0] "{nick} a donné {count} op dans le canal..."
+msgstr[1] "{nick} a donné {count} ops dans le canal..."
 
 msgid "{nick} was also generous with ops, giving {count} times."
 msgstr "{nick} a aussi été généreux avec les ops, en donnant {count} fois."
@@ -286,10 +282,9 @@ msgid "Strange, no op was given on {channel}!"
 msgstr "Étrange, aucun op n'a été donné sur {channel} !"
 
 msgid "{nick} is the channel's deop machine, removing ops from {count} person."
-msgstr "{nick} est la machine à deop du canal, retirant les ops à {count} personne."
-
-msgid "{nick} is the channel's deop machine, removing ops from {count} people."
-msgstr "{nick} est la machine à deop du canal, retirant les ops à {count} personnes."
+msgid_plural "{nick} is the channel's deop machine, removing ops from {count} people."
+msgstr[0] "{nick} est la machine à deop du canal, retirant les ops à {count} personne."
+msgstr[1] "{nick} est la machine à deop du canal, retirant les ops à {count} personnes."
 
 msgid "{nick} also took ops away {count} times."
 msgstr "{nick} a aussi retiré des ops {count} fois."
@@ -298,10 +293,9 @@ msgid "Wow, no op was taken on {channel}!"
 msgstr "Waouh, aucun op n'a été retiré sur {channel} !"
 
 msgid "{nick} donated {count} halfop in the channel..."
-msgstr "{nick} a donné {count} halfop dans le canal..."
-
-msgid "{nick} donated {count} halfops in the channel..."
-msgstr "{nick} a donné {count} halfops dans le canal..."
+msgid_plural "{nick} donated {count} halfops in the channel..."
+msgstr[0] "{nick} a donné {count} halfop dans le canal..."
+msgstr[1] "{nick} a donné {count} halfops dans le canal..."
 
 msgid "{nick} also gave halfops {count} times."
 msgstr "{nick} a aussi donné des halfops {count} fois."
@@ -310,19 +304,17 @@ msgid "Strange, no halfop was given on {channel}!"
 msgstr "Étrange, aucun halfop n'a été donné sur {channel} !"
 
 msgid "{nick} took halfops away {count} time."
-msgstr "{nick} a retiré des halfops {count} fois."
-
-msgid "{nick} took halfops away {count} times."
-msgstr "{nick} a retiré des halfops {count} fois."
+msgid_plural "{nick} took halfops away {count} times."
+msgstr[0] "{nick} a retiré des halfops {count} fois."
+msgstr[1] "{nick} a retiré des halfops {count} fois."
 
 msgid "Wow, no halfop was taken on {channel}!"
 msgstr "Waouh, aucun halfop n'a été retiré sur {channel} !"
 
 msgid "{nick} is very generous with voice, handing it out {count} time."
-msgstr "{nick} est très généreux avec le voice, en le donnant {count} fois."
-
-msgid "{nick} is very generous with voice, handing it out {count} times."
-msgstr "{nick} est très généreux avec le voice, en le donnant {count} fois."
+msgid_plural "{nick} is very generous with voice, handing it out {count} times."
+msgstr[0] "{nick} est très généreux avec le voice, en le donnant {count} fois."
+msgstr[1] "{nick} est très généreux avec le voice, en le donnant {count} fois."
 
 msgid "{nick} was also quite vocal about giving voice, {count} times."
 msgstr "{nick} a aussi été assez vocal pour donner le voice, {count} fois."
@@ -331,10 +323,9 @@ msgid "Strange, no voices were given on {channel}!"
 msgstr "Étrange, aucun voice n'a été donné sur {channel} !"
 
 msgid "{nick} took voice away {count} time — someone had to."
-msgstr "{nick} a retiré le voice {count} fois — quelqu'un devait le faire."
-
-msgid "{nick} took voice away {count} times — someone had to."
-msgstr "{nick} a retiré le voice {count} fois — quelqu'un devait le faire."
+msgid_plural "{nick} took voice away {count} times — someone had to."
+msgstr[0] "{nick} a retiré le voice {count} fois — quelqu'un devait le faire."
+msgstr[1] "{nick} a retiré le voice {count} fois — quelqu'un devait le faire."
 
 msgid "{nick} also silenced people {count} times."
 msgstr "{nick} a aussi réduit des gens au silence {count} fois."
@@ -343,10 +334,9 @@ msgid "No voices were taken on {channel}!"
 msgstr "Aucun voice n'a été retiré sur {channel} !"
 
 msgid "{nick} always lets us know what they're doing: {count} action!"
-msgstr "{nick} nous dit toujours ce qu'il·elle fait : {count} action !"
-
-msgid "{nick} always lets us know what they're doing: {count} actions!"
-msgstr "{nick} nous dit toujours ce qu'il·elle fait : {count} actions !"
+msgid_plural "{nick} always lets us know what they're doing: {count} actions!"
+msgstr[0] "{nick} nous dit toujours ce qu'il·elle fait : {count} action !"
+msgstr[1] "{nick} nous dit toujours ce qu'il·elle fait : {count} actions !"
 
 msgid "Also, {nick} tells us what's up with {count} actions."
 msgstr "En outre, {nick} nous dit ce qui se passe avec {count} actions."
@@ -423,69 +413,67 @@ msgstr "Pas encore de citations."
 msgid "{nick}'s random quote: \\\"{quote}\\\""
 msgstr "Citation aléatoire de {nick} : \\\"{quote}\\\""
 
-
 msgid "{nick} is a sad person, kicked {count} time."
-msgstr ""
-
-msgid "{nick} is a sad person, kicked {count} times."
-msgstr ""
+msgid_plural "{nick} is a sad person, kicked {count} times."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} is a fierce one, kicking {count} time."
-msgstr ""
-
-msgid "{nick} is a fierce one, kicking {count} times."
-msgstr ""
+msgid_plural "{nick} is a fierce one, kicking {count} times."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} is the channel's love machine, opping {count} other person."
-msgstr ""
-
-msgid "{nick} is the channel's love machine, opping {count} other people."
-msgstr ""
+msgid_plural "{nick} is the channel's love machine, opping {count} other people."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} is the channel destroyer, deopping {count} other person."
-msgstr ""
-
-msgid "{nick} is the channel destroyer, deopping {count} other people."
-msgstr ""
+msgid_plural "{nick} is the channel destroyer, deopping {count} other people."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} likes to share half-ops, giving them out {count} time."
-msgstr ""
-
-msgid "{nick} likes to share half-ops, giving them out {count} times."
-msgstr ""
+msgid_plural "{nick} likes to share half-ops, giving them out {count} times."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} took half-ops away {count} time."
-msgstr ""
-
-msgid "{nick} took half-ops away {count} times."
-msgstr ""
+msgid_plural "{nick} took half-ops away {count} times."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} gave voice {count} time."
-msgstr ""
-
-msgid "{nick} gave voice {count} times."
-msgstr ""
+msgid_plural "{nick} gave voice {count} times."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} silenced people {count} time."
-msgstr ""
-
-msgid "{nick} silenced people {count} times."
-msgstr ""
+msgid_plural "{nick} silenced people {count} times."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} always lets us know what they're doing: {count} action."
-msgstr ""
-
-msgid "{nick} always lets us know what they're doing: {count} actions."
-msgstr ""
+msgid_plural "{nick} always lets us know what they're doing: {count} actions."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} likes to talk to themselves: {count} monologue."
-msgstr ""
-
-msgid "{nick} likes to talk to themselves: {count} monologues."
-msgstr ""
+msgid_plural "{nick} likes to talk to themselves: {count} monologues."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{nick} couldn't decide whether to stay or go: {count} join."
-msgstr ""
+msgid_plural "{nick} couldn't decide whether to stay or go: {count} joins."
+msgstr[0] ""
+msgstr[1] ""
 
-msgid "{nick} couldn't decide whether to stay or go: {count} joins."
-msgstr ""
+msgid "{nick} seems to be unliked. They got beaten {count} time."
+msgid_plural "{nick} seems to be unliked. They got beaten {count} times."
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{count} topic set"
+msgid_plural "{count} topics set"
+msgstr[0] ""
+msgstr[1] ""

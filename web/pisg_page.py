@@ -9,7 +9,7 @@ import logging
 import time
 from datetime import datetime
 from typing import List, Dict, Optional
-from i18n import t, get_lang, format_date_long
+from i18n import t, get_lang, format_date_long, tn
 
 
 def _ts_date(ts: int) -> str:
@@ -687,7 +687,7 @@ b {{ color: var(--cyan); }}
         vt = [r for r in vt if r["value"] > 0]
         if vt:
             _vc = vt[0]["value"]
-            text = t("bignums_violent" if _vc == 1 else "bignums_violent_plural", lang, nick=f"<b>{vt[0]['nick']}</b>", count=f"<b>{_vc}</b>")
+            text = tn("{nick} is a very aggressive person. They attacked others {count} time.", "{nick} is a very aggressive person. They attacked others {count} times.", _vc, lang, nick=f"<b>{vt[0]['nick']}</b>", count=f"<b>{_vc}</b>")
             sub  = t("{nick} can't control their aggressions, either. They picked on others {count} times.", lang, nick=f"<b>{vt[1]['nick']}</b>", count=f"<b>{vt[1]['value']}</b>") if len(vt) > 1 else None
             with get_conn() as _vconn:
                 _vrow = _vconn.execute(
@@ -702,7 +702,7 @@ b {{ color: var(--cyan); }}
             at = [r for r in at if r["value"] > 0]
             if at:
                 _ac = at[0]["value"]
-                atext = t("bignums_attacked" if _ac == 1 else "bignums_attacked_plural", lang, nick=f"<b>{at[0]['nick']}</b>", count=f"<b>{_ac}</b>")
+                atext = tn("{nick} seems to be unliked. They got beaten {count} time.", "{nick} seems to be unliked. They got beaten {count} times.", _ac, lang, nick=f"<b>{at[0]['nick']}</b>", count=f"<b>{_ac}</b>")
                 asub  = t("{nick} seems to be unliked too. They got beaten {count} times.", lang, nick=f"<b>{at[1]['nick']}</b>", count=f"<b>{at[1]['value']}</b>") if len(at) > 1 else None
                 with get_conn() as _aconn:
                     _arow = _aconn.execute(
@@ -928,7 +928,7 @@ b {{ color: var(--cyan); }}
               f'</tr>')
         _tc = len(recent_topics)
         h(f'<tr><td colspan="2" style="text-align:center;font-size:.78rem;color:var(--muted)">'
-          f'{t("topics_set_count" if _tc == 1 else "topics_set_count_plural", lang, count=_tc)}</td></tr>')
+          f'{tn("{count} topic set", "{count} topics set", _tc, lang, count=_tc)}</td></tr>')
         h('</table></div>')
 
     # ── Other numbers ─────────────────────────────────────────────────────────
@@ -941,7 +941,7 @@ b {{ color: var(--cyan); }}
         kt = [r for r in kt if r["value"] > 0]
         if kt:
             _kv = kt[0]["value"]
-            text = t("{nick} is a sad person, kicked {count} time." if _kv == 1 else "{nick} is a sad person, kicked {count} times.", lang, nick=f"<b>{kt[0]['nick']}</b>", count=_kv)
+            text = tn("{nick} is a sad person, kicked {count} time.", "{nick} is a sad person, kicked {count} times.", _kv, lang, nick=f"<b>{kt[0]['nick']}</b>", count=_kv)
             sub  = t("{nick} seemed to be hated too: {count} kicks were received.", lang, nick=f"<b>{kt[1]['nick']}</b>", count=kt[1]['value']) if len(kt) > 1 else None
             # Find the most recent kick for this nick for the example line
             _kick_ex = next((k for k in recent_kicks if k["victim"].lower() == kt[0]["nick"].lower()), None)
@@ -961,7 +961,7 @@ b {{ color: var(--cyan); }}
         kg = [r for r in kg if r["value"] > 0]
         if kg:
             _kg0v = kg[0]["value"]
-            text = t("{nick} is a fierce one, kicking {count} time." if _kg0v == 1 else "{nick} is a fierce one, kicking {count} times.", lang, nick=f"<b>{kg[0]['nick']}</b>", count=_kg0v)
+            text = tn("{nick} is a fierce one, kicking {count} time.", "{nick} is a fierce one, kicking {count} times.", _kg0v, lang, nick=f"<b>{kg[0]['nick']}</b>", count=_kg0v)
             sub  = t("{nick}'s faithful follower, {nick2}, kicked about {count} people.", lang, nick=kg[0]['nick'], nick2=f"<b>{kg[1]['nick']}</b>", count=kg[1]['value']) if len(kg) > 1 else None
             _bignum_row(text, sub)
 
@@ -979,14 +979,14 @@ b {{ color: var(--cyan); }}
         ot = [r for r in _get_opvoice_top("op_taken", 3) if r["value"] > 0]
         if og:
             _ogv = og[0]["value"]
-            text = t("{nick} is the channel's love machine, opping {count} other person." if _ogv == 1 else "{nick} is the channel's love machine, opping {count} other people.", lang, nick=f"<b>{og[0]['nick']}</b>", count=_ogv)
+            text = tn("{nick} is the channel's love machine, opping {count} other person.", "{nick} is the channel's love machine, opping {count} other people.", _ogv, lang, nick=f"<b>{og[0]['nick']}</b>", count=_ogv)
             sub  = t("{nick} was also generous with ops, giving {count} times.", lang, nick=f"<b>{og[1]['nick']}</b>", count=og[1]['value']) if len(og) > 1 else None
             hicell(text, sub)
         else:
             hicell(t("Strange, no op was given on {channel}!", lang, channel=channel))
         if ot:
             _otv = ot[0]["value"]
-            text = t("{nick} is the channel destroyer, deopping {count} other person." if _otv == 1 else "{nick} is the channel destroyer, deopping {count} other people.", lang, nick=f"<b>{ot[0]['nick']}</b>", count=f"<b>{_otv}</b>")
+            text = tn("{nick} is the channel destroyer, deopping {count} other person.", "{nick} is the channel destroyer, deopping {count} other people.", _otv, lang, nick=f"<b>{ot[0]['nick']}</b>", count=f"<b>{_otv}</b>")
             sub  = t("{nick} also took ops away {count} times.", lang, nick=f"<b>{ot[1]['nick']}</b>", count=ot[1]['value']) if len(ot) > 1 else None
             hicell(text, sub)
         elif og:
@@ -997,14 +997,14 @@ b {{ color: var(--cyan); }}
         hot = [r for r in _get_opvoice_top("halfop_taken", 3) if r["value"] > 0]
         if hog:
             _hv = hog[0]["value"]
-            text = t("{nick} likes to share half-ops, giving them out {count} time." if _hv == 1 else "{nick} likes to share half-ops, giving them out {count} times.", lang, nick=f"<b>{hog[0]['nick']}</b>", count=_hv)
+            text = tn("{nick} likes to share half-ops, giving them out {count} time.", "{nick} likes to share half-ops, giving them out {count} times.", _hv, lang, nick=f"<b>{hog[0]['nick']}</b>", count=_hv)
             sub  = t("{nick} also gave halfops {count} times.", lang, nick=f"<b>{hog[1]['nick']}</b>", count=hog[1]['value']) if len(hog) > 1 else None
             hicell(text, sub)
         else:
             hicell(t("Strange, no halfop was given on {channel}!", lang, channel=channel))
         if hot:
             _htv = hot[0]["value"]
-            text = t("{nick} took half-ops away {count} time." if _htv == 1 else "{nick} took half-ops away {count} times.", lang, nick=f"<b>{hot[0]['nick']}</b>", count=_htv)
+            text = tn("{nick} took half-ops away {count} time.", "{nick} took half-ops away {count} times.", _htv, lang, nick=f"<b>{hot[0]['nick']}</b>", count=_htv)
             hicell(text)
         elif hog:
             hicell(t("Wow, no halfop was taken on {channel}!", lang, channel=channel))
@@ -1014,14 +1014,14 @@ b {{ color: var(--cyan); }}
         vt = [r for r in _get_opvoice_top("voice_taken", 3) if r["value"] > 0]
         if vg:
             _vgv = vg[0]["value"]
-            text = t("{nick} gave voice {count} time." if _vgv == 1 else "{nick} gave voice {count} times.", lang, nick=f"<b>{vg[0]['nick']}</b>", count=f"<b>{_vgv}</b>")
+            text = tn("{nick} gave voice {count} time.", "{nick} gave voice {count} times.", _vgv, lang, nick=f"<b>{vg[0]['nick']}</b>", count=f"<b>{_vgv}</b>")
             sub  = t("{nick} was also quite vocal about giving voice, {count} times.", lang, nick=f"<b>{vg[1]['nick']}</b>", count=vg[1]['value']) if len(vg) > 1 else None
             hicell(text, sub)
         else:
             hicell(t("Strange, no voices were given on {channel}!", lang, channel=channel))
         if vt:
             _vtv = vt[0]["value"]
-            text = t("{nick} silenced people {count} time." if _vtv == 1 else "{nick} silenced people {count} times.", lang, nick=f"<b>{vt[0]['nick']}</b>", count=f"<b>{_vtv}</b>")
+            text = tn("{nick} silenced people {count} time.", "{nick} silenced people {count} times.", _vtv, lang, nick=f"<b>{vt[0]['nick']}</b>", count=f"<b>{_vtv}</b>")
             sub  = t("{nick} also silenced people {count} times.", lang, nick=f"<b>{vt[1]['nick']}</b>", count=vt[1]['value']) if len(vt) > 1 else None
             hicell(text, sub)
         elif vg:
@@ -1033,7 +1033,7 @@ b {{ color: var(--cyan); }}
         ac = [r for r in ac if r["value"] > 0]
         if ac:
             _acv = ac[0]["value"]
-            text = t("{nick} always lets us know what they're doing: {count} action." if _acv == 1 else "{nick} always lets us know what they're doing: {count} actions.", lang, nick=f"<b>{ac[0]['nick']}</b>", count=_acv)
+            text = tn("{nick} always lets us know what they're doing: {count} action.", "{nick} always lets us know what they're doing: {count} actions.", _acv, lang, nick=f"<b>{ac[0]['nick']}</b>", count=_acv)
             sub  = t("Also, {nick} tells us what's up with {count} actions.", lang, nick=f"<b>{ac[1]['nick']}</b>", count=ac[1]['value']) if len(ac) > 1 else None
             ax   = nick_stats.get(ac[0]["nick"], {}).get("action_ex", None)
             hicell(text, sub, example=ax)
@@ -1046,7 +1046,7 @@ b {{ color: var(--cyan); }}
         if mdata:
             ranked = sorted(mdata, key=mdata.get, reverse=True)
             _mc  = mdata[ranked[0]]
-            text = t("{nick} likes to talk to themselves: {count} monologue." if _mc == 1 else "{nick} likes to talk to themselves: {count} monologues.", lang, nick=f"<b>{ranked[0]}</b>", count=f"<b>{_mc}</b>")
+            text = tn("{nick} likes to talk to themselves: {count} monologue.", "{nick} likes to talk to themselves: {count} monologues.", _mc, lang, nick=f"<b>{ranked[0]}</b>", count=f"<b>{_mc}</b>")
             sub  = t("Another lonely one was {nick}, who managed to hit {count} times.", lang, nick=f"<b>{ranked[1]}</b>", count=mdata[ranked[1]]) if len(ranked) > 1 else None
             _bignum_row(text, sub)
 
@@ -1056,7 +1056,7 @@ b {{ color: var(--cyan); }}
         jn = [r for r in jn if r["value"] > 0]
         if jn:
             _jv = jn[0]["value"]
-            _bignum_row(t("{nick} couldn't decide whether to stay or go: {count} join." if _jv == 1 else "{nick} couldn't decide whether to stay or go: {count} joins.", lang, nick=f"<b>{jn[0]['nick']}</b>", count=_jv))
+            _bignum_row(tn("{nick} couldn't decide whether to stay or go: {count} join.", "{nick} couldn't decide whether to stay or go: {count} joins.", _jv, lang, nick=f"<b>{jn[0]['nick']}</b>", count=_jv))
 
     # Most foul
     if pisg.get("ShowBigNumbers", True) and qualified:
