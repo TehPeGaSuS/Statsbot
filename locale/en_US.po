@@ -421,13 +421,13 @@ msgid_plural "{nick} is a fierce one, kicking {count} times."
 msgstr[0] ""
 msgstr[1] ""
 
-msgid "{nick} is the channel's love machine, opping {count} other person."
-msgid_plural "{nick} is the channel's love machine, opping {count} other people."
+msgid "{nick} donated {count} op in the channel."
+msgid_plural "{nick} donated {count} ops in the channel."
 msgstr[0] ""
 msgstr[1] ""
 
-msgid "{nick} is the channel destroyer, deopping {count} other person."
-msgid_plural "{nick} is the channel destroyer, deopping {count} other people."
+msgid "{nick} is the channel sheriff with {count} deop."
+msgid_plural "{nick} is the channel sheriff with {count} deops."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -456,8 +456,8 @@ msgid_plural "{nick} always lets us know what they're doing: {count} actions."
 msgstr[0] ""
 msgstr[1] ""
 
-msgid "{nick} likes to talk to themselves: {count} monologue."
-msgid_plural "{nick} likes to talk to themselves: {count} monologues."
+msgid "{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} time!"
+msgid_plural "{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} times!"
 msgstr[0] ""
 msgstr[1] ""
 

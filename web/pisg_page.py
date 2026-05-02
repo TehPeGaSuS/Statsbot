@@ -979,14 +979,14 @@ b {{ color: var(--cyan); }}
         ot = [r for r in _get_opvoice_top("op_taken", 3) if r["value"] > 0]
         if og:
             _ogv = og[0]["value"]
-            text = tn("{nick} is the channel's love machine, opping {count} other person.", "{nick} is the channel's love machine, opping {count} other people.", _ogv, lang, nick=f"<b>{og[0]['nick']}</b>", count=_ogv)
+            text = tn("{nick} donated {count} op in the channel.", "{nick} donated {count} ops in the channel.", _ogv, lang, nick=f"<b>{og[0]['nick']}</b>", count=_ogv)
             sub  = t("{nick} was also generous with ops, giving {count} times.", lang, nick=f"<b>{og[1]['nick']}</b>", count=og[1]['value']) if len(og) > 1 else None
             hicell(text, sub)
         else:
             hicell(t("Strange, no op was given on {channel}!", lang, channel=channel))
         if ot:
             _otv = ot[0]["value"]
-            text = tn("{nick} is the channel destroyer, deopping {count} other person.", "{nick} is the channel destroyer, deopping {count} other people.", _otv, lang, nick=f"<b>{ot[0]['nick']}</b>", count=f"<b>{_otv}</b>")
+            text = tn("{nick} is the channel sheriff with {count} deop.", "{nick} is the channel sheriff with {count} deops.", _otv, lang, nick=f"<b>{ot[0]['nick']}</b>", count=f"<b>{_otv}</b>")
             sub  = t("{nick} also took ops away {count} times.", lang, nick=f"<b>{ot[1]['nick']}</b>", count=ot[1]['value']) if len(ot) > 1 else None
             hicell(text, sub)
         elif og:
@@ -1046,7 +1046,7 @@ b {{ color: var(--cyan); }}
         if mdata:
             ranked = sorted(mdata, key=mdata.get, reverse=True)
             _mc  = mdata[ranked[0]]
-            text = tn("{nick} likes to talk to themselves: {count} monologue.", "{nick} likes to talk to themselves: {count} monologues.", _mc, lang, nick=f"<b>{ranked[0]}</b>", count=f"<b>{_mc}</b>")
+            text = tn("{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} time!", "{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} times!", _mc, lang, nick=f"<b>{ranked[0]}</b>", count=f"<b>{_mc}</b>")
             sub  = t("Another lonely one was {nick}, who managed to hit {count} times.", lang, nick=f"<b>{ranked[1]}</b>", count=mdata[ranked[1]]) if len(ranked) > 1 else None
             _bignum_row(text, sub)
 
