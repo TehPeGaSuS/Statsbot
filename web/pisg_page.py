@@ -1190,8 +1190,9 @@ new Chart(document.getElementById('hourChart'), {{
 // ── Sortable columns ──────────────────────────────────────────────────────────
 document.querySelectorAll('.sortable-table').forEach(function(table) {
   var tbody = table.querySelector('tbody');
-  table.querySelectorAll('th[data-col]').forEach(function(th, thIdx) {
+  table.querySelectorAll('th[data-col]').forEach(function(th) {
     th.addEventListener('click', function() {
+      var colIdx = th.cellIndex;
       var asc = !th.classList.contains('sort-asc');
       // clear all headers
       table.querySelectorAll('th').forEach(function(h) {
@@ -1201,8 +1202,8 @@ document.querySelectorAll('.sortable-table').forEach(function(table) {
       var rows = Array.from(tbody.querySelectorAll('tr'));
       var isNum = th.dataset.col === 'num';
       rows.sort(function(a, b) {
-        var ai = Array.from(a.querySelectorAll('td'))[thIdx];
-        var bi = Array.from(b.querySelectorAll('td'))[thIdx];
+        var ai = Array.from(a.querySelectorAll('td'))[colIdx];
+        var bi = Array.from(b.querySelectorAll('td'))[colIdx];
         var av = ai ? (ai.dataset.val || ai.textContent.trim()) : '';
         var bv = bi ? (bi.dataset.val || bi.textContent.trim()) : '';
         if (isNum) { av = parseFloat(av)||0; bv = parseFloat(bv)||0; }
