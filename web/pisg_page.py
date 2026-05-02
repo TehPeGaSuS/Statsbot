@@ -15,7 +15,7 @@ from i18n import t, get_lang, format_date_long, tn
 def _ts_date(ts: int) -> str:
     if not ts:
         return ""
-    return datetime.fromtimestamp(ts).strftime("%d/%m/%Y")
+    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%d/%m/%Y")
 
 
 def _ago(ts: int, lang: str = "en_US") -> str:
@@ -195,7 +195,7 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
     tracking_start = _fs["fs"] if _fs and _fs["fs"] else None
     if tracking_start:
         from datetime import timedelta
-        start_dt  = datetime.fromtimestamp(tracking_start)
+        start_dt  = datetime.fromtimestamp(tracking_start, tz=timezone.utc)
         days_tracked = max(1, (datetime.now(timezone.utc) - start_dt).days)
         t_period = t("During this {n}-day reporting period, a total of {total} different nicks were represented on {channel}.", lang,
                      n=days_tracked, total=total_users, channel=channel)
@@ -921,7 +921,7 @@ b {{ color: var(--cyan); }}
         section(t("Latest Topics", lang))
         h('<div class="tscroll"><table class="info-table">')
         for _tp in recent_topics:
-            _tdt = datetime.fromtimestamp(_tp["ts"]) if _tp["ts"] else None
+            _tdt = datetime.fromtimestamp(_tp["ts"], tz=timezone.utc) if _tp["ts"] else None
             _days = (datetime.now(timezone.utc) - _tdt).days if _tdt else 0
             if _tdt and _days > 1:
                 _twhen = t("{n} days ago at {time}", lang, n=_days,
