@@ -95,10 +95,14 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
             JOIN nicks n ON n.id=ha.nick_id
             WHERE n.network=? AND n.channel=?
         """, (network, channel)).fetchall()
+    nick_hours_raw = {}   # nick -> [h0, h1, ..., h23] UTC lines
     for _hr in _hr_rows:
         _hn = _hr["nick"]; _hh = _hr["hour"]; _hl = _hr["lines"]
         if _hn not in nick_band_lines:
             nick_band_lines[_hn] = [0, 0, 0, 0]
+        if _hn not in nick_hours_raw:
+            nick_hours_raw[_hn] = [0] * 24
+        nick_hours_raw[_hn][_hh] += _hl
         for _bi, (_lo, _hi) in enumerate(_bands_def):
             if _lo <= _hh <= _hi:
                 nick_band_lines[_hn][_bi] += _hl
@@ -541,17 +545,8 @@ b {{ color: var(--cyan); }}
         if show_wpl:   h(f'<td data-val="{wpl}">{wpl}</td>')
         if show_cpl:   h(f'<td data-val="{cpl}">{cpl}</td>')
         if show_time:
-            _nb = nick_band_lines.get(nick, [0, 0, 0, 0])
-            _nb_total = sum(_nb) or 1
-            _band_cols = ["blue-h", "green-h", "yellow-h", "red-h"]
-            _bars = ""
-            for _bi, _bv in enumerate(_nb):
-                _bw = max(1, int(_bv / _nb_total * 40)) if _bv else 0
-                if _bw:
-                    _bars += (f'<span class="bh-bar {_band_cols[_bi]}" ')
-                    _bars += (f'style="width:{_bw}px;display:inline-block;')
-                    _bars += (f'height:15px;vertical-align:middle"></span>')
-            h(f'<td style="white-space:nowrap">{_bars}</td>')
+            _nh = json.dumps(nick_hours_raw.get(nick, [0]*24))
+            h(f'<td class="tz-bands" data-hours="{_nh}" style="white-space:nowrap"></td>')
         if show_lastseen: h(f'<td class="small" data-val="{_last_ts}">{last}</td>')
         if show_quote: h(f'<td class="quote-cell" title="{q}"><div>{q}</div></td>')
         h('</tr>')
@@ -615,17 +610,8 @@ b {{ color: var(--cyan); }}
             if show_wpl:   h(f'<td data-val="{wpl}">{wpl}</td>')
             if show_cpl:   h(f'<td data-val="{cpl}">{cpl}</td>')
             if show_time:
-                _nb = nick_band_lines.get(nick, [0, 0, 0, 0])
-                _nb_total = sum(_nb) or 1
-                _band_cols = ["blue-h", "green-h", "yellow-h", "red-h"]
-                _bars = ""
-                for _bi, _bv in enumerate(_nb):
-                    _bw = max(1, int(_bv / _nb_total * 40)) if _bv else 0
-                    if _bw:
-                        _bars += (f'<span class="bh-bar {_band_cols[_bi]}" ')
-                        _bars += (f'style="width:{_bw}px;display:inline-block;')
-                        _bars += (f'height:15px;vertical-align:middle"></span>')
-                h(f'<td style="white-space:nowrap">{_bars}</td>')
+                _nh = json.dumps(nick_hours_raw.get(nick, [0]*24))
+                h(f'<td class="tz-bands" data-hours="{_nh}" style="white-space:nowrap"></td>')
             if show_lastseen: h(f'<td class="small" data-val="{_last_ts}">{last}</td>')
             if show_quote:    h(f'<td class="quote-cell" title="{q}"><div>{q}</div></td>')
             h('</tr>')
@@ -1108,7 +1094,15 @@ b {{ color: var(--cyan); }}
     # ── JavaScript ───────────────────────────────────────────────────────────
     h(f"""<script>
 // Hourly activity chart
-const hdata = {json.dumps(hourly_data)};
+const hdataUtc = {json.dumps(hourly_data)};
+// Shift UTC hourly data to browser local time
+const tzOffH = -(new Date().getTimezoneOffset() / 60);
+const hdata = {{}};
+for (var _h = 0; _h < 24; _h++) {{
+  var _lh = ((_h + tzOffH) % 24 + 24) % 24;
+  hdata[_lh] = (hdata[_lh] || 0) + (hdataUtc[_h] || 0);
+}}
+// Labels: local hours
 const labels = Array.from({{length:24}}, (_,i) => i.toString().padStart(2,'0')+':00');
 const vals = labels.map((_,i) => hdata[i] || 0);
 // Band colours matching legend: blue=0-5, green=6-11, yellow=12-17, red=18-23
@@ -1184,6 +1178,43 @@ new Chart(document.getElementById('hourChart'), {{
     var next = (cur === 'light') ? 'dark' : 'light';
     localStorage.setItem('theme', next);
     applyTheme(next);
+  });
+})();
+
+// ── Timezone-aware activity bands ─────────────────────────────────────────────
+(function() {
+  var offsetH = -(new Date().getTimezoneOffset() / 60); // e.g. +1 for WET, -5 for EST
+  var bandCols = ['blue-h','green-h','yellow-h','red-h'];
+  var bands = [[0,5],[6,11],[12,17],[18,23]];
+
+  function shiftHours(utcArr) {
+    var local = new Array(24).fill(0);
+    for (var h = 0; h < 24; h++) {
+      var lh = ((h + offsetH) % 24 + 24) % 24;
+      local[lh] += utcArr[h];
+    }
+    return local;
+  }
+
+  function bucket(localArr) {
+    return bands.map(function(b) {
+      var sum = 0;
+      for (var h = b[0]; h <= b[1]; h++) sum += localArr[h];
+      return sum;
+    });
+  }
+
+  document.querySelectorAll('.tz-bands').forEach(function(td) {
+    var utcArr = JSON.parse(td.dataset.hours);
+    var local  = shiftHours(utcArr);
+    var nb     = bucket(local);
+    var total  = nb.reduce(function(a,b){return a+b;}, 0) || 1;
+    var html   = '';
+    nb.forEach(function(v, bi) {
+      var w = v ? Math.max(1, Math.round(v / total * 40)) : 0;
+      if (w) html += '<span class="bh-bar ' + bandCols[bi] + '" style="width:'+w+'px;display:inline-block;height:15px;vertical-align:middle"></span>';
+    });
+    td.innerHTML = html;
   });
 })();
 
