@@ -52,6 +52,22 @@ class Sensors:
         # Load static ignores from config into DB
         self._load_statics(config)
 
+    def reload(self, config: dict):
+        """Re-apply config values after a rehash. Called by main.reload_consumer."""
+        self.cfg         = config
+        pisg             = config.get("pisg", {})
+        self.min_word    = pisg.get("WordLength", 4)
+        self.violent_words = pisg.get("ViolentWords", [])
+        self.foul_words  = pisg.get("FoulWords", [])
+        self.smileys     = config.get("stats", {}).get("happy_smileys", [])
+        self.sad_smileys = config.get("stats", {}).get("sad_smileys", [])
+        self.log_wordstats = config.get("stats", {}).get("log_wordstats", True)
+        self.quote_freq  = config.get("stats", {}).get("quote_frequency", 5)
+        self.kick_context = config.get("stats", {}).get("kick_context", 5)
+        self.log_urls    = pisg.get("UrlHistory", 10) > 0
+        self.cmd_prefix  = config.get("commands", {}).get("prefix", "!")
+        self._load_statics(config)
+
     def _load_statics(self, config: dict):
         from database.models import add_ignore, add_master
         # Always ignore the bot's own nicks — we don't want ourselves in the stats

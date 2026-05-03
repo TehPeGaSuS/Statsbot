@@ -73,6 +73,7 @@ class PMCommandHandler:
             "nets":     lambda: self._cmd_nets(nick),
             "chans":    lambda: self._cmd_chans(nick),
             "setlang":  lambda: self._cmd_setlang(nick, args),
+            "pisg":     lambda: self._cmd_pisg(nick, args),
         }
 
         handler = handlers.get(cmd)
@@ -339,11 +340,81 @@ class PMCommandHandler:
         else:
             self.send(nick, f"Unknown setting: {key}. Available: page")
 
+    # ─── Pisg per-channel config ──────────────────────────────────────────────
+
+    def _cmd_pisg(self, nick: str, args: str):
+        """pisg #channel set <key> <value>
+           pisg #channel reset [key]
+           pisg #channel list"""
+        if not self._require_auth(nick):
+            return
+
+        parts = args.split(None, 2)
+        if len(parts) < 2 or not parts[0].startswith("#"):
+            self.send(nick, "Usage: pisg #channel set <key> <value>")
+            self.send(nick, "       pisg #channel reset [key]")
+            self.send(nick, "       pisg #channel list")
+            return
+
+        channel = parts[0]
+        subcmd  = parts[1].lower()
+        rest    = parts[2] if len(parts) > 2 else ""
+
+        if subcmd == "list":
+            self._pisg_list(nick, channel)
+        elif subcmd == "set":
+            kv = rest.split(None, 1)
+            if len(kv) < 2:
+                self.send(nick, "Usage: pisg #channel set <key> <value>")
+                return
+            self._pisg_set(nick, channel, kv[0], kv[1])
+        elif subcmd == "reset":
+            self._pisg_reset(nick, channel, rest.strip() or None)
+        else:
+            self.send(nick, f"Unknown subcommand: {subcmd}. Use: set / reset / list")
+
+    def _pisg_list(self, nick: str, channel: str):
+        from web.dashboard import generate_pisg_token
+        web = self.cfg.get("web", {})
+        public_url = web.get("public_url", "").rstrip("/")
+        if not public_url:
+            self.send(nick, "web.public_url is not set in config — cannot generate link.")
+            return
+        token    = generate_pisg_token(self.network, channel)
+        chan_slug = channel.lstrip("#")
+        url      = f"{public_url}/{self.network}/{chan_slug}/pisg?token={token}"
+        self.send(nick, f"pisg config for {channel}: {url}  (valid 5 min, single use)")
+
+    def _pisg_set(self, nick: str, channel: str, key: str, value: str):
+        from web.pisg_config_page import _PISG_DEFAULTS
+        from database.models import set_channel_config
+        if key not in _PISG_DEFAULTS:
+            self.send(nick, f"Unknown key: {key}  — use 'pisg {channel} list' to see valid keys.")
+            return
+        set_channel_config(self.network, channel, f"pisg.{key}", value)
+        self.send(nick, f"Set {key} = {value!r} for {channel}.")
+
+    def _pisg_reset(self, nick: str, channel: str, key: str = None):
+        from database.models import del_channel_pisg_config
+        del_channel_pisg_config(self.network, channel, key)
+        if key:
+            self.send(nick, f"Removed override for {key} on {channel} (global/default now applies).")
+        else:
+            self.send(nick, f"Removed all pisg overrides for {channel}.")
+
     # ─── Rehash ───────────────────────────────────────────────────────────────
 
     def _cmd_rehash(self, nick: str):
-        """Alias for reload."""
-        self._cmd_reload(nick)
+        if not self._require_auth(nick): return
+        ok = self._post_event({
+            "action":  "rehash",
+            "nick":    nick,
+            "send_fn": self.send,
+        })
+        if ok:
+            self.send(nick, "Rehashing — re-reading config.yml...")
+        else:
+            self.send(nick, "Could not queue rehash (reload queue unavailable).")
 
     # ─── Network / Channel management ────────────────────────────────────────
 
@@ -540,7 +611,15 @@ class PMCommandHandler:
 
     def _cmd_reload(self, nick: str):
         if not self._require_auth(nick): return
-        self.send(nick, "Changes apply immediately — no reload needed.")
+        ok = self._post_event({
+            "action":  "rehash",
+            "nick":    nick,
+            "send_fn": self.send,
+        })
+        if ok:
+            self.send(nick, "Rehashing — re-reading config.yml...")
+        else:
+            self.send(nick, "Could not queue rehash (reload queue unavailable).")
 
     def _cmd_nets(self, nick: str):
         """List all networks in the DB."""
@@ -581,6 +660,9 @@ class PMCommandHandler:
             "  set page [#chan] <url>",
             "  nets                                       — list all networks",
             "  setlang [-network <net>] #channel <lang>     — set channel language (en_US/pt_PT/fr_FR/it_IT)",
+            "  pisg #channel list                          — get a link to view pisg config for a channel",
+            "  pisg #channel set <key> <value>             — set a per-channel pisg override",
+            "  pisg #channel reset [key]                   — remove one override (or all if no key given)",
             "  chans                                      — list channels on this network",
             "  addchan [-network <net>] #channel          — join and track a channel",
             "  delchan [-network <net>] #channel          — part and delete channel stats",

@@ -1043,6 +1043,35 @@ def get_channel_config(network: str, channel: str, key: str) -> Optional[str]:
         return None
 
 
+def get_pisg_channel_overrides(network: str, channel: str) -> dict:
+    """Return all pisg.* overrides set for this channel as {key: value_string}."""
+    try:
+        with get_conn() as conn:
+            rows = conn.execute(
+                """SELECT key, value FROM channel_config
+                   WHERE network=? AND channel=? AND key LIKE 'pisg.%'""",
+                (network, channel)
+            ).fetchall()
+        return {r["key"][5:]: r["value"] for r in rows}  # strip "pisg." prefix
+    except Exception:
+        return {}
+
+
+def del_channel_pisg_config(network: str, channel: str, key: str = None):
+    """Delete one pisg override (key given) or all of them (key=None)."""
+    with get_conn() as conn:
+        if key:
+            conn.execute(
+                "DELETE FROM channel_config WHERE network=? AND channel=? AND key=?",
+                (network, channel, f"pisg.{key}")
+            )
+        else:
+            conn.execute(
+                "DELETE FROM channel_config WHERE network=? AND channel=? AND key LIKE 'pisg.%'",
+                (network, channel)
+            )
+
+
 # ─── Updated ignore functions (channel-scoped) ────────────────────────────────
 
 def add_ignore(pattern: str, network: str = '*', channel: str = '*', added_by: str = None):

@@ -25,6 +25,14 @@ def load_config(path: str) -> dict:
         return yaml.safe_load(f)
 
 
+_config_path: str = "config/config.yml"
+
+
+def reload_config() -> dict:
+    """Re-read config.yml from disk and return the new dict."""
+    return load_config(_config_path)
+
+
 def setup_logging(config: dict):
     log_cfg = config.get("logging", {})
     level = getattr(logging, log_cfg.get("level", "INFO").upper(), logging.INFO)
@@ -94,6 +102,8 @@ def main():
                         help="Configure master nicks and passwords")
     args = parser.parse_args()
 
+    global _config_path
+    _config_path = args.config
     config = load_config(args.config)
     setup_logging(config)
     log = logging.getLogger("main")
@@ -255,6 +265,26 @@ def main():
                         chan = event["channel"]
                         if name in active:
                             await active[name][0].part_channel(chan)
+                    elif action == "rehash":
+                        try:
+                            new_cfg = reload_config()
+                            config.clear()
+                            config.update(new_cfg)
+                            from web.dashboard import set_config
+                            set_config(config, config.get("database", {}).get("path", "data/stats.db"))
+                            for s in sensors_list:
+                                s.reload(config)
+                            log.info("Rehash complete — config reloaded from disk.")
+                            notify_nick = event.get("nick")
+                            notify_fn   = event.get("send_fn")
+                            if notify_nick and notify_fn:
+                                notify_fn(notify_nick, "Rehash complete.")
+                        except Exception as e:
+                            log.error(f"Rehash failed: {e}", exc_info=True)
+                            notify_nick = event.get("nick")
+                            notify_fn   = event.get("send_fn")
+                            if notify_nick and notify_fn:
+                                notify_fn(notify_nick, f"Rehash failed: {e}")
                 except Exception as e:
                     log.error(f"Reload consumer error: {e}", exc_info=True)
 

@@ -20,6 +20,24 @@ _db_path = "data/stats.db"
 # Live channel member counts — updated by connectors via register_connector()
 _connectors: list = []
 
+# Short-lived tokens for /network/channel/pisg view
+# {token: {"network": ..., "channel": ..., "expires": timestamp}}
+_pisg_tokens: dict = {}
+_PISG_TOKEN_TTL = 300  # 5 minutes
+
+
+def generate_pisg_token(network: str, channel: str) -> str:
+    """Generate a single-use token valid for 5 minutes. Returns the token string."""
+    import secrets
+    # Expire old tokens opportunistically
+    now = time.time()
+    expired = [t for t, v in _pisg_tokens.items() if v["expires"] < now]
+    for t in expired:
+        del _pisg_tokens[t]
+    token = secrets.token_urlsafe(16)
+    _pisg_tokens[token] = {"network": network, "channel": channel, "expires": now + _PISG_TOKEN_TTL}
+    return token
+
 
 def register_connector(connector) -> None:
     """Called from main.py after connectors are created."""
@@ -224,6 +242,35 @@ def channel_stats(network: str, channel: str):
 
     from web.pisg_page import build_page
     html = build_page(network, channel, period, _config)
+    return html
+
+
+@app.route("/<network>/<path:channel>/pisg")
+def channel_pisg_config(network: str, channel: str):
+    """Read-only pisg config view, protected by a short-lived token."""
+    channel = channel.rstrip("/")
+    if not channel.startswith("#"):
+        channel = "#" + channel
+
+    token = request.args.get("token", "")
+    entry = _pisg_tokens.get(token)
+    now   = time.time()
+
+    if not entry or entry["expires"] < now:
+        abort(403)
+    if entry["network"] != _canonical_network(network) or entry["channel"].lower() != channel.lower():
+        abort(403)
+
+    # Consume token (single use)
+    del _pisg_tokens[token]
+
+    canonical_net  = _canonical_network(network)
+    if canonical_net is None:
+        abort(404)
+
+    from database.models import get_pisg_channel_overrides
+    from web.pisg_config_page import build_pisg_config_page
+    html = build_pisg_config_page(canonical_net, channel, _config)
     return html
 
 
