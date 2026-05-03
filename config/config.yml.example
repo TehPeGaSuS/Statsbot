@@ -97,6 +97,7 @@ logging:
 
 pisg:
   # Main nick table
+  DailyActivity: 30            # days to show in "Daily activity" graph (0 = disabled)
   ActiveNicks: 25              # rows in main top table (pisg: ActiveNicks)
   ActiveNicks2: 10             # nicks in "These didn't make it to the top" list (pisg: ActiveNicks2)
   SortByWords: true            # sort by words (true) or lines (false) (pisg: SortByWords)

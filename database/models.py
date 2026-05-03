@@ -275,6 +275,15 @@ def init_db():
             PRIMARY KEY (network, channel, nick)
         );
 
+        CREATE TABLE IF NOT EXISTS daily_activity (
+            network  TEXT NOT NULL,
+            channel  TEXT NOT NULL COLLATE NOCASE,
+            date     TEXT NOT NULL,         -- YYYY-MM-DD (UTC)
+            lines    INTEGER DEFAULT 0,
+            words    INTEGER DEFAULT 0,
+            PRIMARY KEY (network, channel, date)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_nicks_lookup ON nicks(nick, network, channel);
         CREATE INDEX IF NOT EXISTS idx_stats_nick   ON stats(nick_id);
         CREATE INDEX IF NOT EXISTS idx_quotes_chan  ON quotes(network, channel);
@@ -748,6 +757,52 @@ def get_chanlog(network: str, channel: str, limit: int = 10) -> List[Dict]:
 
 
 # ─── Period Reset ─────────────────────────────────────────────────────────────
+
+def snapshot_daily():
+    """Snapshot today's period=1 totals into daily_activity before the daily reset."""
+    from datetime import date as _date
+    today = _date.today().isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT n.network, n.channel,
+                   SUM(s.lines) AS lines, SUM(s.words) AS words
+            FROM stats s
+            JOIN nicks n ON n.id = s.nick_id
+            WHERE s.period = 1
+            GROUP BY n.network, n.channel
+        """).fetchall()
+        for row in rows:
+            if row["lines"]:
+                conn.execute("""
+                    INSERT INTO daily_activity(network, channel, date, lines, words)
+                    VALUES(?,?,?,?,?)
+                    ON CONFLICT(network, channel, date) DO UPDATE SET
+                        lines = lines + excluded.lines,
+                        words = words + excluded.words
+                """, (row["network"], row["channel"], today,
+                      row["lines"], row["words"]))
+
+
+def get_daily_activity(network: str, channel: str, days: int = 30) -> List[Dict]:
+    """Return the last `days` days of activity, oldest first."""
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT date, lines, words
+            FROM daily_activity
+            WHERE network=? AND channel=? COLLATE NOCASE
+            ORDER BY date DESC
+            LIMIT ?
+        """, (network, channel, days)).fetchall()
+    return [dict(r) for r in reversed(rows)]
+
+
+def trim_daily_activity(keep_days: int = 365):
+    """Remove daily_activity rows older than keep_days days."""
+    from datetime import date as _date, timedelta
+    cutoff = (_date.today() - timedelta(days=keep_days)).isoformat()
+    with get_conn() as conn:
+        conn.execute("DELETE FROM daily_activity WHERE date < ?", (cutoff,))
+
 
 def reset_period(period: int):
     """Reset stats for a given period (1=daily, 2=weekly, 3=monthly).

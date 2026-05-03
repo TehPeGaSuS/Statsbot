@@ -64,6 +64,9 @@ msgstr ""
 msgid "most online"
 msgstr ""
 
+msgid "Daily activity"
+msgstr ""
+
 msgid "Most active times"
 msgstr ""
 

@@ -55,6 +55,7 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
         get_top, get_nick_list, get_top_words_channel,
         get_channel_hourly, get_recent_urls, get_recent_kicks,
         get_recent_topics, get_peak, count_users, get_conn,
+        get_daily_activity,
         get_top_smileys, get_top_nick_refs, get_quote_for_nick,
         get_random_quote, get_example,
         get_karma_top, get_karma_bottom
@@ -68,6 +69,8 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
     peak_data    = get_peak(network, channel, 0)
     total_users  = count_users(network, channel)
     hourly       = get_channel_hourly(network, channel)
+    daily_days   = pisg.get("DailyActivity", 30)
+    daily_data   = get_daily_activity(network, channel, daily_days) if daily_days else []
     hourly_data  = {h["hour"]: h["lines"] for h in hourly}
     # Fetch more words than needed so we can filter by word_length and ignore_words
     _word_limit   = pisg.get("WordHistory", 10)
@@ -334,6 +337,7 @@ b {{ color: var(--cyan); }}
 
 /* Activity chart */
 .chart-wrap {{ height: 140px; margin-bottom: 1rem; }}
+.daily-chart-wrap {{ height: 160px; margin-bottom: 1rem; }}
 
 /* Per-nick hour chart */
 .byhour-table {{ width: 100%; border-collapse: collapse; margin-bottom: 1rem; }}
@@ -479,6 +483,13 @@ b {{ color: var(--cyan); }}
                 h(f'<span><span class="{_lc}" style="width:40px;height:15px;'
                   f'display:inline-block;vertical-align:middle"></span> = {_ll}</span>')
             h('</div>')
+
+    # ── Daily activity chart ─────────────────────────────────────────────────
+    if daily_data and pisg.get("DailyActivity", 30):
+        section(t("Daily activity", lang))
+        _daily_dates = json.dumps([r["date"] for r in daily_data])
+        _daily_lines = json.dumps([r["lines"] for r in daily_data])
+        h(f'<div class="daily-chart-wrap"><canvas id="dailyChart"></canvas></div>')
 
     # ── Main nick table ───────────────────────────────────────────────────────
     section(t("Most active nicks", lang))
@@ -1129,6 +1140,42 @@ new Chart(document.getElementById('hourChart'), {{
     }}
   }}
 }});
+
+// Daily activity chart
+if (document.getElementById('dailyChart')) {{
+  const dDatesUtc = {_daily_dates};
+  const dLines    = {_daily_lines};
+  // Shift UTC dates to local — find the local date string for each UTC midnight
+  const localDates = dDatesUtc.map(function(d) {{
+    // d is "YYYY-MM-DD" stored as UTC; display as local date
+    var dt = new Date(d + 'T12:00:00Z'); // use noon to avoid DST edge cases
+    return dt.toLocaleDateString(undefined, {{month:'short', day:'numeric'}});
+  }});
+  const gridCol  = getComputedStyle(document.body).getPropertyValue('--bg3').trim();
+  const mutedCol = getComputedStyle(document.body).getPropertyValue('--muted').trim();
+  const blueCol  = getComputedStyle(document.body).getPropertyValue('--blue').trim();
+  new Chart(document.getElementById('dailyChart'), {{
+    type: 'bar',
+    data: {{
+      labels: localDates,
+      datasets: [{{
+        data: dLines,
+        backgroundColor: blueCol,
+        borderRadius: 2,
+      }}]
+    }},
+    options: {{
+      responsive: true, maintainAspectRatio: false,
+      plugins: {{ legend: {{ display: false }} }},
+      scales: {{
+        x: {{ grid: {{ color: gridCol }},
+             ticks: {{ color: mutedCol, font: {{ size: 9 }}, maxRotation: 45 }} }},
+        y: {{ grid: {{ color: gridCol }},
+             ticks: {{ color: mutedCol }}, beginAtZero: true }}
+      }}
+    }}
+  }});
+}}
 
 // Live user count
 (function() {{

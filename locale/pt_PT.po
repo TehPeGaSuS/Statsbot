@@ -63,6 +63,9 @@ msgstr "mais triste :("
 msgid "most online"
 msgstr "mais tempo online"
 
+msgid "Daily activity"
+msgstr "Actividade diária"
+
 msgid "Most active times"
 msgstr "Horários mais activos"
 

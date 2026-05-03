@@ -13,7 +13,8 @@ from typing import Optional
 from database.models import (
     get_or_create_nick, incr, incr_word,
     add_quote, add_url, add_kick, add_topic, add_chanlog,
-    get_chanlog, update_peak, reset_period, touch_nick, is_ignored, add_master,
+    get_chanlog, update_peak, reset_period, snapshot_daily, trim_daily_activity,
+    touch_nick, is_ignored, add_master,
     set_example
 )
 from bot.parser import parse_message, count_words, count_letters, count_smileys, count_questions
@@ -425,8 +426,10 @@ class Sensors:
     # ─── PERIOD RESETS ────────────────────────────────────────────────────────
 
     def on_daily_reset(self):
-        """Called at midnight."""
+        """Called at midnight — snapshot today before resetting."""
+        snapshot_daily()
         reset_period(1)
+        trim_daily_activity(365)
         log.info("Daily stats reset.")
 
     def on_weekly_reset(self):
