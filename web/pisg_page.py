@@ -489,11 +489,29 @@ b {{ color: var(--cyan); }}
             h('</div>')
 
     # ── Daily activity chart ─────────────────────────────────────────────────
-    _daily_dates = json.dumps([r["date"] for r in daily_data])
-    _daily_lines = json.dumps([r["lines"] for r in daily_data])
-    if daily_data and pisg.get("DailyActivity", 30):
+    if daily_days and pisg.get("DailyActivity", 30):
+        # Build complete date range — fill missing days with null
+        from datetime import date as _d, timedelta as _td
+        _end   = _d.today()
+        _start = _end - _td(days=daily_days - 1)
+        _lookup = {r["date"]: r["lines"] for r in daily_data}
+        _all_dates = []
+        _all_lines = []
+        _cur = _start
+        while _cur <= _end:
+            _ds = _cur.isoformat()
+            _all_dates.append(_ds)
+            _all_lines.append(_lookup.get(_ds))  # None if no data
+            _cur += _td(days=1)
+        _daily_dates = json.dumps(_all_dates)
+        _daily_lines = json.dumps(_all_lines)  # contains null for missing days
+        _bar_w   = 28
+        _chart_w = max(480, daily_days * (_bar_w + 2))
         section(t("Daily activity", lang))
-        h(f'<div class="chart-scroll"><div class="chart-wrap" style="min-width:{max(480, daily_days*28)}px"><canvas id="dailyChart"></canvas></div></div>')
+        h(f'<div class="chart-scroll"><div class="chart-wrap" style="width:{_chart_w}px;flex-shrink:0"><canvas id="dailyChart"></canvas></div></div>')
+    else:
+        _daily_dates = "[]"
+        _daily_lines = "[]"
 
     # ── Main nick table ───────────────────────────────────────────────────────
     section(t("Most active nicks", lang))
@@ -1149,8 +1167,12 @@ new Chart(document.getElementById('hourChart'), {{
 // Daily activity chart
 if (document.getElementById('dailyChart')) {{
   const dDatesUtc = {_daily_dates};
-  const dLines    = {_daily_lines};
+  const dLines    = {_daily_lines};  // null = no data for that day
   const todayISO  = new Date().toLocaleDateString('en-CA');
+  const blueCol  = getComputedStyle(document.body).getPropertyValue('--blue').trim();
+  const gridCol  = getComputedStyle(document.body).getPropertyValue('--bg3').trim();
+  const mutedCol = getComputedStyle(document.body).getPropertyValue('--muted').trim();
+
   const localLabels = dDatesUtc.map(function(d) {{
     var dt = new Date(d + 'T12:00:00Z');
     return dt.toLocaleDateString(undefined, {{month:'short', day:'numeric'}});
@@ -1158,32 +1180,37 @@ if (document.getElementById('dailyChart')) {{
   const isToday = dDatesUtc.map(function(d) {{
     return new Date(d + 'T12:00:00Z').toLocaleDateString('en-CA') === todayISO;
   }});
-  const blueCol  = getComputedStyle(document.body).getPropertyValue('--blue').trim();
-  const gridCol  = getComputedStyle(document.body).getPropertyValue('--bg3').trim();
-  const mutedCol = getComputedStyle(document.body).getPropertyValue('--muted').trim();
-  const colors   = dLines.map(function(_, i) {{
+  const colors = dLines.map(function(v, i) {{
+    if (v === null) return gridCol;
     return isToday[i] ? blueCol + '70' : blueCol;
   }});
-  var dailyChart = new Chart(document.getElementById('dailyChart'), {{
+
+  new Chart(document.getElementById('dailyChart'), {{
     type: 'bar',
     data: {{
       labels: localLabels,
       datasets: [{{
-        data: dLines,
+        data: dLines.map(function(v) {{ return v === null ? 0 : v; }}),
         backgroundColor: colors,
         borderRadius: 3,
+        barThickness: 22,
       }}]
     }},
     options: {{
-      responsive: true, maintainAspectRatio: false,
+      responsive: false,
+      maintainAspectRatio: false,
       plugins: {{ legend: {{ display: false }},
         tooltip: {{ callbacks: {{ label: function(ctx) {{
-          return ctx.parsed.y.toLocaleString() + ' lines' + (isToday[ctx.dataIndex] ? ' ★' : '');
+          var v = dLines[ctx.dataIndex];
+          if (v === null) return 'n/a';
+          return v.toLocaleString() + ' lines' + (isToday[ctx.dataIndex] ? ' ★' : '');
         }}}}}}
       }},
       scales: {{
         x: {{ grid: {{ color: gridCol }},
-             ticks: {{ color: mutedCol, font: {{ size: 9 }}, maxRotation: 45, autoSkip: true, maxTicksLimit: 31 }} }},
+             ticks: {{ color: function(ctx) {{
+               return dLines[ctx.index] === null ? mutedCol + '60' : mutedCol;
+             }}, font: {{ size: 9 }}, maxRotation: 45 }} }},
         y: {{ grid: {{ color: gridCol }},
              ticks: {{ color: mutedCol }}, beginAtZero: true }}
       }}
