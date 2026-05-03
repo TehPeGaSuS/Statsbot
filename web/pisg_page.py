@@ -231,6 +231,7 @@ def build_page(network: str, channel: str, period: int, config: dict) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{channel} @ {network} — {title}</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root {{
   --bg:      #0d0d1a;
@@ -505,10 +506,10 @@ b {{ color: var(--cyan); }}
             _cur += _td(days=1)
         _daily_dates = json.dumps(_all_dates)
         _daily_lines = json.dumps(_all_lines)  # contains null for missing days
-        _bar_w   = 28
-        _chart_w = max(480, daily_days * (_bar_w + 2))
+        _bar_w   = 20
+        _chart_w = max(480, daily_days * (_bar_w + 6))
         section(t("Daily activity", lang))
-        h(f'<div class="chart-scroll"><div class="chart-wrap" style="width:{_chart_w}px;flex-shrink:0"><canvas id="dailyChart"></canvas></div></div>')
+        h(f'<div class="chart-scroll"><div class="chart-wrap" style="width:{_chart_w}px;min-width:{_chart_w}px"><canvas id="dailyChart"></canvas></div></div>')
     else:
         _daily_dates = "[]"
         _daily_lines = "[]"
@@ -1169,9 +1170,9 @@ if (document.getElementById('dailyChart')) {{
   const dDatesUtc = {_daily_dates};
   const dLines    = {_daily_lines};  // null = no data for that day
   const todayISO  = new Date().toLocaleDateString('en-CA');
-  const blueCol  = getComputedStyle(document.body).getPropertyValue('--blue').trim();
-  const gridCol  = getComputedStyle(document.body).getPropertyValue('--bg3').trim();
-  const mutedCol = getComputedStyle(document.body).getPropertyValue('--muted').trim();
+  const blueCol   = getComputedStyle(document.body).getPropertyValue('--blue').trim();
+  const gridCol   = getComputedStyle(document.body).getPropertyValue('--bg3').trim();
+  const mutedCol  = getComputedStyle(document.body).getPropertyValue('--muted').trim();
 
   const localLabels = dDatesUtc.map(function(d) {{
     var dt = new Date(d + 'T12:00:00Z');
@@ -1181,7 +1182,7 @@ if (document.getElementById('dailyChart')) {{
     return new Date(d + 'T12:00:00Z').toLocaleDateString('en-CA') === todayISO;
   }});
   const colors = dLines.map(function(v, i) {{
-    if (v === null) return gridCol;
+    if (v === null) return 'transparent';
     return isToday[i] ? blueCol + '70' : blueCol;
   }});
 
@@ -1193,32 +1194,43 @@ if (document.getElementById('dailyChart')) {{
         data: dLines.map(function(v) {{ return v === null ? 0 : v; }}),
         backgroundColor: colors,
         borderRadius: 3,
-        barThickness: 22,
+        barThickness: 20,
       }}]
     }},
     options: {{
       responsive: false,
       maintainAspectRatio: false,
-      plugins: {{ legend: {{ display: false }},
+      layout: {{ padding: {{ top: 18 }} }},
+      plugins: {{
+        legend: {{ display: false }},
         tooltip: {{ callbacks: {{ label: function(ctx) {{
           var v = dLines[ctx.dataIndex];
-          if (v === null) return 'n/a';
+          if (v === null) return 'no data';
           return v.toLocaleString() + ' lines' + (isToday[ctx.dataIndex] ? ' ★' : '');
-        }}}}}}
+        }}}}}},
+        datalabels: {{
+          display: function(ctx) {{ return dLines[ctx.dataIndex] > 0; }},
+          anchor: 'end',
+          align: 'end',
+          color: mutedCol,
+          font: {{ size: 9 }},
+          formatter: function(v) {{ return v.toLocaleString(); }},
+          clip: false,
+        }}
       }},
       scales: {{
         x: {{ grid: {{ color: gridCol }},
-             ticks: {{ color: function(ctx) {{
-               return dLines[ctx.index] === null ? mutedCol + '60' : mutedCol;
-             }}, font: {{ size: 9 }}, maxRotation: 45 }} }},
+             ticks: {{ color: mutedCol, font: {{ size: 9 }}, maxRotation: 45 }} }},
         y: {{ grid: {{ color: gridCol }},
              ticks: {{ color: mutedCol }}, beginAtZero: true }}
       }}
-    }}
+    }},
+    plugins: [ChartDataLabels]
   }});
+
   // Scroll to show today (rightmost bar)
-  var wrap = document.getElementById('dailyChart').parentElement.parentElement;
-  wrap.scrollLeft = wrap.scrollWidth;
+  var outer = document.getElementById('dailyChart').parentElement.parentElement;
+  outer.scrollLeft = outer.scrollWidth;
 }}
 
 // Live user count
