@@ -84,9 +84,21 @@ networks:
     #   - "UMODE2 +x"           # alternative cloak (UnrealIRCd)
     #   - "MODE {nick} +B"      # set bot flag
 
-    # ── Channel join retries ──────────────────────────────────────────────
-    # If a channel can't be joined (full, +i, banned, +k, needs registration,
-    # DALnet temp unavailable), the bot retries automatically.
+    # ── Per-channel pisg overrides ────────────────────────────────────────
+    # Any key from the global pisg: section can be overridden here per channel.
+    # These are applied when the stats page is rendered — no restart required
+    # after a rehash. PM commands (pisg #channel set/reset) update the DB and
+    # take effect immediately, independent of this section.
+    #
+    # channel_pisg:
+    #   "#yourchannel":
+    #     DailyActivity: 90      # 90-day graph instead of global 30
+    #     ShowVoice: true        # enable voice section on this channel only
+    #
+    #   "#quietchannel":
+    #     ActiveNicks: 10        # smaller top table
+    #     ShowBigNumbers: false  # disable big numbers section entirely
+    #     DailyActivity: 0       # disable daily activity graph
     # join_retries: 5            # max attempts per channel (default 5)
     # join_retry_delay: 30       # seconds between attempts (default 30)
 ```
@@ -321,6 +333,11 @@ networks:
 | Command | Description |
 |---------|-------------|
 | `set page [#channel] <url>` | Override the stats URL returned by `!stats` |
+| `setlang [-network <net>] #channel <lang>` | Set the stats page language (`en_US`, `pt_PT`, `fr_FR`, `it_IT`) |
+| `pisg #channel list` | Generate a short-lived link to view effective pisg config for a channel |
+| `pisg #channel set <key> <value>` | Set a per-channel pisg override — takes effect immediately |
+| `pisg #channel reset [key]` | Remove one override or all of them (no key = all) |
+| `rehash` / `reload` | Re-read `config.yml` from disk and apply changes live — no restart required |
 
 **Network management** (requires auth):
 
@@ -368,7 +385,44 @@ part #general going for lunch
 All options go under the `pisg:` section in `config.yml`. Names match pisg
 exactly so the [pisg documentation](https://pisg.github.io/docs/) applies.
 
+### Per-channel overrides
+
+Any option from this section can be overridden for a specific channel in two ways:
+
+**In `config.yml`** under `channel_pisg:` inside a network entry (applied after `rehash`):
+```yaml
+networks:
+  - name: "libera"
+    channels:
+      - "#busy"
+      - "#quiet"
+    channel_pisg:
+      "#busy":
+        DailyActivity: 90
+        ActiveNicks: 50
+      "#quiet":
+        ShowBigNumbers: false
+        DailyActivity: 0
+```
+
+**Via PM** (takes effect immediately, stored in the DB):
+```
+/msg statsbot pisg #channel set DailyActivity 90
+/msg statsbot pisg #channel set ShowBigNumbers false
+/msg statsbot pisg #channel reset DailyActivity    ← remove override, global applies again
+/msg statsbot pisg #channel reset                  ← remove all overrides for channel
+/msg statsbot pisg #channel list                   ← get a link to view effective config
+```
+
+DB overrides (PM) take precedence over `channel_pisg:` in `config.yml`, which takes precedence over the global `pisg:` section.
+
 ### Main nick table
+
+#### `DailyActivity`
+Number of days to show in the "Daily activity" bar chart below the hourly
+activity chart. Each bar represents one day; bars scroll horizontally if
+there are more than fit on screen. Set to `0` to disable the chart entirely.
+**Default:** `30`
 
 #### `ActiveNicks`
 Number of nicks shown in the "Most active nicks" table.
@@ -621,5 +675,5 @@ logging:
 | User pictures | Yes | Not yet |
 | Gender stats | Yes | Not yet |
 | Music charts | Yes | Not yet |
-| Daily activity graph | Yes | Not yet |
+| Daily activity graph | Yes | Yes — scrollable bar chart, configurable per channel |
 | NickTracking / aliases | Yes | Not yet |
