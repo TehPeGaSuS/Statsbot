@@ -37,6 +37,7 @@ live web dashboard — no log files, no cron jobs, no static HTML generation.
 | Op/voice/halfop stats | ✓ | ✓ |
 | Multi-network | ✗ | ✓ |
 | Admin via IRC | ✗ | ✓ via PM commands |
+| Per-channel page config | ✗ | ✓ via PM or `config.yml`, live rehash |
 | Multilingual stats page | ✓ static, per-install | ✓ live, per-channel |
 
 If you already know pisg, the `pisg:` section in `config.yml` uses the same
@@ -72,6 +73,9 @@ option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
 - **Multi-network** — connect to Libera, Undernet, PTirc simultaneously
 - **Runtime network management** — add/remove networks and channels live via PM
   commands, no restart required; `config.yml` seeds the DB on first run only
+- **Per-channel pisg config** — any `pisg:` option can be overridden per channel
+  via PM (`pisg #channel set <key> <value>`) or via `channel_pisg:` in `config.yml`;
+  `rehash`/`reload` re-reads the config live without restarting
 - **Op/voice/halfop stats** — who gave ops, who got deopped, who hands out voice;
   pisg-style prose sentences; `ShowOps`, `ShowVoice`, `ShowHalfops` toggles
 - **Fully clickable cards** on the landing and network pages
@@ -161,7 +165,7 @@ See **[DOCS.md](DOCS.md)** for the complete reference.
 | `ignore list [#chan]` | List ignores |
 | `master add <nick>` | Add master (bot asks for password interactively) |
 | `master del <nick>` / `master list` | Manage masters |
-| `set page [#chan] <url>` | Override `!stats` URL for a channel |
+| `set page [#chan] <url>` | Override `!stats` URL for a channel |\n| `setlang [-network <net>] #channel <lang>` | Set stats page language for a channel (`en_US`, `pt_PT`, `fr_FR`, `it_IT`) |\n| `pisg #channel list` | Get a link to view the effective pisg config for a channel |\n| `pisg #channel set <key> <value>` | Set a per-channel pisg override (takes effect immediately) |\n| `pisg #channel reset [key]` | Remove one override, or all of them if no key given |\n| `rehash` / `reload` | Re-read `config.yml` from disk and apply changes live |
 | `nets` | List all networks (host, port, SSL status) |
 | `chans` | List channels tracked on the current network |
 | `addnet -name <n> -host <host> -port <port> [-ssl\|-plaintext]` | Add network and connect immediately (TLS by default) |
@@ -317,7 +321,8 @@ Statsbot/
 │   ├── commands.py          # Channel commands: !stats, !top, !quote
 │   └── pm_commands.py       # PM admin: identify, ignore, master, set
 └── web/
-    ├── dashboard.py         # Flask: landing, network pages, JSON API
+    ├── dashboard.py         # Flask: landing, network pages, JSON API, pisg config view
+    ├── pisg_config_page.py  # Read-only per-channel pisg config page (token-gated)
     └── pisg_page.py         # Full pisg-style channel stats page
 ```
 
@@ -344,7 +349,6 @@ see [What's not yet implemented](#whats-not-yet-implemented-vs-pisg) for what's 
 |---|---|
 | User pictures | Not yet, probably never will |
 | Gender stats | Not yet, probably never will |
-| Daily activity graph (lines per day) | Not yet, probably never will |
 | NickTracking / nick aliases | Not yet, probably never will |
 | Music charts (`now playing:`) | Not yet, probably never will |
 
