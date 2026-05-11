@@ -778,11 +778,19 @@ b {{ color: var(--cyan); }}
                 asub  = t("{nick} seems to be unliked too. They got beaten {count} times.", lang, nick=f"<b>{at[1]['nick']}</b>", count=f"<b>{at[1]['value']}</b>") if len(at) > 1 else None
                 with get_conn() as _aconn:
                     _arow = _aconn.execute(
-                        "SELECT s.attacked_ex FROM stats s JOIN nicks n ON n.id=s.nick_id "
+                        "SELECT s.violent_ex FROM stats s JOIN nicks n ON n.id=s.nick_id "
                         "WHERE n.nick=? AND n.network=? AND n.channel=? AND s.period=?",
-                        (at[0]["nick"], network, channel, period)
+                        (vt[0]["nick"], network, channel, period)
                     ).fetchone()
-                ax = strip_irc(_arow["attacked_ex"]) if _arow and _arow["attacked_ex"] else None
+                # Truncate the example line after the first victim nick appears
+                # to avoid showing bystander nicks from lines like "* X slaps Y around with Z"
+                _raw_ax = strip_irc(_arow["violent_ex"]) if _arow and _arow["violent_ex"] else None
+                if _raw_ax and at:
+                    _victim = at[0]["nick"]
+                    _vi = _raw_ax.lower().find(_victim.lower())
+                    if _vi >= 0:
+                        _raw_ax = _raw_ax[:_vi + len(_victim)]
+                ax = _raw_ax
                 hicell(atext, asub, example=ax)
         else:
             _bignum_row(t("Nobody beat anyone up. Everybody was friendly.", lang))
