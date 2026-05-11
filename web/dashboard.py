@@ -241,7 +241,10 @@ def channel_stats(network: str, channel: str):
         )
 
     from web.pisg_page import build_page
-    lang_override = request.args.get("lang")
+    # Resolve language: explicit ?lang= wins, otherwise use the persisted cookie
+    # so the page is rendered in the chosen locale on the very first byte
+    # (no English flash + client-side redirect).
+    lang_override = request.args.get("lang") or request.cookies.get("statsbot_lang")
     html = build_page(network, channel, period, _config, lang_override=lang_override)
     return html
 

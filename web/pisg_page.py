@@ -1338,22 +1338,43 @@ if (document.getElementById('dailyChart')) {{
   var sel = document.getElementById('langSelect');
   if (!sel) return;
 
-  // On load: if localStorage has a lang preference and it differs from current, redirect
-  var stored = localStorage.getItem('statsbot_lang');
-  var params = new URLSearchParams(window.location.search);
-  var current = params.get('lang') || 'en_US';
-  if (stored && stored !== current) {
-    params.set('lang', stored);
-    window.location.replace(window.location.pathname + '?' + params.toString());
-    return;
+  // Language is resolved server-side from the `statsbot_lang` cookie, so the
+  // page is rendered directly in the chosen locale (no English flash).
+  function setLangCookie(v) {
+    // 1 year, site-wide, lax
+    document.cookie = 'statsbot_lang=' + encodeURIComponent(v) +
+      '; path=/; max-age=31536000; SameSite=Lax';
+  }
+  function getCookie(name) {
+    var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+    return m ? decodeURIComponent(m[1]) : null;
   }
 
-  // On change: save to localStorage and redirect
+  var params = new URLSearchParams(window.location.search);
+  var current = params.get('lang') || getCookie('statsbot_lang') || 'en_US';
+  try { sel.value = current; } catch(e) {}
+
+  // One-time migration: older builds stored the choice only in localStorage.
+  // If we have it there but no cookie yet, persist it as a cookie and reload
+  // once so the next render is server-side localized.
+  var stored = localStorage.getItem('statsbot_lang');
+  if (stored && !getCookie('statsbot_lang')) {
+    setLangCookie(stored);
+    if (!params.has('lang') && stored !== 'en_US') {
+      window.location.replace(window.location.pathname + window.location.search);
+      return;
+    }
+  }
+
+  // On change: persist cookie + localStorage, then navigate without ?lang=
+  // so the cookie is the single source of truth across pages.
   sel.addEventListener('change', function() {
     var chosen = sel.value;
-    localStorage.setItem('statsbot_lang', chosen);
-    params.set('lang', chosen);
-    window.location.href = window.location.pathname + '?' + params.toString();
+    setLangCookie(chosen);
+    try { localStorage.setItem('statsbot_lang', chosen); } catch(e) {}
+    params.delete('lang');
+    var qs = params.toString();
+    window.location.href = window.location.pathname + (qs ? '?' + qs : '');
   });
 })();
 

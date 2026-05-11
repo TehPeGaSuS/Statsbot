@@ -231,13 +231,30 @@ class Sensors:
                     "SELECT n.nick FROM nicks n JOIN stats st ON st.nick_id=n.id WHERE n.network=? AND n.channel=? AND st.words>0 AND st.period=0",
                     (self.network, channel)
                 ).fetchall()]
-            refs = find_nick_refs(text, known)
-            for victim_nick in refs:
-                if victim_nick.lower() != nick.lower():
-                    victim_id = get_or_create_nick(victim_nick, self.network, channel)
-                    incr(victim_id, "attacked", 1)
-                    set_example(victim_id, "attacked_ex", full_text)
-                    break  # only first victim
+            # Find the victim positionally: the first known nick that appears
+            # AFTER the first violent word in the action text. Any nicks
+            # mentioned later in the sentence (e.g. the weapon/instrument in
+            # "slaps payiurtuk around with Jack^") must NOT be counted.
+            tokens = text.split()
+            known_lower = {n.lower(): n for n in known}
+            violent_lower = [w.lower() for w in self.violent_words]
+            first_violent_idx = -1
+            for i, tok in enumerate(tokens):
+                t = tok.strip(".,!?;:\"'<>@").lower()
+                if t in violent_lower or any(v in tok.lower() for v in violent_lower):
+                    first_violent_idx = i
+                    break
+            victim_nick = None
+            if first_violent_idx >= 0:
+                for tok in tokens[first_violent_idx + 1:]:
+                    t = tok.strip(".,!?;:\"'<>@").lower()
+                    if t in known_lower:
+                        victim_nick = known_lower[t]
+                        break
+            if victim_nick and victim_nick.lower() != nick.lower():
+                victim_id = get_or_create_nick(victim_nick, self.network, channel)
+                incr(victim_id, "attacked", 1)
+                set_example(victim_id, "attacked_ex", full_text)
 
         # Count lines/words/letters for the action directly — do NOT call
         # on_privmsg to avoid double-counting lines, smileys, quotes, etc.
