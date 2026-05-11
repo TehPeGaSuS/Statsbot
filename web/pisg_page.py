@@ -493,13 +493,17 @@ b {{ color: var(--cyan); }}
         "it_IT": "Italiano",
         "nl_NL": "Nederlands",
     }
-    h('<div style="display:flex;align-items:center;gap:.4rem;">')
-    h('<span style="font-size:.75rem;color:var(--muted);">🌐</span>')
-    for _lcode in SUPPORTED:
-        _llabel  = _lang_labels.get(_lcode, _lcode)
-        _lactive = ' active' if _lcode == lang else ''
-        h(f'<a class="tab{_lactive}" style="padding:.25rem .65rem;font-size:.78rem" href="?period={period}&lang={_lcode}">{_llabel}</a>')
-    h('</div>')
+    _lang_options = "".join(
+        f'<option value="{lc}" {"selected" if lc == lang else ""}>{_lang_labels.get(lc, lc)}</option>'
+        for lc in SUPPORTED
+    )
+    h(f'''<div style="display:flex;align-items:center;gap:.5rem;">
+      <span style="font-size:.85rem">🌐</span>
+      <select id="langSelect" style="background:var(--bg2);color:var(--fg);border:1px solid var(--border);
+        border-radius:20px;padding:.25rem .6rem;font-size:.78rem;cursor:pointer;outline:none;">
+        {_lang_options}
+      </select>
+    </div>''')
     h('</div>')
 
     # ── Summary strip ─────────────────────────────────────────────────────────
@@ -1318,6 +1322,30 @@ if (document.getElementById('dailyChart')) {{
     var next = (cur === 'light') ? 'dark' : 'light';
     localStorage.setItem('theme', next);
     applyTheme(next);
+  });
+})();
+
+// ── Language selector ────────────────────────────────────────────────────────
+(function() {
+  var sel = document.getElementById('langSelect');
+  if (!sel) return;
+
+  // On load: if localStorage has a lang preference and it differs from current, redirect
+  var stored = localStorage.getItem('statsbot_lang');
+  var params = new URLSearchParams(window.location.search);
+  var current = params.get('lang') || 'en_US';
+  if (stored && stored !== current) {
+    params.set('lang', stored);
+    window.location.replace(window.location.pathname + '?' + params.toString());
+    return;
+  }
+
+  // On change: save to localStorage and redirect
+  sel.addEventListener('change', function() {
+    var chosen = sel.value;
+    localStorage.setItem('statsbot_lang', chosen);
+    params.set('lang', chosen);
+    window.location.href = window.location.pathname + '?' + params.toString();
   });
 })();
 
