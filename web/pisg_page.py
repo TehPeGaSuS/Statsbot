@@ -493,11 +493,12 @@ b {{ color: var(--cyan); }}
         "it_IT": "Italiano",
         "nl_NL": "Nederlands",
     }
-    h('<div class="tabs" style="margin-bottom:0">')
+    h('<div style="display:flex;align-items:center;gap:.4rem;">')
+    h('<span style="font-size:.75rem;color:var(--muted);">🌐</span>')
     for _lcode in SUPPORTED:
         _llabel  = _lang_labels.get(_lcode, _lcode)
         _lactive = ' active' if _lcode == lang else ''
-        h(f'<a class="tab{_lactive}" href="?period={period}&lang={_lcode}">{_llabel}</a>')
+        h(f'<a class="tab{_lactive}" style="padding:.25rem .65rem;font-size:.78rem" href="?period={period}&lang={_lcode}">{_llabel}</a>')
     h('</div>')
     h('</div>')
 
