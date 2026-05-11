@@ -25,7 +25,7 @@ from typing import Dict, List, Tuple, Callable
 
 log = logging.getLogger("i18n")
 
-SUPPORTED = ("en_US", "pt_PT", "fr_FR", "it_IT")
+SUPPORTED = ("en_US", "pt_PT", "fr_FR", "it_IT", "nl_NL")
 DEFAULT   = "en_US"
 
 # catalogue: msgid -> (msgstr, [plural_forms_or_empty])

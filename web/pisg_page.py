@@ -66,6 +66,7 @@ def build_page(network: str, channel: str, period: int, config: dict,
     web  = config.get("web", {})
     from i18n import SUPPORTED
     lang = lang_override if lang_override and lang_override in SUPPORTED else get_lang(network, channel)
+    lang_code = lang.split("_")[0]  # BCP-47: en_US -> en, pt_PT -> pt, nl_NL -> nl
 
     # Apply per-channel pisg overrides from DB (set via PM: pisg #chan key value)
     from database.models import get_pisg_channel_overrides
@@ -243,7 +244,7 @@ def build_page(network: str, channel: str, period: int, config: dict,
         h(f'<tr><td class="hicell">{content}{ex_html}{extra}</td></tr>')
     # ── Page header ───────────────────────────────────────────────────────────
     h(f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="{lang_code}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -479,14 +480,22 @@ b {{ color: var(--cyan); }}
     # ── Period tabs ───────────────────────────────────────────────────────────
     h('<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem">')
     h('<div class="tabs" style="margin-bottom:0">')
+    _lang_param = f"&lang={lang}" if lang != "en_US" else ""
     for i, pn in enumerate(period_names):
         active = ' active' if i == period else ''
-        h(f'<a class="tab{active}" href="?period={i}">{pn}</a>')
+        h(f'<a class="tab{active}" href="?period={i}{_lang_param}">{pn}</a>')
     h('</div>')
-    # Language switcher
-    _lang_labels = {lc: lc.split("_")[1] for lc in SUPPORTED}
+    # Language switcher — native language names
+    _lang_labels = {
+        "en_US": "English",
+        "pt_PT": "Português",
+        "fr_FR": "Français",
+        "it_IT": "Italiano",
+        "nl_NL": "Nederlands",
+    }
     h('<div class="tabs" style="margin-bottom:0">')
-    for _lcode, _llabel in _lang_labels.items():
+    for _lcode in SUPPORTED:
+        _llabel  = _lang_labels.get(_lcode, _lcode)
         _lactive = ' active' if _lcode == lang else ''
         h(f'<a class="tab{_lactive}" href="?period={period}&lang={_lcode}">{_llabel}</a>')
     h('</div>')

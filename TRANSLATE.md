@@ -1,6 +1,6 @@
 # Translating Statsbot
 
-**Português** · **Français** · **Italiano** — see below for your language.
+**Português** · **Français** · **Italiano** · **Nederlands** — see below for your language.
 
 ---
 
@@ -22,6 +22,7 @@ as the reference catalogue; do not add translations to it.
 ### Adding a new language
 
 1. Copy `locale/en_US.po` to `locale/<lang>.po` (e.g. `locale/de_DE.po`)
+   Currently supported: `en_US`, `pt_PT`, `fr_FR`, `it_IT`, `nl_NL`
 2. Update the `Language:` header
 3. Add your language code to `SUPPORTED` in `i18n.py`
 4. Translate every `msgstr` line
@@ -298,3 +299,70 @@ Entrambe devono essere tradotte.
   o ristrutturare la frase per evitare la concordanza di genere)
 - Mantenere `!` e `?` dove presenti
 - I termini IRC (`op`, `halfop`, `voice`, `kick`) non devono essere tradotti
+
+---
+
+---
+
+## Nederlands
+
+### Hoe het werkt
+
+Statsbot gebruikt standaard PO-bestanden (`locale/<lang>.po`). Elke vermelding ziet er zo uit:
+
+```
+msgid "{nick} is a very aggressive person. They attacked others {count} times."
+msgstr "{nick} is een erg agressief persoon. Diegene viel anderen {count} keer aan."
+```
+
+De `msgid` is de Engelse zin — **vertaal of wijzig de `msgid`-regels niet**.
+Bewerk alleen de `msgstr`-regel. Het bestand `en_US.po` heeft overal een lege `msgstr`
+en dient als referentiecatalogus; voeg er geen vertalingen aan toe.
+
+### Regels
+
+**Verplicht te behouden — de pagina breekt als deze worden verwijderd of hernoemd:**
+
+- `{nick}` — IRC-nick, ingevoegd door de bot
+- `{nick2}` — tweede IRC-nick (gebruikt in opvolgerszinnen)
+- `{count}` — een getal
+- `{pct}` — procentuele waarde (al opgemaakt, bijv. `27.3`)
+- `{avg}` — een gemiddelde waarde
+- `{n}` — een getal (dagen, nicks, enz.)
+- `{channel}` — kanaalnaam (bijv. `#nederland`)
+- `{network}` — netwerknaam (bijv. `PTirc`)
+- `{url}` — een URL
+- `{list}` — een opgemaakte lijst
+- `{date}` — een opgemaakte datum
+- `{time}` — een opgemaakte tijd
+- `{by}` — attributiereeks (kan leeg zijn)
+- `{quote}` — een willekeurig citaat
+- `{total}` — totaal aantal nicks
+
+Tijdaanduidingen mogen **herordend** worden binnen de zin om de Nederlandse grammatica te volgen.
+Je kunt ze niet hernoemen, verwijderen of nieuwe toevoegen.
+
+**Niet vertalen:**
+
+- De vier tijdbanden: `0-5`, `6-11`, `12-17`, `18-23` — ongewijzigd laten.
+- `Karma` — eigennaam, gebruikt als sectietitel en in de database.
+- `Nick` (kolomkop) — IRC-terminologie, algemeen begrepen.
+- `URL`, `Smiley` — universele afkortingen.
+- `:-)`  `:)`  `:(`  — emoticons in teksten zoals `"Smileys :-)"` — ongewijzigd laten.
+
+**Dagen van de week en maanden:**
+
+Kommagescheiden lijsten. Houd precies 7 dagen (beginnend op maandag)
+en precies 12 maanden aan. Geen spaties rondom komma's.
+
+**Enkelvoud en meervoud:**
+
+Veel statistieken hebben twee versies — één voor `{count} = 1` en één voor `{count} > 1`.
+Beide moeten vertaald worden.
+
+**Stijl:**
+
+- Houd de toon aan — speels, licht sarcastisch, nooit gemeen
+- Gebruik genderneutrale taal (gebruik “diegene”, “hun” of herformuleer zinnen om genderovereenkomst te vermijden)
+- Behoud `!` en `?` waar aanwezig
+- IRC-termen (`op`, `halfop`, `voice`, `kick`) mogen niet worden vertaald

@@ -1,0 +1,430 @@
+# Statsbot — Nederlands (Nederland)
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: nl_NL\nPlural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
+msgstr "maandag,dinsdag,woensdag,donderdag,vrijdag,zaterdag,zondag"
+
+msgid "January,February,March,April,May,June,July,August,September,October,November,December"
+msgstr "januari,februari,maart,april,mei,juni,juli,augustus,september,oktober,november,december"
+
+msgid "today"
+msgstr "vandaag"
+
+msgid "yesterday"
+msgstr "gisteren"
+
+msgid "{n} days ago"
+msgstr "{n} dagen geleden"
+
+msgid "today at {time}"
+msgstr "vandaag om {time}"
+
+msgid "yesterday at {time}"
+msgstr "gisteren om {time}"
+
+msgid "{n} days ago at {time}"
+msgstr "{n} dagen geleden om {time}"
+
+msgid "Statistics generated on {date}"
+msgstr "Statistieken gegenereerd op {date}"
+
+msgid "During this {n}-day reporting period, a total of {total} different nicks were represented on {channel}."
+msgstr "In deze periode van {n} dagen waren er {total} verschillende nicks actief op {channel}."
+
+msgid "All-time statistics for {channel} — {total} different nicks represented."
+msgstr "Statistieken voor {channel} — {total} verschillende nicks."
+
+msgid "all-time"
+msgstr "altijd"
+
+msgid "this week"
+msgstr "deze week"
+
+msgid "this month"
+msgstr "deze maand"
+
+msgid "users"
+msgstr ""
+
+msgid "peak users"
+msgstr ""
+
+msgid "top talker"
+msgstr ""
+
+msgid "happiest :)"
+msgstr ""
+
+msgid "saddest :("
+msgstr ""
+
+msgid "most online"
+msgstr ""
+
+msgid "Daily activity"
+msgstr "Dagelijkse activiteit"
+
+msgid "Most active times"
+msgstr "Meest actieve tijden"
+
+msgid "Most active nicks"
+msgstr "Meest actieve nicks"
+
+msgid "Big numbers"
+msgstr "Grote aantallen"
+
+msgid "Most active nicks by hours"
+msgstr "Meest actieve nicks per uur"
+
+msgid "Most used words"
+msgstr "Meest gebruikte woorden"
+
+msgid "Most referenced nicks"
+msgstr "Meest genoemde nicks"
+
+msgid "Smileys :-)"
+msgstr "Smileys :-)"
+
+msgid "Karma"
+msgstr "Karma"
+
+msgid "Most referenced URLs"
+msgstr "Meest gedeelde URL’s"
+
+msgid "Latest Topics"
+msgstr "Laatste onderwerpen"
+
+msgid "Other interesting numbers"
+msgstr "Andere interessante cijfers"
+
+msgid "Number of lines"
+msgstr "Aantal regels"
+
+msgid "Number of Words"
+msgstr "Aantal woorden"
+
+msgid "Words per line"
+msgstr "Woorden per regel"
+
+msgid "Chars per line"
+msgstr "Tekens per regel"
+
+msgid "When?"
+msgstr "Wanneer?"
+
+msgid "Last seen"
+msgstr "Laatst gezien"
+
+msgid "Random quote"
+msgstr "Willekeurig citaat"
+
+msgid "Word"
+msgstr "Woord"
+
+msgid "Number of Uses"
+msgstr "Aantal keer gebruikt"
+
+msgid "Last Used by"
+msgstr "Laatst gebruikt door"
+
+msgid "Nick"
+msgstr "Nick"
+
+msgid "Last by"
+msgstr "Laatste door"
+
+msgid "Smiley"
+msgstr "Smiley"
+
+msgid "Uses"
+msgstr "Gebruik"
+
+msgid "Top user"
+msgstr "Topgebruiker"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "Score"
+msgstr "Score"
+
+msgid "These didn't make it to the top:"
+msgstr "Deze haalden de top niet:"
+
+msgid "By the way, there were {n} other nicks."
+msgstr "Er waren trouwens nog {n} andere nicks."
+
+msgid "0-5"
+msgstr "0-5"
+
+msgid "6-11"
+msgstr "6-11"
+
+msgid "12-17"
+msgstr "12-17"
+
+msgid "18-23"
+msgstr "18-23"
+
+msgid "Is {nick} a little bit slower than the rest, or just asking too many questions?  {pct}% lines contained a question!"
+msgstr "Is {nick} een beetje traag, of stelt diegene gewoon te veel vragen? {pct}% van de regels bevatte een vraag!"
+
+msgid "{nick} didn't know that much either. {pct}% of their lines were questions."
+msgstr "{nick} wist het ook niet zo goed. {pct}% van hun regels waren vragen."
+
+msgid "The loudest one was {nick}, who yelled {pct}% of the time!"
+msgstr "De luidste was {nick}, die {pct}% van de tijd schreeuwde!"
+
+msgid "Another old yeller was {nick}, who shouted {pct}% of the time!"
+msgstr "{nick} schreeuwde ook, namelijk {pct}% van de tijd!"
+
+msgid "It seems that {nick}'s shift-key is hanging: {pct}% of the time they wrote UPPERCASE."
+msgstr "Het lijkt erop dat de shift-toets van {nick} vastzit: {pct}% van de tijd schreef diegene in HOOFDLETTERS."
+
+msgid "{nick} just forgot to deactivate their Caps-Lock. They wrote UPPERCASE {pct}% of the time."
+msgstr "{nick} vergat de Caps-Lock uit te zetten. {pct}% van de tijd in HOOFDLETTERS."
+
+msgid "{nick} is a very aggressive person. They attacked others {count} time."
+msgstr "{nick} is een erg agressief persoon. Diegene viel anderen {count} keer aan."
+
+msgid "{nick} is a very aggressive person. They attacked others {count} times."
+msgstr "{nick} is een erg agressief persoon. Diegene viel anderen {count} keer aan."
+
+msgid "{nick} can't control their aggressions, either. They picked on others {count} times."
+msgstr "{nick} kan hun agressie ook niet beheersen. Diegene treiterde anderen {count} keer."
+
+msgid "Nobody beat anyone up. Everybody was friendly."
+msgstr "Niemand heeft iemand aangevallen. Iedereen was vriendelijk."
+
+msgid "Poor {nick}, nobody likes them. They were attacked {count} time."
+msgstr "Arme {nick}, niemand mag hen. Ze werden {count} keer aangevallen."
+
+msgid "Poor {nick}, nobody likes them. They were attacked {count} times."
+msgstr "Arme {nick}, niemand mag hen. Ze werden {count} keer aangevallen."
+
+msgid "{nick} seems to be unliked too. They got beaten {count} times."
+msgstr "{nick} lijkt ook niet geliefd te zijn. Diegene werd {count} keer geslagen."
+
+msgid "For example, like this:"
+msgstr "Bijvoorbeeld, zoals dit:"
+
+msgid "{nick} brings happiness to the world. {pct}% of their lines contained smiling faces. :)"
+msgstr "{nick} brengt vreugde in de wereld. {pct}% van de regels bevatte een smiley. :)"
+
+msgid "{nick} isn't a sad person either, smiling {pct}% of the time."
+msgstr "{nick} is ook niet triest, {pct}% van de tijd een smiley."
+
+msgid "Nobody smiles in this channel! Cheer up, everyone."
+msgstr "Niemand lacht in dit kanaal! Vrolijk je op, allemaal."
+
+msgid "{nick} seems to be sad at the moment: {pct}% of their lines contained sad faces. :("
+msgstr "{nick} lijkt op dit moment verdrietig: {pct}% van de regels bevatte een droevig gezichtje. :("
+
+msgid "{nick} is also a sad person, crying {pct}% of the time."
+msgstr "{nick} is ook een triest persoon, {pct}% van de tijd."
+
+msgid "Nobody is sad in this channel! What a happy channel. :-)"
+msgstr "Niemand is verdrietig in dit kanaal! Wat een vrolijk kanaal. :-)"
+
+msgid "{nick} wrote the longest lines, averaging {avg} letters per line."
+msgstr "{nick} schreef de langste regels, gemiddeld {avg} letters per regel."
+
+msgid "{channel} average was {avg} letters per line."
+msgstr "Het gemiddelde van {channel} was {avg} letters per regel."
+
+msgid "{nick} wrote the shortest lines, averaging {avg} characters per line."
+msgstr "{nick} schreef de kortste regels, gemiddeld {avg} tekens per regel."
+
+msgid "{nick} was tight-lipped, too, averaging {avg} characters."
+msgstr "{nick} was ook spaarzaam met woorden, gemiddeld {avg} tekens."
+
+msgid "{nick} spoke a total of {count} words!"
+msgstr "{nick} sprak in totaal {count} woorden!"
+
+msgid "{nick}'s faithful follower, {nick2}, didn't speak so much: {count} words."
+msgstr "De trouwe volgeling van {nick}, {nick2}, sprak minder: {count} woorden."
+
+msgid "{nick} wrote an average of {avg} words per line."
+msgstr "{nick} schreef gemiddeld {avg} woorden per regel."
+
+msgid "Channel average was {avg} words per line."
+msgstr "Het kanaalgemiddelde was {avg} woorden per regel."
+
+msgid "{nick} wasn't very popular, getting kicked {count} time!"
+msgstr "{nick} was niet erg populair, {count} keer gekickt!"
+
+msgid "{nick} seemed to be hated too: {count} kicks were received."
+msgstr "{nick} leek ook gehaat te worden: {count} kicks ontvangen."
+
+msgid "{nick} is either insane or just a fair op, kicking a total of {count} person!"
+msgstr "{nick} is gek of gewoon een eerlijke op, en kickte in totaal {count} persoon!"
+
+msgid "{nick}'s faithful follower, {nick2}, kicked about {count} people."
+msgstr "De trouwe volgeling van {nick}, {nick2}, kickte ongeveer {count} mensen."
+
+msgid "{nick} donated {count} op in the channel..."
+msgstr "{nick} gaf {count} op in het kanaal..."
+
+msgid "{nick} was also generous with ops, giving {count} times."
+msgstr "{nick} was ook genereus met ops, {count} keer gegeven."
+
+msgid "Strange, no op was given on {channel}!"
+msgstr "Vreemd, er is geen op gegeven op {channel}!"
+
+msgid "{nick} is the channel's deop machine, removing ops from {count} person."
+msgstr "{nick} is de deop-machine van het kanaal, ops verwijderd van {count} persoon."
+
+msgid "{nick} also took ops away {count} times."
+msgstr "{nick} nam ook {count} keer ops af."
+
+msgid "Wow, no op was taken on {channel}!"
+msgstr "Wauw, er is geen op afgenomen op {channel}!"
+
+msgid "{nick} donated {count} halfop in the channel..."
+msgstr "{nick} gaf {count} halfop in het kanaal..."
+
+msgid "{nick} also gave halfops {count} times."
+msgstr "{nick} gaf ook {count} keer halfops."
+
+msgid "Strange, no halfop was given on {channel}!"
+msgstr "Vreemd, er is geen halfop gegeven op {channel}!"
+
+msgid "{nick} took halfops away {count} time."
+msgstr "{nick} nam {count} keer halfops af."
+
+msgid "Wow, no halfop was taken on {channel}!"
+msgstr "Wauw, er is geen halfop afgenomen op {channel}!"
+
+msgid "{nick} is very generous with voice, handing it out {count} time."
+msgstr "{nick} is erg genereus met voice, {count} keer uitgedeeld."
+
+msgid "{nick} was also quite vocal about giving voice, {count} times."
+msgstr "{nick} gaf ook {count} keer voice."
+
+msgid "Strange, no voices were given on {channel}!"
+msgstr "Vreemd, er zijn geen voices gegeven op {channel}!"
+
+msgid "{nick} took voice away {count} time — someone had to."
+msgstr "{nick} nam {count} keer voice af — iemand moest het doen."
+
+msgid "{nick} also silenced people {count} times."
+msgstr "{nick} bracht ook {count} mensen tot zwijgen."
+
+msgid "No voices were taken on {channel}!"
+msgstr "Er zijn geen voices afgenomen op {channel}!"
+
+msgid "{nick} always lets us know what they're doing: {count} action!"
+msgstr "{nick} laat ons altijd weten wat diegene doet: {count} actie!"
+
+msgid "Also, {nick} tells us what's up with {count} actions."
+msgstr "{nick} vertelt ons ook wat er speelt met {count} acties."
+
+msgid "No actions in this channel!"
+msgstr "Geen acties in dit kanaal!"
+
+msgid "{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} time!"
+msgstr "{nick} praat veel met zichzelf. Diegene schreef {count} keer meer dan 5 regels achter elkaar!"
+
+msgid "{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} times!"
+msgstr "{nick} praat veel met zichzelf. Diegene schreef {count} keer meer dan 5 regels achter elkaar!"
+
+msgid "Another lonely one was {nick}, who managed to hit {count} times."
+msgstr "Een andere eenling was {nick}, die het {count} keer deed."
+
+msgid "{nick} couldn't decide whether to stay or go. {count} join during this period!"
+msgstr "{nick} kon niet beslissen of diegene wilde blijven of gaan. {count} keer joined in deze periode!"
+
+msgid "{nick} couldn't decide whether to stay or go. {count} joins during this period!"
+msgstr "{nick} kon niet beslissen of diegene wilde blijven of gaan. {count} keer joined in deze periode!"
+
+msgid "{nick} has quite a potty mouth. {pct}% of their words were foul language."
+msgstr "{nick} heeft een vuilbekkerij. {pct}% van hun woorden was grof taalgebruik."
+
+msgid "{nick} also makes sailors blush, {pct}% of the time."
+msgstr "{nick} laat ook matrozen blozen, {pct}% van de tijd."
+
+msgid "Nobody is foul-mouthed here! Remarkable."
+msgstr "Niemand vloekt hier! Opmerkelijk."
+
+msgid "The topic was set {count} time."
+msgstr "Het onderwerp werd {count} keer ingesteld."
+
+msgid "The topic was set {count} times."
+msgstr "Het onderwerp werd {count} keer ingesteld."
+
+msgid "Total lines"
+msgstr "Totaal regels"
+
+msgid "Unique nicks"
+msgstr "Unieke nicks"
+
+msgid "Avg words/line"
+msgstr "Gem. woorden/regel"
+
+msgid "Avg chars/line"
+msgstr "Gem. tekens/regel"
+
+msgid "Topics set"
+msgstr "Onderwerpen ingesteld"
+
+msgid "{n} times"
+msgstr "{n} keer"
+
+msgid "Stats for {channel} on {network}{by} — generated {date} by"
+msgstr "Stats voor {channel} op {network}{by} — gegenereerd op {date} door"
+
+msgid "Stats for {channel}: {url}"
+msgstr "Stats voor {channel}: {url}"
+
+msgid "No stats yet."
+msgstr "Nog geen statistieken."
+
+msgid "{channel} top {n}: {list}"
+msgstr ""
+
+msgid "No quotes for {nick}."
+msgstr "Geen citaten voor {nick}."
+
+msgid "No quotes yet."
+msgstr "Nog geen citaten."
+
+msgid "{nick}'s random quote: \\\\\\\"{quote}\\\\\\\""
+msgstr ""
+
+msgid "{nick} is a sad person, kicked {count} time."
+msgstr ""
+
+msgid "{nick} is a fierce one, kicking {count} time."
+msgstr ""
+
+msgid "{nick} donated {count} op in the channel."
+msgstr ""
+
+msgid "{nick} is the channel sheriff with {count} deop."
+msgstr ""
+
+msgid "{nick} likes to share half-ops, giving them out {count} time."
+msgstr ""
+
+msgid "{nick} took half-ops away {count} time."
+msgstr ""
+
+msgid "{nick} gave voice {count} time."
+msgstr ""
+
+msgid "{nick} silenced people {count} time."
+msgstr ""
+
+msgid "{nick} always lets us know what they're doing: {count} action."
+msgstr ""
+
+msgid "{nick} couldn't decide whether to stay or go: {count} join."
+msgstr ""
+
+msgid "{nick} seems to be unliked. They got beaten {count} time."
+msgstr ""
+
+msgid "{count} topic set"
+msgstr ""
+
