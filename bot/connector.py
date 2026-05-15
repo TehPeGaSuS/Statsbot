@@ -159,9 +159,16 @@ class IRCConnector:
                 log.debug(f"<< {line}")
                 self._handle_line(line)
             except asyncio.CancelledError:
+                self._connected = False
+                raise
+            except (ConnectionResetError, BrokenPipeError, OSError, ssl.SSLError) as e:
+                log.warning(f"Read loop ended for {self.host}: {e}")
                 break
             except Exception as e:
-                log.error(f"Read error: {e}", exc_info=True)
+                log.error(f"Unexpected read error for {self.host}: {e}", exc_info=True)
+                break
+
+        self._connected = False
 
     def _handle_line(self, line: str):
         parsed = parse_irc(line)
