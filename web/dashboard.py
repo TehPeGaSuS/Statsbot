@@ -319,7 +319,7 @@ def api_nick(network: str, channel: str, nick: str):
             (nick, network, channel)
         ).fetchone()
     if row:
-        hourly = get_hourly_activity(row["id"])
+        hourly = get_hourly_activity(row["id"], period)
         s["hourly"] = hourly
     return jsonify(dict(s))
 
