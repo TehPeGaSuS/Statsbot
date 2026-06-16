@@ -173,11 +173,13 @@ def init_db():
         );
 
         -- Per-nick hourly activity (heatmap data)
+        -- period: 0=total, 1=today, 2=week, 3=month (mirrors `stats`)
         CREATE TABLE IF NOT EXISTS hourly_activity (
             nick_id     INTEGER NOT NULL REFERENCES nicks(id) ON DELETE CASCADE,
             hour        INTEGER NOT NULL,
+            period      INTEGER NOT NULL DEFAULT 0,
             lines       INTEGER DEFAULT 0,
-            PRIMARY KEY (nick_id, hour)
+            PRIMARY KEY (nick_id, hour, period)
         );
 
         -- Channel peak users
@@ -363,6 +365,34 @@ def _migrate():
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}")
                 print(f"Migration: added {table}.{column}")
 
+        # hourly_activity gained a `period` column with a new PK shape
+        # (nick_id, hour, period) instead of (nick_id, hour). ADD COLUMN can't
+        # change a PK, so rebuild the table when the old shape is detected.
+        cols = [row[1] for row in
+                conn.execute("PRAGMA table_info(hourly_activity)").fetchall()]
+        if "period" not in cols:
+            conn.execute("ALTER TABLE hourly_activity RENAME TO hourly_activity_old")
+            conn.execute("""
+                CREATE TABLE hourly_activity (
+                    nick_id     INTEGER NOT NULL REFERENCES nicks(id) ON DELETE CASCADE,
+                    hour        INTEGER NOT NULL,
+                    period      INTEGER NOT NULL DEFAULT 0,
+                    lines       INTEGER DEFAULT 0,
+                    PRIMARY KEY (nick_id, hour, period)
+                )
+            """)
+            # Old data had no period concept (it was a lifetime accumulator).
+            # Seed it into period=0 (all-time) only; 1/2/3 start fresh from now
+            # on, since there's no way to know how much of the old total
+            # belongs in today/this week/this month.
+            conn.execute("""
+                INSERT INTO hourly_activity (nick_id, hour, period, lines)
+                SELECT nick_id, hour, 0, lines FROM hourly_activity_old
+            """)
+            conn.execute("DROP TABLE hourly_activity_old")
+            print("Migration: rebuilt hourly_activity with period column "
+                  "(existing data preserved as period=0/all-time)")
+
 
 
 # ─── Nick Management ────────────────────────────────────────────────────────
@@ -434,14 +464,17 @@ def incr(nick_id: int, stat: str, value: int = 1):
                 f"UPDATE stats SET {stat}={stat}+? WHERE nick_id=? AND period=?",
                 (value, nick_id, period)
             )
-        # Track hourly activity for lines
+        # Track hourly activity for lines, mirrored across all periods so
+        # the day/week/month/all-time tabs can each show their own
+        # "active hours" breakdown instead of one shared lifetime bucket.
         if stat == "lines":
             hour = int(time.strftime("%H"))
-            conn.execute(
-                "INSERT INTO hourly_activity(nick_id,hour,lines) VALUES(?,?,?) "
-                "ON CONFLICT(nick_id,hour) DO UPDATE SET lines=lines+?",
-                (nick_id, hour, value, value)
-            )
+            for period in range(4):
+                conn.execute(
+                    "INSERT INTO hourly_activity(nick_id,hour,period,lines) VALUES(?,?,?,?) "
+                    "ON CONFLICT(nick_id,hour,period) DO UPDATE SET lines=lines+?",
+                    (nick_id, hour, period, value, value)
+                )
 
 
 def get_stats(nick_id: int, period: int = 0) -> Optional[sqlite3.Row]:
@@ -679,24 +712,24 @@ def get_recent_topics(network: str, channel: str, limit: int = 5) -> List[Dict]:
 
 # ─── Hourly / Activity ───────────────────────────────────────────────────────
 
-def get_hourly_activity(nick_id: int) -> List[Dict]:
+def get_hourly_activity(nick_id: int, period: int = 0) -> List[Dict]:
     with get_conn() as conn:
         rows = conn.execute(
-            "SELECT hour, lines FROM hourly_activity WHERE nick_id=? ORDER BY hour",
-            (nick_id,)
+            "SELECT hour, lines FROM hourly_activity WHERE nick_id=? AND period=? ORDER BY hour",
+            (nick_id, period)
         ).fetchall()
         return [dict(r) for r in rows]
 
 
-def get_channel_hourly(network: str, channel: str) -> List[Dict]:
+def get_channel_hourly(network: str, channel: str, period: int = 0) -> List[Dict]:
     with get_conn() as conn:
         rows = conn.execute("""
             SELECT ha.hour, SUM(ha.lines) as lines
             FROM hourly_activity ha
             JOIN nicks n ON n.id=ha.nick_id
-            WHERE n.network=? AND n.channel=?
+            WHERE n.network=? AND n.channel=? AND ha.period=?
             GROUP BY ha.hour ORDER BY ha.hour
-        """, (network, channel)).fetchall()
+        """, (network, channel, period)).fetchall()
         return [dict(r) for r in rows]
 
 
@@ -847,6 +880,10 @@ def reset_period(period: int):
                 questions=0, minutes=0, topics=0
             WHERE period=?
         """, (period,))
+        # Hourly "active hours" data is mirrored per-period (see incr());
+        # clear this period's bucket too so day/week/month reflect only
+        # activity since the last reset, instead of accumulating forever.
+        conn.execute("DELETE FROM hourly_activity WHERE period=?", (period,))
 
 
 # ─── Channel / Nick Listing ───────────────────────────────────────────────────
