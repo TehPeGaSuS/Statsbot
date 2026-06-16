@@ -87,7 +87,7 @@ def build_page(network: str, channel: str, period: int, config: dict,
     # ── Fetch all data ────────────────────────────────────────────────────────
     peak_data    = get_peak(network, channel, 0)
     total_users  = count_users(network, channel)
-    hourly       = get_channel_hourly(network, channel)
+    hourly       = get_channel_hourly(network, channel, period)
     daily_days   = pisg.get("DailyActivity", 30)
     if daily_days:
         snapshot_today(network, channel)
@@ -117,8 +117,8 @@ def build_page(network: str, channel: str, period: int, config: dict,
             SELECT n.nick, ha.hour, ha.lines
             FROM hourly_activity ha
             JOIN nicks n ON n.id=ha.nick_id
-            WHERE n.network=? AND n.channel=?
-        """, (network, channel)).fetchall()
+            WHERE n.network=? AND n.channel=? AND ha.period=?
+        """, (network, channel, period)).fetchall()
     nick_hours_raw = {}   # nick -> [h0, h1, ..., h23] UTC lines
     for _hr in _hr_rows:
         _hn = _hr["nick"]; _hh = _hr["hour"]; _hl = _hr["lines"]
