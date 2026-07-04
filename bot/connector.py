@@ -169,6 +169,7 @@ class IRCConnector:
                 break
 
         self._connected = False
+        self._reset_join_state()
 
     def _handle_line(self, line: str):
         parsed = parse_irc(line)
@@ -583,8 +584,27 @@ class IRCConnector:
             task.cancel()
         self.send_raw(f"PART {channel} :Removed by admin")
 
+    def _reset_join_state(self):
+        """Clear all join tracking when connection is lost.
+        
+        This ensures that on reconnection, the bot will treat all JOINs
+        as fresh attempts rather than skipping them because they appear
+        already-joined from the previous session. This is critical for
+        proper recovery from network splits.
+        """
+        self._joined_channels.clear()
+        self._join_attempts.clear()
+        self._channel_members.clear()
+        # Cancel any pending retry tasks
+        for task in self._join_retry_tasks.values():
+            if not task.done():
+                task.cancel()
+        self._join_retry_tasks.clear()
+        log.info("Cleared join state on disconnect — will rejoin fresh on reconnection")
+
     async def disconnect(self):
         self._connected = False
+        self._reset_join_state()
         if self._writer:
             self.send_raw("QUIT :statsbot shutting down")
             self._writer.close()
