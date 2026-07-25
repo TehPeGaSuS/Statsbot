@@ -114,14 +114,19 @@ def _canonical_network(name: str):
 
 
 def _canonical_channel(network: str, channel: str):
-    """Return the DB-stored channel name matching `channel` case-insensitively, or None."""
+    """Return the canonical (lowercase) channel name matching `channel`
+    case-insensitively, or None. Lowercased rather than returned as
+    DB-stored — the live IRC casing for a channel can drift after a
+    netsplit (whoever (re-)creates an empty channel sets its casing on
+    the server), so there's no single "correct" stored casing to prefer;
+    always normalizing to lowercase keeps generated URLs stable."""
     from database.models import get_conn
     with get_conn() as conn:
         row = conn.execute(
             "SELECT DISTINCT channel FROM nicks WHERE network=? COLLATE NOCASE AND channel=? COLLATE NOCASE",
             (network, channel)
         ).fetchone()
-        return row["channel"] if row else None
+        return row["channel"].lower() if row else None
 
 
 @app.route("/")
@@ -190,7 +195,11 @@ def network_stats(network: str):
 
     channels = []
     for ch in all_channels:
-        chan = ch["channel"]
+        # Lowercase for display/links — the DB row's casing just reflects
+        # whichever nick happened to be inserted first for this channel,
+        # not anything meaningful (COLLATE NOCASE means queries below still
+        # match regardless of case).
+        chan = ch["channel"].lower()
         users = count_users(network, chan)
         with get_conn() as conn:
             row = conn.execute(

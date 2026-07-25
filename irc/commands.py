@@ -69,13 +69,15 @@ class CommandHandler:
         url = get_channel_config(self.network, channel, "stats_url")
         if not url:
             web = self.cfg.get("web", {})
+            # Lowercase so the link lands on the canonical URL directly —
+            # the channel's live IRC casing (server-assigned, can drift after
+            # a netsplit) would otherwise 301-redirect on every click.
+            chan_slug = channel.lstrip("#").lower()
             public_url = web.get("public_url", "")
             if public_url:
-                chan_slug = channel.lstrip("#")
                 url = f"{public_url.rstrip('/')}/{self.network}/{chan_slug}/"
             else:
                 port = web.get("port", 8033)
-                chan_slug = channel.lstrip("#")
                 url = f"http://localhost:{port}/{self.network}/{chan_slug}/"
         lang = get_lang(self.network, channel)
         self.send(channel, t("Stats for {channel}: {url}", lang, channel=channel, url=url))
