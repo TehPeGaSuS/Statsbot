@@ -97,6 +97,17 @@ class IRCConnector:
             network_cfg.get("join_retry_delay",
                             (config.get("bot", {}) or {}).get("join_retry_delay", 30))
         )
+        # Once join_retries quick attempts are exhausted, keep retrying at this
+        # much slower cadence instead of giving up. Networks like Undernet lock
+        # a channel with ERR_UNAVAILRESOURCE (437) for a "channel delay" window
+        # after a netsplit empties it, which can easily outlast the quick-retry
+        # budget above — and if the bot's own server isn't the one that split,
+        # its connection never drops, so nothing else would ever retry that
+        # channel again for the rest of the session.
+        self.join_retry_backoff_delay = float(
+            network_cfg.get("join_retry_backoff_delay",
+                            (config.get("bot", {}) or {}).get("join_retry_backoff_delay", 300))
+        )
 
     # ─── Send ─────────────────────────────────────────────────────────────
 
@@ -518,37 +529,49 @@ class IRCConnector:
         log.info(f"Joined {channel} successfully.")
 
     def _schedule_join_retry(self, channel: str, code: str, reason: str):
-        """Schedule a delayed retry for a failed JOIN, up to join_retries."""
+        """Schedule a delayed retry for a failed JOIN.
+
+        Never gives up permanently while the connection is alive: after
+        join_retries quick attempts, fall back to a slow indefinite retry
+        cadence (join_retry_backoff_delay) instead of stopping. This is what
+        lets the bot recover from transient conditions — e.g. Undernet's
+        post-netsplit channel-delay lock — without needing a full reconnect,
+        which may not happen for a long time if the bot's own server isn't
+        the one that split.
+        """
         ch_l = channel.lower()
         if ch_l in self._joined_channels:
-            return
-        attempts = self._join_attempts.get(ch_l, 0)
-        if attempts >= self.join_retries:
-            log.warning(
-                f"JOIN {channel} failed ({code} {reason}) — "
-                f"giving up after {attempts} attempts."
-            )
             return
         # Avoid stacking multiple pending retries for the same channel
         existing = self._join_retry_tasks.get(ch_l)
         if existing and not existing.done():
             return
-        log.warning(
-            f"JOIN {channel} failed ({code} {reason}) — "
-            f"retrying in {self.join_retry_delay}s "
-            f"(attempt {attempts}/{self.join_retries} done)."
-        )
+        attempts = self._join_attempts.get(ch_l, 0)
+        if attempts < self.join_retries:
+            delay = self.join_retry_delay
+            log.warning(
+                f"JOIN {channel} failed ({code} {reason}) — "
+                f"retrying in {delay}s "
+                f"(attempt {attempts}/{self.join_retries} done)."
+            )
+        else:
+            delay = self.join_retry_backoff_delay
+            log.warning(
+                f"JOIN {channel} still failing ({code} {reason}) after "
+                f"{attempts} attempts — backing off to a slow retry "
+                f"every {delay}s until it succeeds."
+            )
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
             return
         self._join_retry_tasks[ch_l] = loop.create_task(
-            self._delayed_join_retry(channel)
+            self._delayed_join_retry(channel, delay)
         )
 
-    async def _delayed_join_retry(self, channel: str):
+    async def _delayed_join_retry(self, channel: str, delay: Optional[float] = None):
         try:
-            await asyncio.sleep(self.join_retry_delay)
+            await asyncio.sleep(delay if delay is not None else self.join_retry_delay)
         except asyncio.CancelledError:
             return
         ch_l = channel.lower()

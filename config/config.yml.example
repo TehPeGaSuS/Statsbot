@@ -40,8 +40,13 @@ networks:
     #   - "MODE {nick} +x"       # request cloak (Undernet, some others)
 
     # Channel join retries
-    # join_retries: 5            # max attempts per channel (default: 5)
-    # join_retry_delay: 30       # seconds between attempts (default: 30)
+    # join_retries: 5                  # quick attempts per channel before backing off (default: 5)
+    # join_retry_delay: 30             # seconds between quick attempts (default: 30)
+    # join_retry_backoff_delay: 300    # seconds between attempts after join_retries is
+    #                                  # exhausted — retried forever at this cadence, never
+    #                                  # given up on, so e.g. Undernet's post-netsplit
+    #                                  # channel-delay lock eventually clears on its own
+    #                                  # (default: 300)
 
     # ── Per-channel pisg overrides ───────────────────────────────────────────
     # Any key from the global pisg: section below can be overridden per channel.
