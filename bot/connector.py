@@ -108,6 +108,14 @@ class IRCConnector:
             network_cfg.get("join_retry_backoff_delay",
                             (config.get("bot", {}) or {}).get("join_retry_backoff_delay", 300))
         )
+        # Cap on slow-backoff attempts, separate from join_retries. Without
+        # this the bot would retry a stuck channel forever (e.g. 300s delay
+        # -> 12/hr -> ~105,000 attempts/year). Default 36 gives ~3 hours of
+        # backoff retries before truly giving up.
+        self.join_retry_backoff_retries = int(
+            network_cfg.get("join_retry_backoff_retries",
+                            (config.get("bot", {}) or {}).get("join_retry_backoff_retries", 36))
+        )
 
     # ─── Send ─────────────────────────────────────────────────────────────
 
@@ -531,13 +539,14 @@ class IRCConnector:
     def _schedule_join_retry(self, channel: str, code: str, reason: str):
         """Schedule a delayed retry for a failed JOIN.
 
-        Never gives up permanently while the connection is alive: after
-        join_retries quick attempts, fall back to a slow indefinite retry
-        cadence (join_retry_backoff_delay) instead of stopping. This is what
-        lets the bot recover from transient conditions — e.g. Undernet's
+        Doesn't give up after just join_retries quick attempts: falls back to
+        a slow retry cadence (join_retry_backoff_delay) instead of stopping,
+        so the bot can recover from transient conditions — e.g. Undernet's
         post-netsplit channel-delay lock — without needing a full reconnect,
         which may not happen for a long time if the bot's own server isn't
-        the one that split.
+        the one that split. That backoff phase is itself capped at
+        join_retry_backoff_retries so a truly stuck channel (permanent ban,
+        etc.) doesn't get retried forever.
         """
         ch_l = channel.lower()
         if ch_l in self._joined_channels:
@@ -555,11 +564,20 @@ class IRCConnector:
                 f"(attempt {attempts}/{self.join_retries} done)."
             )
         else:
+            backoff_attempt = attempts - self.join_retries
+            if backoff_attempt >= self.join_retry_backoff_retries:
+                log.warning(
+                    f"JOIN {channel} failed ({code} {reason}) — giving up "
+                    f"after {self.join_retries} quick + {backoff_attempt} "
+                    f"backoff attempts."
+                )
+                return
             delay = self.join_retry_backoff_delay
             log.warning(
                 f"JOIN {channel} still failing ({code} {reason}) after "
                 f"{attempts} attempts — backing off to a slow retry "
-                f"every {delay}s until it succeeds."
+                f"every {delay}s "
+                f"(backoff attempt {backoff_attempt}/{self.join_retry_backoff_retries})."
             )
         try:
             loop = asyncio.get_running_loop()
