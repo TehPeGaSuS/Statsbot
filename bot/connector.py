@@ -117,6 +117,27 @@ class IRCConnector:
                             (config.get("bot", {}) or {}).get("join_retry_backoff_retries", 36))
         )
 
+        # ── Rejoin on kick ──────────────────────────────────────────────
+        # Timestamps of recent self-kicks per channel (lowercased), used to
+        # detect a kick war and stop rejoining rather than flap forever.
+        self._kick_history: dict = {}
+        self.rejoin_on_kick = bool(
+            network_cfg.get("rejoin_on_kick",
+                            (config.get("bot", {}) or {}).get("rejoin_on_kick", True))
+        )
+        self.rejoin_delay = float(
+            network_cfg.get("rejoin_delay",
+                            (config.get("bot", {}) or {}).get("rejoin_delay", 5))
+        )
+        self.rejoin_max_kicks = int(
+            network_cfg.get("rejoin_max_kicks",
+                            (config.get("bot", {}) or {}).get("rejoin_max_kicks", 3))
+        )
+        self.rejoin_kick_window = float(
+            network_cfg.get("rejoin_kick_window",
+                            (config.get("bot", {}) or {}).get("rejoin_kick_window", 60))
+        )
+
     # ─── Send ─────────────────────────────────────────────────────────────
 
     def send_raw(self, line: str):
@@ -416,6 +437,10 @@ class IRCConnector:
             victim = params[1] if len(params) > 1 else ""
             reason = params[2] if len(params) > 2 else ""
             self._channel_members.get(channel, set()).discard(victim)
+            if victim == self._current_nick:
+                self._channel_members.pop(channel, None)
+                self._joined_channels.discard(channel.lower())
+                self._handle_self_kick(channel, kicker, reason)
             self.sensors.on_kick(kicker, host, channel, victim, reason)
 
         elif command == "MODE":
@@ -600,6 +625,58 @@ class IRCConnector:
             return
         self._attempt_join(channel)
 
+    def _handle_self_kick(self, channel: str, kicker: str, reason: str):
+        """We were kicked — rejoin after a short delay unless that would
+        mean flapping in a kick war (kicked repeatedly in a short window)."""
+        if not self.rejoin_on_kick:
+            log.info(f"Kicked from {channel} by {kicker} ({reason}) — "
+                      f"rejoin_on_kick disabled, not rejoining.")
+            return
+        ch_l = channel.lower()
+        now = time.time()
+        cutoff = now - self.rejoin_kick_window
+        hits = [t for t in self._kick_history.get(ch_l, []) if t >= cutoff]
+        hits.append(now)
+        self._kick_history[ch_l] = hits
+        if len(hits) > self.rejoin_max_kicks:
+            log.warning(
+                f"Kicked from {channel} by {kicker} ({reason}) — "
+                f"{len(hits)} kicks within {self.rejoin_kick_window}s, "
+                f"not rejoining to avoid a kick war."
+            )
+            return
+        log.info(
+            f"Kicked from {channel} by {kicker} ({reason}) — "
+            f"rejoining in {self.rejoin_delay}s "
+            f"({len(hits)}/{self.rejoin_max_kicks} recent kicks)."
+        )
+        self._join_attempts.pop(ch_l, None)
+        # The kick-rejoin path takes over channel state from any pending
+        # join-retry task, so there's only ever one rejoin in flight.
+        task = self._join_retry_tasks.pop(ch_l, None)
+        if task and not task.done():
+            task.cancel()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        self._join_retry_tasks[ch_l] = loop.create_task(
+            self._delayed_kick_rejoin(channel)
+        )
+
+    async def _delayed_kick_rejoin(self, channel: str):
+        try:
+            await asyncio.sleep(self.rejoin_delay)
+        except asyncio.CancelledError:
+            return
+        ch_l = channel.lower()
+        self._join_retry_tasks.pop(ch_l, None)
+        if ch_l in self._joined_channels:
+            return
+        if not self._connected:
+            return
+        self._attempt_join(channel)
+
     async def join_channel(self, channel: str):
         """JOIN a channel live and add it to the tracked list."""
         if channel not in self.channels:
@@ -608,6 +685,7 @@ class IRCConnector:
         ch_l = channel.lower()
         self._joined_channels.discard(ch_l)
         self._join_attempts.pop(ch_l, None)
+        self._kick_history.pop(ch_l, None)
         task = self._join_retry_tasks.pop(ch_l, None)
         if task and not task.done():
             task.cancel()
@@ -620,6 +698,7 @@ class IRCConnector:
         ch_l = channel.lower()
         self._joined_channels.discard(ch_l)
         self._join_attempts.pop(ch_l, None)
+        self._kick_history.pop(ch_l, None)
         task = self._join_retry_tasks.pop(ch_l, None)
         if task and not task.done():
             task.cancel()
@@ -636,6 +715,7 @@ class IRCConnector:
         self._joined_channels.clear()
         self._join_attempts.clear()
         self._channel_members.clear()
+        self._kick_history.clear()
         # Cancel any pending retry tasks
         for task in self._join_retry_tasks.values():
             if not task.done():

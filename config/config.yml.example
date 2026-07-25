@@ -48,6 +48,14 @@ networks:
     # join_retry_backoff_retries: 36     # backoff attempts before truly giving up, i.e.
     #                                    # ~3h at the default 300s delay (default: 36)
 
+    # Rejoin a channel after getting kicked from it
+    # rejoin_on_kick: true          # (default: true)
+    # rejoin_delay: 5               # seconds to wait before rejoining (default: 5)
+    # rejoin_max_kicks: 3           # if kicked more than this many times within
+    #                               # rejoin_kick_window, stop rejoining — treated
+    #                               # as a kick war, not a one-off (default: 3)
+    # rejoin_kick_window: 60        # seconds (default: 60)
+
     # ── Per-channel pisg overrides ───────────────────────────────────────────
     # Any key from the global pisg: section below can be overridden per channel.
     # Changes here take effect after: /msg statsbot rehash
