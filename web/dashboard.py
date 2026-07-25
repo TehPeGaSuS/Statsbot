@@ -46,10 +46,13 @@ def register_connector(connector) -> None:
 
 def get_online_count(network: str, channel: str) -> int:
     """Return live member count from connector state, or -1 if unavailable."""
+    chan_l = channel.lower()
     for conn in _connectors:
         if conn.network == network:
-            members = conn._channel_members.get(channel, set())
-            return len(members)
+            for ch, members in conn._channel_members.items():
+                if ch.lower() == chan_l:
+                    return len(members)
+            return 0
     return -1
 
 
