@@ -1124,5 +1124,22 @@ def run_dashboard(config: dict, db_path: str):
     web_cfg = config.get("web", {})
     host = web_cfg.get("host", "0.0.0.0")
     port = web_cfg.get("port", 8033)
+
+    # Flask/Werkzeug never trust X-Forwarded-* headers on their own — without
+    # this, request.remote_addr (and the access log) always shows the proxy's
+    # own address, not the real client, even if the proxy sets the headers
+    # correctly. Off by default: blindly trusting these headers when there is
+    # NOT actually a reverse proxy in front lets any client spoof its own IP.
+    trusted_proxies = int(web_cfg.get("trusted_proxies", 0))
+    if trusted_proxies > 0:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            x_for=trusted_proxies, x_proto=trusted_proxies,
+            x_host=trusted_proxies, x_port=trusted_proxies,
+            x_prefix=trusted_proxies,
+        )
+        log.info(f"ProxyFix enabled, trusting {trusted_proxies} proxy hop(s).")
+
     log.info(f"Starting dashboard at http://{host}:{port}/")
     app.run(host=host, port=port, debug=False, use_reloader=False)

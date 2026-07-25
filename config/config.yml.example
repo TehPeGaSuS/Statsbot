@@ -105,6 +105,12 @@ web:
   public_url: ""            # e.g. https://stats.yourserver.org — used by !stats and pisg config links
   title: "IRC Stats"
   project_url: "https://github.com/TehPeGaSuS/Statsbot"
+  # trusted_proxies: 0       # set to the number of reverse proxy hops in front
+                             # of this app (usually 1) to trust X-Forwarded-*
+                             # headers for the real client IP. Leave at 0
+                             # (default) unless you actually run one — nginx
+                             # example: proxy_set_header X-Forwarded-For
+                             # $proxy_add_x_forwarded_for;
 
 commands:
   prefix: "!"
