@@ -5,6 +5,7 @@ Uses asyncio for non-blocking I/O, supports TLS.
 """
 
 import asyncio
+import socket
 import ssl
 import logging
 import re
@@ -88,6 +89,13 @@ class IRCConnector:
         self._joined_channels: set = set()
         # Pending retry asyncio tasks (lowercased channel -> Task)
         self._join_retry_tasks: dict = {}
+        # Pending "did the server ever answer our JOIN?" watchdogs
+        # (lowercased channel -> Task)
+        self._join_confirm_tasks: dict = {}
+        # Channels whose retry ladder is fully exhausted. The periodic channel
+        # audit skips these so a permanently banned channel isn't retried
+        # forever; cleared on reconnect and on a manual join.
+        self._gave_up: set = set()
         # Config: max attempts and delay between them
         self.join_retries = int(
             network_cfg.get("join_retries",
@@ -117,6 +125,46 @@ class IRCConnector:
                             (config.get("bot", {}) or {}).get("join_retry_backoff_retries", 36))
         )
 
+        # A JOIN that the server silently swallows produces no reply at all —
+        # no JOIN echo, no error numeric. That happens routinely mid-netsplit,
+        # when the JOIN reaches a server that is desynced or still merging.
+        # Without a watchdog nothing would ever notice, because every retry
+        # path below is driven by an error numeric arriving.
+        self.join_confirm_timeout = float(
+            network_cfg.get("join_confirm_timeout",
+                            (config.get("bot", {}) or {}).get("join_confirm_timeout", 30))
+        )
+        # Periodic sweep that re-JOINs any configured channel we are not in
+        # and have no retry pending for. Safety net for anything the paths
+        # above miss. 0 disables it.
+        self.channel_audit_interval = float(
+            network_cfg.get("channel_audit_interval",
+                            (config.get("bot", {}) or {}).get("channel_audit_interval", 120))
+        )
+
+        # ── Connection liveness ─────────────────────────────────────────
+        # A netsplit frequently leaves the TCP connection half-open: the peer
+        # stops sending but never sends FIN or RST, so `readline()` blocks
+        # forever and the bot never learns it is disconnected. Without an
+        # idle timeout the process sits there as a zombie — believing it is
+        # connected and joined — until it is restarted by hand.
+        #
+        # After ping_interval seconds of silence we send our own PING; if the
+        # server has not said anything at all ping_timeout seconds after that,
+        # the link is declared dead and torn down so auto_reconnect can run.
+        self.ping_interval = float(
+            network_cfg.get("ping_interval",
+                            (config.get("bot", {}) or {}).get("ping_interval", 120))
+        )
+        self.ping_timeout = float(
+            network_cfg.get("ping_timeout",
+                            (config.get("bot", {}) or {}).get("ping_timeout", 90))
+        )
+
+        self._last_recv: float = 0.0   # monotonic time of last byte from server
+        self._ping_sent: bool = False  # PING sent for the current idle period
+        self._watchdog_task: Optional[asyncio.Task] = None
+
         # ── Rejoin on kick ──────────────────────────────────────────────
         # Timestamps of recent self-kicks per channel (lowercased), used to
         # detect a kick war and stop rejoining rather than flap forever.
@@ -141,10 +189,20 @@ class IRCConnector:
     # ─── Send ─────────────────────────────────────────────────────────────
 
     def send_raw(self, line: str):
-        if self._writer:
-            data = (line.rstrip("\r\n") + "\r\n").encode("utf-8", errors="replace")
+        # Writing to a closed/closing transport is silently discarded by
+        # asyncio, so without these guards a JOIN retry on a dead link looks
+        # like it succeeded in the log while nothing left the machine.
+        if not self._writer or self._writer.is_closing():
+            log.warning(f"Dropping outbound line, link to {self.host} is down: {line}")
+            return
+        data = (line.rstrip("\r\n") + "\r\n").encode("utf-8", errors="replace")
+        try:
             self._writer.write(data)
-            log.debug(f">> {line}")
+        except Exception as e:
+            log.warning(f"Write to {self.host} failed ({e}) — tearing down link.")
+            self._force_disconnect(f"write failed: {e}")
+            return
+        log.debug(f">> {line}")
 
     def send_msg(self, target: str, text: str):
         # Split long messages
@@ -168,6 +226,9 @@ class IRCConnector:
 
         self._writer = writer
         self._connected = True
+        self._last_recv = time.monotonic()
+        self._ping_sent = False
+        self._enable_keepalive(writer)
         log.info(f"Connected to {self.host}")
 
         # Server password (for BNCs / private servers)
@@ -186,7 +247,88 @@ class IRCConnector:
         self.send_raw(f"NICK {self.nick}")
         self.send_raw(f"USER {self.ident} 0 * :{self.realname}")
 
-        await self._read_loop(reader)
+        self._watchdog_task = asyncio.create_task(
+            self._watchdog(), name=f"watchdog-{self.network}"
+        )
+        try:
+            await self._read_loop(reader)
+        finally:
+            if self._watchdog_task and not self._watchdog_task.done():
+                self._watchdog_task.cancel()
+            self._watchdog_task = None
+
+    def _enable_keepalive(self, writer: asyncio.StreamWriter):
+        """Turn on TCP keepalive as a second line of defence under the
+        application-level ping watchdog. The kernel default idle time is two
+        hours, which is far too long to be useful on its own, so tighten it."""
+        sock = writer.get_extra_info("socket")
+        if sock is None:
+            return
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            for opt, val in (("TCP_KEEPIDLE", 60), ("TCP_KEEPINTVL", 15),
+                             ("TCP_KEEPCNT", 4)):
+                if hasattr(socket, opt):
+                    sock.setsockopt(socket.IPPROTO_TCP, getattr(socket, opt), val)
+        except OSError as e:
+            log.debug(f"Could not set TCP keepalive on {self.host}: {e}")
+
+    async def _watchdog(self):
+        """Detect a silently dead link, and re-JOIN channels we've fallen out of.
+
+        Runs for the lifetime of one connection. Cancelled by connect() when
+        the read loop exits.
+        """
+        # Tick fast enough that the idle check lands inside the PING window
+        # rather than stepping straight over it to the timeout.
+        tick = max(1.0, min(5.0, self.ping_interval / 4))
+        last_audit = time.monotonic()
+        try:
+            while self._connected:
+                await asyncio.sleep(tick)
+                if not self._connected:
+                    return
+
+                idle = time.monotonic() - self._last_recv
+                if idle >= self.ping_interval + self.ping_timeout:
+                    log.warning(
+                        f"No data from {self.host} for {idle:.0f}s "
+                        f"(ping_interval={self.ping_interval}s + "
+                        f"ping_timeout={self.ping_timeout}s) — "
+                        f"treating the link as dead and reconnecting."
+                    )
+                    self._force_disconnect("ping timeout")
+                    return
+                if idle >= self.ping_interval and not self._ping_sent:
+                    # Routine on a quiet network — debug, or it would dominate
+                    # the log at one line per idle period per network.
+                    log.debug(
+                        f"No data from {self.host} for {idle:.0f}s — "
+                        f"sending PING to check the link is alive."
+                    )
+                    self.send_raw(f"PING :{self.network}-keepalive")
+                    self._ping_sent = True
+
+                now = time.monotonic()
+                if (self.channel_audit_interval > 0
+                        and now - last_audit >= self.channel_audit_interval):
+                    last_audit = now
+                    self._audit_channels()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            log.error(f"Watchdog error for {self.host}: {e}", exc_info=True)
+
+    def _force_disconnect(self, reason: str):
+        """Tear down the socket so the blocked read loop unblocks and
+        auto_reconnect in main.py gets its turn."""
+        self._connected = False
+        if self._writer and not self._writer.is_closing():
+            try:
+                self._writer.close()
+            except Exception:
+                pass
+        log.warning(f"Link to {self.host} torn down: {reason}")
 
     async def _read_loop(self, reader: asyncio.StreamReader):
         while self._connected:
@@ -195,9 +337,18 @@ class IRCConnector:
                 if not raw:
                     log.warning("Server closed connection.")
                     break
+                # Any byte from the server proves the link is alive.
+                self._last_recv = time.monotonic()
+                self._ping_sent = False
                 line = raw.decode("utf-8", errors="replace").rstrip("\r\n")
                 log.debug(f"<< {line}")
-                self._handle_line(line)
+                try:
+                    self._handle_line(line)
+                except Exception as e:
+                    # One malformed or unexpected message must not drop the
+                    # whole connection — log it and keep reading.
+                    log.error(f"Error handling line from {self.host}: {e} "
+                              f"(line: {line!r})", exc_info=True)
             except asyncio.CancelledError:
                 self._connected = False
                 raise
@@ -219,6 +370,20 @@ class IRCConnector:
 
         if command == "PING":
             self.send_raw(f"PONG :{params[0] if params else ''}")
+            return
+
+        if command == "PONG":
+            # Reply to our own keepalive PING. _last_recv is already updated
+            # by the read loop; nothing else to do.
+            return
+
+        if command == "ERROR":
+            # Sent by the ircd immediately before it closes the link
+            # ("Closing Link", "Ping timeout", netsplit-related quits).
+            # Tear down now rather than waiting on the socket to notice.
+            log.warning(f"Server error from {self.host}: "
+                        f"{params[0] if params else '(no reason)'}")
+            self._force_disconnect("server sent ERROR")
             return
 
         if command == "CAP":
@@ -395,6 +560,11 @@ class IRCConnector:
             channel = params[0] if params else ""
             reason = params[1] if len(params) > 1 else ""
             self._channel_members.get(channel, set()).discard(nick)
+            if nick == self._current_nick:
+                # We left (or were forced out). Drop the joined flag so the
+                # channel audit will pull us back in if it's still configured.
+                self._channel_members.pop(channel, None)
+                self._joined_channels.discard(channel.lower())
             self.sensors.on_part(nick, host, channel, reason)
 
         elif command == "NOTICE":
@@ -550,15 +720,85 @@ class IRCConnector:
         log.info(
             f"JOIN {channel} (attempt {attempt}/{self.join_retries})"
         )
+        self._start_join_confirm(channel)
+
+    def _start_join_confirm(self, channel: str):
+        """Arm a watchdog for a JOIN we just sent, in case the server never
+        answers it at all — no JOIN echo and no error numeric."""
+        if self.join_confirm_timeout <= 0:
+            return
+        ch_l = channel.lower()
+        old = self._join_confirm_tasks.pop(ch_l, None)
+        if old and not old.done():
+            old.cancel()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        self._join_confirm_tasks[ch_l] = loop.create_task(
+            self._confirm_join(channel)
+        )
+
+    async def _confirm_join(self, channel: str):
+        try:
+            await asyncio.sleep(self.join_confirm_timeout)
+        except asyncio.CancelledError:
+            return
+        ch_l = channel.lower()
+        self._join_confirm_tasks.pop(ch_l, None)
+        if ch_l in self._joined_channels or not self._connected:
+            return
+        # Channel may have been parted while we waited.
+        if ch_l not in {c.lower() for c in self.channels}:
+            return
+        log.warning(
+            f"JOIN {channel} got no response within "
+            f"{self.join_confirm_timeout}s — server swallowed it, retrying."
+        )
+        self._schedule_join_retry(channel, "timeout", "no response from server")
+
+    def _cancel_join_confirm(self, channel: str):
+        task = self._join_confirm_tasks.pop(channel.lower(), None)
+        if task and not task.done():
+            task.cancel()
+
+    def _audit_channels(self):
+        """Periodic sweep: re-JOIN any configured channel we are not in and
+        have no retry pending for.
+
+        This is the backstop for cases the error-numeric and confirm-timeout
+        paths don't cover: a retry task that died unexpectedly, a channel
+        added to self.channels without a join, or the bot being forced out
+        of a channel by a PART it didn't ask for.
+        """
+        if not self._connected:
+            return
+        for chan in list(self.channels):
+            ch_l = chan.lower()
+            if ch_l in self._joined_channels or ch_l in self._gave_up:
+                continue
+            retry = self._join_retry_tasks.get(ch_l)
+            if retry and not retry.done():
+                continue
+            confirm = self._join_confirm_tasks.get(ch_l)
+            if confirm and not confirm.done():
+                continue
+            log.warning(
+                f"Channel audit: not in {chan} and no retry pending — "
+                f"re-joining."
+            )
+            self._attempt_join(chan)
 
     def _mark_join_success(self, channel: str):
         """Channel joined successfully — clear attempt state and pending retry."""
         ch_l = channel.lower()
         self._joined_channels.add(ch_l)
         self._join_attempts.pop(ch_l, None)
+        self._gave_up.discard(ch_l)
         task = self._join_retry_tasks.pop(ch_l, None)
         if task and not task.done():
             task.cancel()
+        self._cancel_join_confirm(channel)
         log.info(f"Joined {channel} successfully.")
 
     def _schedule_join_retry(self, channel: str, code: str, reason: str):
@@ -580,6 +820,9 @@ class IRCConnector:
         existing = self._join_retry_tasks.get(ch_l)
         if existing and not existing.done():
             return
+        # An answer arrived (or the confirm watchdog itself fired), so the
+        # "server never replied" watchdog has done its job.
+        self._cancel_join_confirm(channel)
         attempts = self._join_attempts.get(ch_l, 0)
         if attempts < self.join_retries:
             delay = self.join_retry_delay
@@ -596,6 +839,9 @@ class IRCConnector:
                     f"after {self.join_retries} quick + {backoff_attempt} "
                     f"backoff attempts."
                 )
+                # Remember, so the periodic audit doesn't immediately undo
+                # the decision to stop. Cleared on reconnect / manual join.
+                self._gave_up.add(ch_l)
                 return
             delay = self.join_retry_backoff_delay
             log.warning(
@@ -686,9 +932,11 @@ class IRCConnector:
         self._joined_channels.discard(ch_l)
         self._join_attempts.pop(ch_l, None)
         self._kick_history.pop(ch_l, None)
+        self._gave_up.discard(ch_l)
         task = self._join_retry_tasks.pop(ch_l, None)
         if task and not task.done():
             task.cancel()
+        self._cancel_join_confirm(channel)
         self._attempt_join(channel)
 
     async def part_channel(self, channel: str):
@@ -699,9 +947,11 @@ class IRCConnector:
         self._joined_channels.discard(ch_l)
         self._join_attempts.pop(ch_l, None)
         self._kick_history.pop(ch_l, None)
+        self._gave_up.discard(ch_l)
         task = self._join_retry_tasks.pop(ch_l, None)
         if task and not task.done():
             task.cancel()
+        self._cancel_join_confirm(channel)
         self.send_raw(f"PART {channel} :Removed by admin")
 
     def _reset_join_state(self):
@@ -716,15 +966,32 @@ class IRCConnector:
         self._join_attempts.clear()
         self._channel_members.clear()
         self._kick_history.clear()
+        self._gave_up.clear()
+        self._whox_pending.clear()
         # Cancel any pending retry tasks
         for task in self._join_retry_tasks.values():
             if not task.done():
                 task.cancel()
         self._join_retry_tasks.clear()
+        for task in self._join_confirm_tasks.values():
+            if not task.done():
+                task.cancel()
+        self._join_confirm_tasks.clear()
+        # Per-session registration flags. These are not join state, but they
+        # must reset too: _ghost_sent in particular is only ever set, so
+        # without this the *second* and every later reconnect would skip
+        # GHOST entirely and strand the bot on its altnick.
+        self._sasl_authed  = False
+        self._ghost_sent   = False
+        self._reclaim_nick = False
+        self._current_nick = self.nick
         log.info("Cleared join state on disconnect — will rejoin fresh on reconnection")
 
     async def disconnect(self):
         self._connected = False
+        if self._watchdog_task and not self._watchdog_task.done():
+            self._watchdog_task.cancel()
+            self._watchdog_task = None
         self._reset_join_state()
         if self._writer:
             self.send_raw("QUIT :statsbot shutting down")

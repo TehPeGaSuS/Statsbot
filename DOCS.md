@@ -101,6 +101,10 @@ networks:
     #     DailyActivity: 0       # disable daily activity graph
     # join_retries: 5            # max attempts per channel (default 5)
     # join_retry_delay: 30       # seconds between attempts (default 30)
+    # join_confirm_timeout: 30   # retry a JOIN the server never answered (default 30)
+    # channel_audit_interval: 120 # periodic re-JOIN sweep (default 120)
+    # ping_interval: 120         # seconds of silence before we PING (default 120)
+    # ping_timeout: 90           # seconds after that PING before dropping (default 90)
 ```
 
 ### Channel join retries
@@ -121,6 +125,41 @@ fails with one of the numerics below, a retry is scheduled with
 
 Both options can also be set globally under `bot:` and are overridden
 per-network when present. Defaults: `5` retries, `30` second delay.
+
+A JOIN can also get **no answer at all** — no join echo and no error numeric.
+That happens routinely during a netsplit, when the JOIN reaches a server that
+is desynced or still merging. `join_confirm_timeout` (default `30`, `0`
+disables) arms a watchdog per JOIN; if nothing comes back in that window the
+join enters the same retry ladder above.
+
+As a final backstop, every `channel_audit_interval` seconds (default `120`,
+`0` disables) the bot sweeps its configured channel list and re-JOINs anything
+it is not in and has no retry pending for. Channels whose retry ladder has been
+fully exhausted are skipped by the audit, so a permanently banned channel isn't
+retried forever; that state is cleared on reconnect and on a manual join.
+
+### Connection liveness (netsplit recovery)
+
+A netsplit frequently leaves the TCP connection **half-open**: the peer stops
+sending but never sends `FIN` or `RST`. Nothing surfaces at the socket layer,
+so a bot that only reacts to server `PING`s will block on the read forever,
+still believing it is connected and joined, until it is restarted by hand.
+
+The bot guards against this at three levels:
+
+| Guard | Behaviour |
+|-------|-----------|
+| `ping_interval` (default `120`) | After this many seconds with no data from the server, send our own `PING`. |
+| `ping_timeout` (default `90`) | If the server is *still* silent this long after that `PING`, declare the link dead, close the socket and let the reconnect loop run. |
+| TCP keepalive | Enabled on the socket (60s idle, 15s interval, 4 probes) as a second line of defence under the application-level check. |
+
+An `ERROR` line from the server — sent by most ircds immediately before they
+close a link — also tears the connection down at once rather than waiting for
+the socket to notice.
+
+Both options can be set globally under `bot:` or per-network. Because any byte
+from the server counts as proof of life, a busy channel means the keepalive
+`PING` is rarely sent in practice.
 
 ### Authentication flow
 

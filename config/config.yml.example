@@ -47,6 +47,22 @@ networks:
     #                                    # channel-delay lock clear on its own (default: 300)
     # join_retry_backoff_retries: 36     # backoff attempts before truly giving up, i.e.
     #                                    # ~3h at the default 300s delay (default: 36)
+    # join_confirm_timeout: 30           # if the server answers a JOIN with nothing at all
+    #                                    # — no join, no error numeric, which happens
+    #                                    # mid-netsplit — retry after this many seconds.
+    #                                    # 0 disables (default: 30)
+    # channel_audit_interval: 120        # seconds between sweeps that re-JOIN any
+    #                                    # configured channel the bot isn't in and has no
+    #                                    # retry pending for. 0 disables (default: 120)
+
+    # Connection liveness. A netsplit often leaves the TCP connection half-open:
+    # the server stops sending but never closes the socket, so without these the
+    # bot waits forever on a dead link and has to be restarted by hand.
+    # ping_interval: 120            # seconds of silence before sending our own PING
+    #                               # (default: 120)
+    # ping_timeout: 90              # if the server is still silent this many seconds
+    #                               # after that PING, drop the link and reconnect
+    #                               # (default: 90)
 
     # Rejoin a channel after getting kicked from it
     # rejoin_on_kick: true          # (default: true)

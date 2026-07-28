@@ -303,6 +303,13 @@ def main():
         while True:
             try:
                 await connector.connect()
+                # connect() returning means the read loop ended — link lost.
+                log.warning(
+                    f"Disconnected from {connector.host} "
+                    f"({connector.network}). Reconnecting in {delay}s..."
+                )
+            except asyncio.CancelledError:
+                raise
             except KeyboardInterrupt:
                 break
             except Exception as e:
