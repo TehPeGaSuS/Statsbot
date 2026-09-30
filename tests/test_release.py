@@ -34,5 +34,5 @@ def test_the_readme_starts_with_the_update_warning():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     head = readme.split("\n", 4)
     assert head[0] == "# Statsbot" and head[2] == "> [!WARNING]"
-    assert "bd2c456" in readme.split("A modern IRC statistics bot")[0]     # the cut-off for unversioned bots
+    assert "2026-09-30" in readme.split("A modern IRC statistics bot")[0]   # the cut-off date for unversioned bots
     assert "CHANGELOG.md" in readme.split("A modern IRC statistics bot")[0]

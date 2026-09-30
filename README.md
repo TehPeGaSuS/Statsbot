@@ -1,18 +1,18 @@
 # Statsbot
 
 > [!WARNING]
-> **Update if your bot is older than commit `bd2c456` (2026-09-30).**
+> **Update if your bot's latest commit is older than 2026-09-30.**
 > Earlier versions have a security hole in the public stats page: text from IRC (quotes,
 > topics, kick reasons, `/me` lines, words, URLs) was not escaped, so anyone who can talk in a
 > channel the bot tracks could run script in the browser of everybody who opens that channel's
 > page. Host-mask auto-login was also broken (and would have matched on a bare nick).
 >
 > Version numbers only start with 1.1.0, so an older bot cannot tell you its version
-> (`python main.py --version` does not exist there). Check the commit instead:
+> (`python main.py --version` does not exist there). Check the date of its latest commit instead:
 >
 > ```bash
-> git log -1 --format='%h %cd' --date=short     # the last unfixed commit is d3538ac (2026-07-28)
-> git merge-base --is-ancestor bd2c456 HEAD && echo "up to date" || echo "OUTDATED: update now"
+> git log -1 --format='%h %cs'      # date of your latest commit; it must be 2026-09-30 or later
+> [[ $(git log -1 --format=%cs) < 2026-09-30 ]] && echo "OUTDATED: update now" || echo "up to date"
 > ```
 >
 > To update:

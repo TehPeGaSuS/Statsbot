@@ -56,7 +56,11 @@ file existed is treated as 1.0.0. Check what you are running with `python main.p
 - If you set up host-mask auto-login before, check that each mask contains an `@`.
 
 ## [1.0.0]
-Everything up to the introduction of version numbers; the last commit without the 1.1.0 fixes is
-`d3538ac` (2026-07-28). An older bot cannot report a version, so check with git: 1.1.0 or newer
-is `git merge-base --is-ancestor bd2c456 HEAD` succeeding (`bd2c456` is the commit that completed
-the security fixes).
+Everything up to the introduction of version numbers (the last such commit is `d3538ac`,
+2026-07-28). An older bot cannot report a version, so check the date of its latest commit: from
+2026-09-30 on it has the 1.1.0 fixes.
+
+```bash
+git log -1 --format='%h %cs'
+[[ $(git log -1 --format=%cs) < 2026-09-30 ]] && echo "OUTDATED: update now" || echo "up to date"
+```
