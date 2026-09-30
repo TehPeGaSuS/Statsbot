@@ -346,6 +346,9 @@ Statsbot/
 ├── slugs.py                 # Channel name <-> URL path (#a, ##a and ###a differ)
 ├── CHANGELOG.md
 ├── tests/                   # pytest suite: python -m pytest
+├── tools/build_docs.py      # builds docs/index.html from README/DOCS/TRANSLATE/CHANGELOG
+├── docs/                    # the generated documentation site (what Cloudflare serves)
+├── wrangler.jsonc           # Cloudflare Workers config for the documentation site
 ├── config/
 │   └── config.yml           # All configuration
 ├── bot/
@@ -374,6 +377,9 @@ Issues and pull requests are welcome. If you're adding a feature, please:
 - Follow the existing code style (no external deps beyond `requirements.txt`)
 - Add a test in `tests/` (`pip install -r requirements-dev.txt && python -m pytest`)
 - For a user-visible change, bump `version.py` and add a section to `CHANGELOG.md`
+- After editing `README.md`, `DOCS.md`, `TRANSLATE.md`, `CHANGELOG.md` or `version.py`, run
+  `python tools/build_docs.py` to regenerate the documentation site (`docs/index.html`); a test
+  fails if you forget
 - Update `DOCS.md` if you add or change a config option
 
 Want to add or improve a translation? See **[TRANSLATE.md](TRANSLATE.md)** —

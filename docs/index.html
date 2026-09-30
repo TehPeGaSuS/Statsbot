@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statsbot 1.1.0 — Documentation</title>
+<meta name="description" content="Statsbot: a modern IRC statistics bot, pisg for the 21st century. Real-time stats, live web dashboard, multi-network. Installation, configuration and command reference.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233850B8'/%3E%3Cpath d='M7 22h4v-7H7zm7 0h4V9h-4zm7 0h4v-10h-4z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#0d0d1a;--bg2:#1a1a2e;--bg3:#1e2245;--border:#2a3860;--text:#c8d3f5;--muted:#8a94c0;--faint:#3d4a6b;
+--blue:#7aa2f7;--green:#9ece6a;--yellow:#e0af68;--red:#f7768e;--cyan:#7dcfff;--accent:#3850B8;--code:#11142b}
+@media (prefers-color-scheme:light){:root:not([data-theme]){--bg:#f5f6fa;--bg2:#fff;--bg3:#e8eaf0;--border:#c5cade;
+--text:#1e2245;--muted:#5b6390;--faint:#9299b8;--blue:#3558d6;--green:#3a7d0e;--yellow:#a06000;--red:#c0132a;
+--cyan:#0077aa;--accent:#3558d6;--code:#eef0f7}}
+:root[data-theme=light]{--bg:#f5f6fa;--bg2:#fff;--bg3:#e8eaf0;--border:#c5cade;--text:#1e2245;--muted:#5b6390;
+--faint:#9299b8;--blue:#3558d6;--green:#3a7d0e;--yellow:#a06000;--red:#c0132a;--cyan:#0077aa;--accent:#3558d6;--code:#eef0f7}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 'Segoe UI',Tahoma,system-ui,sans-serif}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:10px 20px;
+background:var(--bg2);border-bottom:1px solid var(--border)}
+header .brand{font-weight:700;font-size:1.1rem;color:var(--text)}header .brand span{color:var(--blue)}
+.ver{font-size:.75rem;padding:2px 9px;border-radius:12px;border:1px solid var(--border);color:var(--muted)}
+header .sp{flex:1}
+#q{width:min(340px,40vw);padding:7px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg);
+color:var(--text);font:inherit}#q:focus{outline:2px solid var(--accent)}
+button.icon{background:none;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;
+cursor:pointer;font:inherit}
+#menu{display:none}
+#results{position:absolute;right:20px;top:54px;width:min(520px,calc(100vw - 40px));max-height:70vh;overflow:auto;
+background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px #0006;display:none}
+#results a{display:block;padding:9px 14px;border-bottom:1px solid var(--border);color:var(--text)}
+#results a:hover,#results a.sel{background:var(--bg3);text-decoration:none}
+#results b{color:var(--blue)}#results small{display:block;color:var(--muted)}
+#results mark{background:#e0af6855;color:inherit;border-radius:3px}
+.layout{display:flex;align-items:flex-start}
+nav{position:sticky;top:54px;flex:0 0 290px;height:calc(100vh - 54px);overflow:auto;padding:18px 12px 40px 20px;
+border-right:1px solid var(--border);font-size:.86rem}
+.nav-title{display:block;margin:16px 0 4px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+font-size:.72rem;color:var(--muted)}
+.nav-h2>a:first-child{display:block;padding:3px 8px;border-radius:6px;color:var(--text)}
+.nav-h2>a:first-child:hover{background:var(--bg3);text-decoration:none}
+.nav-h3{display:none;padding:1px 8px 1px 22px;color:var(--muted);font-size:.82rem}
+.nav-h2.open>.nav-h3{display:block}.nav-h2.open>a:first-child{background:var(--bg3);color:var(--blue)}
+main{flex:1;min-width:0;padding:8px 40px 80px;max-width:980px}
+section.group{padding-top:8px}
+.group-title{font-size:1.9rem;margin:38px 0 6px;padding-bottom:8px;border-bottom:2px solid var(--accent)}
+h2{font-size:1.4rem;margin:42px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+h3{font-size:1.1rem;margin:28px 0 6px;color:var(--cyan)}
+.headerlink{opacity:0;margin-left:8px;font-size:.8em;color:var(--faint)}
+h2:hover .headerlink,h3:hover .headerlink{opacity:1;text-decoration:none}
+p,ul,ol{margin:.7em 0}li{margin:.25em 0}
+code{font:.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);
+padding:.12em .4em;border-radius:5px;border:1px solid var(--border)}
+.code{position:relative;margin:1em 0}
+pre{margin:0;padding:14px 16px;overflow:auto;background:var(--code);border:1px solid var(--border);border-radius:10px}
+pre code{background:none;border:0;padding:0;font-size:.86rem;line-height:1.55}
+.copy{position:absolute;top:8px;right:8px;opacity:0;background:var(--bg3);color:var(--text);
+border:1px solid var(--border);border-radius:6px;padding:2px 9px;font-size:.75rem;cursor:pointer}
+.code:hover .copy,.copy:focus{opacity:1}
+.table-scroll{overflow-x:auto;margin:1em 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--bg3)}tr:nth-child(even) td{background:#ffffff08}
+blockquote{margin:1em 0;padding:.2em 1em;border-left:4px solid var(--faint);color:var(--muted)}
+.alert{margin:1.2em 0;padding:.7em 1.1em;border-radius:10px;border:1px solid var(--border);border-left-width:5px;background:var(--bg2)}
+.alert p{margin:.4em 0}.alert-title{font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.06em}
+.alert.note{border-left-color:var(--blue)}.alert.note .alert-title{color:var(--blue)}
+.alert.tip{border-left-color:var(--green)}.alert.tip .alert-title{color:var(--green)}
+.alert.important{border-left-color:var(--cyan)}.alert.important .alert-title{color:var(--cyan)}
+.alert.warning{border-left-color:var(--yellow);background:#e0af6812}.alert.warning .alert-title{color:var(--yellow)}
+.alert.caution{border-left-color:var(--red);background:#f7768e12}.alert.caution .alert-title{color:var(--red)}
+footer{margin:60px 0 0;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:.85rem}
+hr{border:0;border-top:1px solid var(--border);margin:2em 0}
+@media (max-width:860px){
+#menu{display:inline-block}nav{position:fixed;left:0;top:54px;z-index:15;width:min(310px,88vw);background:var(--bg2);
+transform:translateX(-105%);transition:transform .2s}body.nav-open nav{transform:none;box-shadow:0 0 40px #0008}
+main{padding:4px 18px 60px}.layout{display:block}#q{width:40vw}}
+</style>
+</head>
+<body>
+<header>
+  <button class="icon" id="menu" type="button" aria-label="Menu">&#9776;</button>
+  <a class="brand" href="#guide">Stats<span>bot</span></a><span class="ver">v1.1.0</span>
+  <span class="sp"></span>
+  <input id="q" type="search" placeholder="Search the docs  ( / )" autocomplete="off" aria-label="Search">
+  <button class="icon" id="theme" type="button" title="Light / dark">&#9681;</button>
+  <a href="https://github.com/TehPeGaSuS/Statsbot" target="_blank" rel="noopener">GitHub</a>
+  <div id="results"></div>
+</header>
+<div class="layout">
+<nav aria-label="Contents">
+<div class="nav-group"><a class="nav-title" href="#guide">Guide</a>
+<div class="nav-h2"><a href="#guide-why-statsbot-instead-of-pisg">Why Statsbot instead of pisg?</a>
+</div>
+<div class="nav-h2"><a href="#guide-features">Features</a>
+</div>
+<div class="nav-h2"><a href="#guide-requirements">Requirements</a>
+</div>
+<div class="nav-h2"><a href="#guide-quick-start">Quick start</a>
+</div>
+<div class="nav-h2"><a href="#guide-configuration-overview">Configuration overview</a>
+</div>
+<div class="nav-h2"><a href="#guide-irc-commands">IRC commands</a>
+<a class="nav-h3" href="#guide-channel-commands">Channel commands</a>
+<a class="nav-h3" href="#guide-pm-commands-msg-statsbot-command">PM commands (/msg statsbot )</a>
+</div>
+<div class="nav-h2"><a href="#guide-stats-page-url-structure">Stats page URL structure</a>
+</div>
+<div class="nav-h2"><a href="#guide-karma">Karma</a>
+</div>
+<div class="nav-h2"><a href="#guide-running-as-a-service">Running as a service</a>
+<a class="nav-h3" href="#guide-user-unit-recommended">User unit (recommended)</a>
+<a class="nav-h3" href="#guide-system-unit">System unit</a>
+</div>
+<div class="nav-h2"><a href="#guide-project-structure">Project structure</a>
+</div>
+<div class="nav-h2"><a href="#guide-contributing">Contributing</a>
+</div>
+<div class="nav-h2"><a href="#guide-whats-not-yet-implemented-vs-pisg">What&#x27;s not yet implemented vs pisg</a>
+</div>
+</div>
+<div class="nav-group"><a class="nav-title" href="#reference">Configuration reference</a>
+<div class="nav-h2"><a href="#reference-bot-settings">Bot settings</a>
+</div>
+<div class="nav-h2"><a href="#reference-network-settings">Network settings</a>
+<a class="nav-h3" href="#reference-channel-join-retries">Channel join retries</a>
+<a class="nav-h3" href="#reference-connection-liveness-netsplit-recovery">Connection liveness (netsplit recovery)</a>
+<a class="nav-h3" href="#reference-authentication-flow">Authentication flow</a>
+<a class="nav-h3" href="#reference-per-network-identity">Per-network identity</a>
+<a class="nav-h3" href="#reference-multiple-networks">Multiple networks</a>
+</div>
+<div class="nav-h2"><a href="#reference-stats-tracking">Stats tracking</a>
+<a class="nav-h3" href="#reference-ignore-patterns">Ignore patterns</a>
+</div>
+<div class="nav-h2"><a href="#reference-web-dashboard">Web dashboard</a>
+</div>
+<div class="nav-h2"><a href="#reference-irc-commands">IRC commands</a>
+<a class="nav-h3" href="#reference-channel-commands-public">Channel commands (public)</a>
+<a class="nav-h3" href="#reference-pm-commands-msg-statsbot-command">PM commands (/msg statsbot )</a>
+</div>
+<div class="nav-h2"><a href="#reference-pisg-style-page-options">pisg-style page options</a>
+<a class="nav-h3" href="#reference-per-channel-overrides">Per-channel overrides</a>
+<a class="nav-h3" href="#reference-main-nick-table">Main nick table</a>
+<a class="nav-h3" href="#reference-big-numbers">Big numbers</a>
+<a class="nav-h3" href="#reference-section-toggles">Section toggles</a>
+<a class="nav-h3" href="#reference-history-limits">History limits</a>
+<a class="nav-h3" href="#reference-karma-options">Karma options</a>
+</div>
+<div class="nav-h2"><a href="#reference-database">Database</a>
+</div>
+<div class="nav-h2"><a href="#reference-logging">Logging</a>
+</div>
+<div class="nav-h2"><a href="#reference-differences-from-pisg">Differences from pisg</a>
+</div>
+</div>
+<div class="nav-group"><a class="nav-title" href="#translating">Translating</a>
+<div class="nav-h2"><a href="#translating-how-it-works">How it works</a>
+</div>
+<div class="nav-h2"><a href="#translating-adding-a-new-language">Adding a new language</a>
+</div>
+<div class="nav-h2"><a href="#translating-rules">Rules</a>
+</div>
+</div>
+<div class="nav-group"><a class="nav-title" href="#changelog">Changelog</a>
+<div class="nav-h2"><a href="#changelog-v1-1-0">[1.1.0] - 2026-09-30</a>
+<a class="nav-h3" href="#changelog-security">Security</a>
+<a class="nav-h3" href="#changelog-fixed">Fixed</a>
+<a class="nav-h3" href="#changelog-changed">Changed</a>
+<a class="nav-h3" href="#changelog-added">Added</a>
+<a class="nav-h3" href="#changelog-upgrade-notes">Upgrade notes</a>
+</div>
+<div class="nav-h2"><a href="#changelog-v1-0-0">[1.0.0]</a>
+</div>
+</div>
+</nav>
+<main>
+<section class="group" id="guide"><h1 class="group-title">Guide</h1>
+<div class="alert warning">
+<p class="alert-title">Warning</p>
+<p><strong>Update if your bot's latest commit is older than 2026-09-30.</strong>
+Earlier versions have a security hole in the public stats page: text from IRC (quotes,
+topics, kick reasons, <code>/me</code> lines, words, URLs) was not escaped, so anyone who can talk in a
+channel the bot tracks could run script in the browser of everybody who opens that channel's
+page. Host-mask auto-login was also broken (and would have matched on a bare nick).</p>
+<p>Version numbers only start with 1.1.0, so an older bot cannot tell you its version
+(<code>python main.py --version</code> does not exist there). Check the date of its latest commit instead:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-bash">git log -1 --format='%h %cs'      # date of your latest commit; it must be 2026-09-30 or later
+[[ $(git log -1 --format=%cs) &lt; 2026-09-30 ]] &amp;&amp; echo &quot;OUTDATED: update now&quot; || echo &quot;up to date&quot;
+</code></pre></div>
+<p>To update:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-bash">git pull
+pip install -r requirements.txt
+# restart the bot; the database updates itself
+python main.py --version        # 1.1.0 or newer
+</code></pre></div>
+<p>Details and upgrade notes: <strong><a href="#changelog">CHANGELOG.md</a></strong>.</p>
+</div>
+<p>A modern IRC statistics bot inspired by <a href="https://pisg.github.io/" target="_blank" rel="noopener">pisg</a>, built
+for the 21st century. Instead of parsing log files after the fact, Statsbot
+connects to IRC as a bot, collects statistics in real time, and serves a
+live web dashboard — no log files, no cron jobs, no static HTML generation.</p>
+<hr />
+<div class="alert note">
+<p class="alert-title">Note</p>
+<p>Statsbot is, pretty much, feature-complete — but the door is always open.<br />
+After all these commits, Statsbot does everything PISG does, except it doesn't need log files,<br />
+doesn't need a cron job, doesn't generate static HTML, and doesn't make you feel like it's 2003.<br />
+It connects to IRC, watches what happens, and serves live stats — no logs, no hassle, no excuses.<br />
+Is it finished? Pretty much. Is it perfect? Probably not. Found a bug? Open an issue. Have a wild idea? Open a PR.<br />
+Speak French, Italian or Portuguese and spotted something that could sound better? You know what to do.<br />
+The IRC scene survived the death of mIRC scripts, the rise of Discord, and seventeen different attempts to replace IRC with something "better".<br />
+Statsbot will survive your pull request.</p>
+</div>
+<hr />
+<h2 id="guide-why-statsbot-instead-of-pisg">Why Statsbot instead of pisg?<a class="headerlink" href="#guide-why-statsbot-instead-of-pisg" title="Permanent link">#</a></h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th></th>
+<th>pisg</th>
+<th>Statsbot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data source</td>
+<td>Parse log files</td>
+<td>Live IRC connection</td>
+</tr>
+<tr>
+<td>Setup</td>
+<td>Configure bot logging + cron + pisg</td>
+<td>Just run Statsbot</td>
+</tr>
+<tr>
+<td>Log format support</td>
+<td>30+ parsers to maintain</td>
+<td>Not needed</td>
+</tr>
+<tr>
+<td>Output</td>
+<td>Static HTML, regenerated periodically</td>
+<td>Live web server</td>
+</tr>
+<tr>
+<td>Stats periods</td>
+<td>One fixed window</td>
+<td>All-time, today, week, month</td>
+</tr>
+<tr>
+<td>Peak users</td>
+<td>✗</td>
+<td>✓ with timestamp</td>
+</tr>
+<tr>
+<td>Live user count</td>
+<td>✗</td>
+<td>✓ updates every 30s</td>
+</tr>
+<tr>
+<td>Karma (<code>nick++</code> / <code>nick--</code>)</td>
+<td>✓ ±1 per pair, <code>nick==</code> resets</td>
+<td>✓ cumulative, no reset</td>
+</tr>
+<tr>
+<td>Op/voice/halfop stats</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Multi-network</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Admin via IRC</td>
+<td>✗</td>
+<td>✓ via PM commands</td>
+</tr>
+<tr>
+<td>Per-channel page config</td>
+<td>✗</td>
+<td>✓ via PM or <code>config.yml</code>, live rehash</td>
+</tr>
+<tr>
+<td>Multilingual stats page</td>
+<td>✓ static, per-install</td>
+<td>✓ live, per-channel</td>
+</tr>
+</tbody>
+</table></div>
+<p>If you already know pisg, the <code>pisg:</code> section in <code>config.yml</code> uses the same
+option names — <code>ActiveNicks</code>, <code>ShowBigNumbers</code>, <code>WordHistory</code>, etc. — so the
+<a href="https://pisg.github.io/docs/" target="_blank" rel="noopener">pisg docs</a> apply directly.</p>
+<hr />
+<h2 id="guide-features">Features<a class="headerlink" href="#guide-features" title="Permanent link">#</a></h2>
+<ul>
+<li>Tracks <strong>words, lines, letters, actions, kicks, modes, bans, joins, topics,
+  minutes online, smileys (happy + sad separately), questions, CAPS lines,
+  violent actions, foul language, monologues</strong></li>
+<li><strong>Karma</strong> — <code>nick++</code> / <code>nick--</code> suffix syntax; only counts if the target is
+  in the channel; nicks containing <code>--</code> or <code>++</code> are handled correctly
+  (e.g. <code>Mike----</code> awards −1 to nick <code>Mike--</code>)</li>
+<li><strong>Big numbers</strong> — questions, shouting %, CAPS %, violence + victim tracking
+  with example lines, smiles %, sad %, line lengths, monologues, words per line</li>
+<li><strong>Other interesting numbers</strong> — kicks given/received, most actions, most joins,
+  foul language %</li>
+<li><strong>Most active by hour</strong> — 4-band table (0–5, 6–11, 12–17, 18–23)</li>
+<li><strong>Most used words</strong> — filterable by length and ignore list, with last-used-by nick</li>
+<li><strong>Most referenced nicks</strong> — who gets mentioned most in conversation, displayed
+  with original casing</li>
+<li><strong>Smiley frequency table</strong> — which specific smiley used most, and by whom</li>
+<li><strong>Most referenced URLs</strong> — deduplicated with use count and last poster</li>
+<li><strong>Latest topics</strong> with setter and timestamp</li>
+<li><strong>Random quotes</strong> in the main table — length-filtered (MinQuote/MaxQuote),
+  first message always logged so new speakers never show blank</li>
+<li><strong>Period tabs</strong> — all-time, today, this week, this month</li>
+<li><strong>Peak users</strong> with date</li>
+<li><strong>Live user count</strong> badge, updates every 30 seconds</li>
+<li><strong>Multi-network</strong> — connect to Libera, Undernet, PTirc simultaneously</li>
+<li><strong>Runtime network management</strong> — add/remove networks and channels live via PM
+  commands, no restart required; <code>config.yml</code> seeds the DB on first run only</li>
+<li><strong>Per-channel pisg config</strong> — any <code>pisg:</code> option can be overridden per channel
+  via PM (<code>pisg #channel set &lt;key&gt; &lt;value&gt;</code>) or via <code>channel_pisg:</code> in <code>config.yml</code>;
+  <code>rehash</code>/<code>reload</code> re-reads the config live without restarting</li>
+<li><strong>Op/voice/halfop stats</strong> — who gave ops, who got deopped, who hands out voice;
+  pisg-style prose sentences; <code>ShowOps</code>, <code>ShowVoice</code>, <code>ShowHalfops</code> toggles</li>
+<li><strong>Fully clickable cards</strong> on the landing and network pages</li>
+<li><strong>PM admin interface</strong> — identify, ignore management, master management</li>
+<li><strong>bcrypt password auth</strong> — session lasts until disconnect, works from any nick</li>
+<li><strong>Auto-auth</strong> via hostmask — silent authentication on join if host matches</li>
+<li><strong>Channel-scoped ignores</strong> — per-channel or network-wide</li>
+<li><strong>Automatic DB migrations</strong> — upgrading never requires manual schema changes</li>
+</ul>
+<hr />
+<h2 id="guide-requirements">Requirements<a class="headerlink" href="#guide-requirements" title="Permanent link">#</a></h2>
+<ul>
+<li>Python 3.11+</li>
+<li>A virtualenv (required on Debian 12+, Ubuntu 24.04+, and any distro that
+  ships PEP 668 — direct <code>pip install</code> into the system Python is blocked)</li>
+</ul>
+<hr />
+<h2 id="guide-quick-start">Quick start<a class="headerlink" href="#guide-quick-start" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-bash"># 1. Clone
+git clone https://github.com/TehPeGaSuS/Statsbot.git
+cd Statsbot
+
+# 2. Create and activate a virtualenv
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure
+cp config/config.yml.example config/config.yml
+nano config/config.yml          # set your networks, channels, nick
+
+# 5. Set up master password(s) — interactive wizard
+python main.py --setup
+
+# 6. Run
+python main.py
+</code></pre></div>
+<blockquote>
+<p><strong>Debian 12+ / Ubuntu 24.04+ note:</strong> these distros enforce PEP 668 and block
+<code>pip install</code> outside a virtualenv. Always use <code>.venv</code> as shown above.</p>
+</blockquote>
+<p>The web dashboard is at <code>http://localhost:8033/</code> by default.</p>
+<hr />
+<h2 id="guide-configuration-overview">Configuration overview<a class="headerlink" href="#guide-configuration-overview" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">bot:        # nick, altnick, realname, ident
+networks:   # list of IRC servers and channels
+stats:      # tracking options, ignore lists, smiley lists
+web:        # dashboard host/port/public_url
+commands:   # prefix, flood protection
+pisg:       # page layout (pisg-compatible option names)
+database:   # SQLite path
+logging:    # level and log file
+</code></pre></div>
+<p>See <strong><a href="#reference">DOCS.md</a></strong> for the complete reference.</p>
+<hr />
+<h2 id="guide-irc-commands">IRC commands<a class="headerlink" href="#guide-irc-commands" title="Permanent link">#</a></h2>
+<h3 id="guide-channel-commands">Channel commands<a class="headerlink" href="#guide-channel-commands" title="Permanent link">#</a></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>!stats</code></td>
+<td>Link to the stats page for this channel</td>
+</tr>
+<tr>
+<td><code>!top [n]</code></td>
+<td>Top N users by words (default 3, max 10)</td>
+</tr>
+<tr>
+<td><code>!quote [nick]</code></td>
+<td>Random quote, optionally from a specific nick</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="guide-pm-commands-msg-statsbot-command">PM commands (<code>/msg statsbot &lt;command&gt;</code>)<a class="headerlink" href="#guide-pm-commands-msg-statsbot-command" title="Permanent link">#</a></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>identify &lt;master&gt; &lt;password&gt;</code></td>
+<td>Authenticate — works from any nick on any network</td>
+</tr>
+<tr>
+<td><code>logout</code> / <code>whoami</code> / <code>status</code></td>
+<td>Session management</td>
+</tr>
+<tr>
+<td><code>ignore add [#chan] &lt;pattern&gt;</code></td>
+<td>Add ignore (network-wide if no <code>#chan</code>)</td>
+</tr>
+<tr>
+<td><code>ignore del [#chan] &lt;pattern&gt;</code></td>
+<td>Remove ignore</td>
+</tr>
+<tr>
+<td><code>ignore list [#chan]</code></td>
+<td>List ignores</td>
+</tr>
+<tr>
+<td><code>master add &lt;nick&gt;</code></td>
+<td>Add master (bot asks for password interactively)</td>
+</tr>
+<tr>
+<td><code>master del &lt;nick&gt;</code> / <code>master list</code></td>
+<td>Manage masters</td>
+</tr>
+<tr>
+<td><code>set page [#chan] &lt;url&gt;</code></td>
+<td>Override <code>!stats</code> URL for a channel</td>
+</tr>
+<tr>
+<td><code>nets</code></td>
+<td>List all networks (host, port, SSL status)</td>
+</tr>
+<tr>
+<td><code>chans</code></td>
+<td>List channels tracked on the current network</td>
+</tr>
+<tr>
+<td><code>addnet -name &lt;n&gt; -host &lt;host&gt; -port &lt;port&gt; [-ssl\|-plaintext]</code></td>
+<td>Add network and connect immediately (TLS by default)</td>
+</tr>
+<tr>
+<td><code>delnet -name &lt;n&gt;</code></td>
+<td>Remove network and delete all its stats</td>
+</tr>
+<tr>
+<td><code>addchan [-network &lt;net&gt;] #channel</code></td>
+<td>Join and track a channel</td>
+</tr>
+<tr>
+<td><code>delchan [-network &lt;net&gt;] #channel</code></td>
+<td>Part channel and delete all its stats</td>
+</tr>
+<tr>
+<td><code>join [-network &lt;net&gt;] #channel [key]</code></td>
+<td>Ad-hoc join without adding to DB (useful after a ban is lifted)</td>
+</tr>
+<tr>
+<td><code>part [-network &lt;net&gt;] #channel [reason]</code></td>
+<td>Ad-hoc part without removing from DB</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="guide-stats-page-url-structure">Stats page URL structure<a class="headerlink" href="#guide-stats-page-url-structure" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>http://yourserver:8033/                        — all networks (clickable cards)
+http://yourserver:8033/&lt;network&gt;/              — channels on a network (clickable cards)
+http://yourserver:8033/&lt;network&gt;/&lt;channel&gt;/    — full pisg-style stats page
+http://yourserver:8033/&lt;network&gt;/&lt;channel&gt;/?period=1   — today
+</code></pre></div>
+<p><code>&lt;channel&gt;</code> is the channel name without its <code>#</code>. Channels with more than one <code>#</code> are three
+different channels, so they get the number of hashes in front:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Address</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#lifeline</code></td>
+<td><code>/&lt;network&gt;/lifeline/</code></td>
+</tr>
+<tr>
+<td><code>##lifeline</code></td>
+<td><code>/&lt;network&gt;/2/lifeline/</code></td>
+</tr>
+<tr>
+<td><code>###lifeline</code></td>
+<td><code>/&lt;network&gt;/3/lifeline/</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Period values: <code>0</code> = all-time (default), <code>1</code> = today, <code>2</code> = this week, <code>3</code> = this month.</p>
+<p>Set <code>web.public_url</code> in config so <code>!stats</code> generates proper external links:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">web:
+  public_url: &quot;https://stats.yourserver.org&quot;
+</code></pre></div>
+<hr />
+<h2 id="guide-karma">Karma<a class="headerlink" href="#guide-karma" title="Permanent link">#</a></h2>
+<p>Users can award or deduct karma points by appending <code>++</code> or <code>--</code> to a nick:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>&lt;Alice&gt; Bob++
+&lt;Alice&gt; Bob--
+</code></pre></div>
+<p>Rules:
+- <strong>Suffix only</strong> — <code>nick++</code> and <code>nick--</code>; prefix forms (<code>++nick</code>) are not recognised
+- <strong>Channel membership</strong> — the target nick must currently be in the channel; random
+  words ending in <code>++</code>/<code>--</code> are silently ignored
+- <strong>No self-karma</strong> — you cannot modify your own score
+- <strong>Nicks containing <code>--</code> or <code>++</code></strong> are handled correctly: <code>Mike----</code> strips
+  exactly the last two characters, awarding −1 to nick <code>Mike--</code></p>
+<p>Karma scores appear in the <strong>Karma</strong> section of the channel stats page, sorted
+highest to lowest. Negative scores are shown in red. Toggle with <code>ShowKarma</code>
+in the <code>pisg:</code> config section.</p>
+<hr />
+<h2 id="guide-running-as-a-service">Running as a service<a class="headerlink" href="#guide-running-as-a-service" title="Permanent link">#</a></h2>
+<p>Two options: a <strong>user unit</strong> (recommended — no root required, starts on login
+or boot if lingering is enabled) or a <strong>system unit</strong> (runs as a dedicated
+user, requires root to install).</p>
+<h3 id="guide-user-unit-recommended">User unit (recommended)<a class="headerlink" href="#guide-user-unit-recommended" title="Permanent link">#</a></h3>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-ini"># ~/.config/systemd/user/statsbot.service
+[Unit]
+Description=Statsbot IRC statistics bot
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Statsbot
+ExecStart=%h/Statsbot/.venv/bin/python main.py
+Restart=on-failure
+RestartSec=30
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
+</code></pre></div>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-bash"># Install and start
+systemctl --user daemon-reload
+systemctl --user enable --now statsbot
+
+# Optional: keep running after logout (requires root once)
+loginctl enable-linger $USER
+
+# Useful commands
+systemctl --user status statsbot
+journalctl --user -u statsbot -f
+</code></pre></div>
+<p><code>%h</code> expands to your home directory. Adjust <code>WorkingDirectory</code> and
+<code>ExecStart</code> if you cloned Statsbot somewhere other than <code>~/Statsbot</code>.</p>
+<h3 id="guide-system-unit">System unit<a class="headerlink" href="#guide-system-unit" title="Permanent link">#</a></h3>
+<p>Use this if you want Statsbot to run as a dedicated system user
+(e.g. <code>statsbot</code>) rather than your own account.</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-ini"># /etc/systemd/system/statsbot.service
+[Unit]
+Description=Statsbot IRC statistics bot
+After=network.target
+
+[Service]
+Type=simple
+User=statsbot
+WorkingDirectory=/opt/statsbot
+ExecStart=/opt/statsbot/.venv/bin/python main.py
+Restart=on-failure
+RestartSec=30
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+</code></pre></div>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-bash"># Create a dedicated user (no login shell, no home directory)
+sudo useradd -r -s /usr/sbin/nologin -d /opt/statsbot statsbot
+sudo mkdir -p /opt/statsbot
+sudo chown statsbot:statsbot /opt/statsbot
+
+# Install and start (as root)
+sudo systemctl daemon-reload
+sudo systemctl enable --now statsbot
+
+# Logs
+sudo journalctl -u statsbot -f
+</code></pre></div>
+<hr />
+<h2 id="guide-project-structure">Project structure<a class="headerlink" href="#guide-project-structure" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>Statsbot/
+├── main.py                  # Entry point, --setup wizard, --version
+├── version.py               # The version number (see CHANGELOG.md)
+├── slugs.py                 # Channel name &lt;-&gt; URL path (#a, ##a and ###a differ)
+├── CHANGELOG.md
+├── tests/                   # pytest suite: python -m pytest
+├── tools/build_docs.py      # builds docs/index.html from README/DOCS/TRANSLATE/CHANGELOG
+├── docs/                    # the generated documentation site (what Cloudflare serves)
+├── wrangler.jsonc           # Cloudflare Workers config for the documentation site
+├── config/
+│   └── config.yml           # All configuration
+├── bot/
+│   ├── auth.py              # Master auth — sessions, bcrypt, auto-auth via mask
+│   ├── connector.py         # Async IRC connection, RFC 1459 parser, WHO handler
+│   ├── parser.py            # Message parsing: words, smileys, caps, violent, foul
+│   ├── sensors.py           # Event handlers — stats, quotes, karma, monologues
+│   └── scheduler.py         # Daily/weekly/monthly stat resets
+├── database/
+│   └── models.py            # SQLite schema, all queries, auto-migrations
+├── irc/
+│   ├── commands.py          # Channel commands: !stats, !top, !quote
+│   └── pm_commands.py       # PM admin: identify, ignore, master, set
+└── web/
+    ├── dashboard.py         # Flask: landing, network pages, JSON API, pisg config view
+    ├── pisg_config_page.py  # Read-only per-channel pisg config page (token-gated)
+    └── pisg_page.py         # Full pisg-style channel stats page
+</code></pre></div>
+<hr />
+<h2 id="guide-contributing">Contributing<a class="headerlink" href="#guide-contributing" title="Permanent link">#</a></h2>
+<p>Issues and pull requests are welcome. If you're adding a feature, please:</p>
+<ul>
+<li>Follow the existing code style (no external deps beyond <code>requirements.txt</code>)</li>
+<li>Add a test in <code>tests/</code> (<code>pip install -r requirements-dev.txt &amp;&amp; python -m pytest</code>)</li>
+<li>For a user-visible change, bump <code>version.py</code> and add a section to <code>CHANGELOG.md</code></li>
+<li>After editing <code>README.md</code>, <code>DOCS.md</code>, <code>TRANSLATE.md</code>, <code>CHANGELOG.md</code> or <code>version.py</code>, run
+  <code>python tools/build_docs.py</code> to regenerate the documentation site (<code>docs/index.html</code>); a test
+  fails if you forget</li>
+<li>Update <code>DOCS.md</code> if you add or change a config option</li>
+</ul>
+<p>Want to add or improve a translation? See <strong><a href="#translating">TRANSLATE.md</a></strong> —
+it covers the rules, the placeholders, and what not to translate, in English,
+Portuguese, French and Italian.</p>
+<p>If you're familiar with pisg, feature parity PRs are especially welcome —
+see <a href="#guide-whats-not-yet-implemented-vs-pisg">What's not yet implemented</a> for what's missing.</p>
+<h2 id="guide-whats-not-yet-implemented-vs-pisg">What's not yet implemented vs pisg<a class="headerlink" href="#guide-whats-not-yet-implemented-vs-pisg" title="Permanent link">#</a></h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>pisg feature</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>User pictures</td>
+<td>Not yet, probably never will</td>
+</tr>
+<tr>
+<td>Gender stats</td>
+<td>Not yet, probably never will</td>
+</tr>
+<tr>
+<td>NickTracking / nick aliases</td>
+<td>Not yet, probably never will</td>
+</tr>
+<tr>
+<td>Music charts (<code>now playing:</code>)</td>
+<td>Not yet, probably never will</td>
+</tr>
+</tbody>
+</table></div>
+<p>All other pisg features are implemented. Contributions welcome.</p>
+</section>
+<section class="group" id="reference"><h1 class="group-title">Configuration reference</h1>
+<p>This document covers all configuration options for Statsbot. Option names in
+the <code>pisg:</code> section deliberately match <a href="https://pisg.github.io/" target="_blank" rel="noopener">pisg</a> so
+that anyone familiar with pisg can migrate without reading much.</p>
+<hr />
+<h2 id="reference-bot-settings">Bot settings<a class="headerlink" href="#reference-bot-settings" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">bot:
+  nick: &quot;statsbot&quot;       # Primary nick
+  altnick: &quot;statsbot_&quot;   # Fallback nick if primary is taken
+  realname: &quot;IRC Stats Bot&quot;
+  ident: &quot;statsbot&quot;
+  # Masters are configured via: python main.py --setup
+</code></pre></div>
+<p>Masters (users allowed to run admin commands) are stored in the database with
+bcrypt-hashed passwords. Use <code>python main.py --setup</code> to add them interactively.
+See <a href="#reference-irc-commands">PM commands</a> for runtime management.</p>
+<hr />
+<h2 id="reference-network-settings">Network settings<a class="headerlink" href="#reference-network-settings" title="Permanent link">#</a></h2>
+<blockquote>
+<p><strong><code>config.yml</code> is a seed file, not the source of truth.</strong>
+On first run, networks and channels from <code>config.yml</code> are inserted into the
+database (<code>INSERT OR IGNORE</code>). After that the database wins. Add, remove, or
+modify networks and channels at runtime using <a href="#reference-irc-commands">PM commands</a>
+— no restart required.</p>
+</blockquote>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">networks:
+  - name: &quot;libera&quot;                  # Internal name — used in URLs and DB
+    host: &quot;irc.libera.chat&quot;
+    port: 6697                      # 6667 plain, 6697 SSL
+    ssl: true
+    channels:
+      - &quot;#yourchannel&quot;
+
+    # ── Authentication (pick one or combine) ──────────────────────────────
+
+    # SASL PLAIN — preferred on modern networks (Libera, OFTC, hackint …)
+    sasl:
+      username: &quot;statsbot&quot;
+      password: &quot;your_password&quot;
+
+    # NickServ IDENTIFY — legacy, works on most networks including Undernet
+    # nickserv_password: &quot;your_password&quot;
+
+    # Nick ghosting — if primary nick is taken, switch to altnick and reclaim
+    # the primary nick via NickServ. Requires nickserv_password or sasl.password.
+    # ghost: true
+    # ghost_command: &quot;GHOST&quot;   # Use &quot;RELEASE&quot; for DALnet (default: GHOST)
+
+    # Server password — for BNCs or private servers that require PASS
+    # server_password: &quot;your_password&quot;
+
+    # ── Post-connect commands ─────────────────────────────────────────────
+    # Sent after authentication completes. {nick} = current bot nick.
+    # on_connect:
+    #   - &quot;MODE {nick} +x&quot;      # request cloak (Undernet, others)
+    #   - &quot;UMODE2 +x&quot;           # alternative cloak (UnrealIRCd)
+    #   - &quot;MODE {nick} +B&quot;      # set bot flag
+
+    # ── Per-channel pisg overrides ────────────────────────────────────────
+    # Any key from the global pisg: section can be overridden here per channel.
+    # These are applied when the stats page is rendered — no restart required
+    # after a rehash. PM commands (pisg #channel set/reset) update the DB and
+    # take effect immediately, independent of this section.
+    #
+    # channel_pisg:
+    #   &quot;#yourchannel&quot;:
+    #     DailyActivity: 90      # 90-day graph instead of global 30
+    #     ShowVoice: true        # enable voice section on this channel only
+    #
+    #   &quot;#quietchannel&quot;:
+    #     ActiveNicks: 10        # smaller top table
+    #     ShowBigNumbers: false  # disable big numbers section entirely
+    #     DailyActivity: 0       # disable daily activity graph
+    # join_retries: 5            # max attempts per channel (default 5)
+    # join_retry_delay: 30       # seconds between attempts (default 30)
+    # join_confirm_timeout: 30   # retry a JOIN the server never answered (default 30)
+    # channel_audit_interval: 120 # periodic re-JOIN sweep (default 120)
+    # ping_interval: 120         # seconds of silence before we PING (default 120)
+    # ping_timeout: 90           # seconds after that PING before dropping (default 90)
+</code></pre></div>
+<h3 id="reference-channel-join-retries">Channel join retries<a class="headerlink" href="#reference-channel-join-retries" title="Permanent link">#</a></h3>
+<p>The bot tracks join state per channel. When the server confirms a self-JOIN
+the channel is marked joined and any pending retry is cancelled. If the join
+fails with one of the numerics below, a retry is scheduled with
+<code>join_retry_delay</code> seconds between attempts, up to <code>join_retries</code> total:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Numeric</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>437</code></td>
+<td>Nick/channel temporarily unavailable (DALnet)</td>
+</tr>
+<tr>
+<td><code>471</code></td>
+<td>Channel is full (<code>+l</code>)</td>
+</tr>
+<tr>
+<td><code>473</code></td>
+<td>Invite-only (<code>+i</code>)</td>
+</tr>
+<tr>
+<td><code>474</code></td>
+<td>Banned from channel (<code>+b</code>)</td>
+</tr>
+<tr>
+<td><code>475</code></td>
+<td>Bad channel key (<code>+k</code>)</td>
+</tr>
+<tr>
+<td><code>477</code></td>
+<td>Channel requires a registered nick / SASL</td>
+</tr>
+</tbody>
+</table></div>
+<p>Both options can also be set globally under <code>bot:</code> and are overridden
+per-network when present. Defaults: <code>5</code> retries, <code>30</code> second delay.</p>
+<p>A JOIN can also get <strong>no answer at all</strong> — no join echo and no error numeric.
+That happens routinely during a netsplit, when the JOIN reaches a server that
+is desynced or still merging. <code>join_confirm_timeout</code> (default <code>30</code>, <code>0</code>
+disables) arms a watchdog per JOIN; if nothing comes back in that window the
+join enters the same retry ladder above.</p>
+<p>As a final backstop, every <code>channel_audit_interval</code> seconds (default <code>120</code>,
+<code>0</code> disables) the bot sweeps its configured channel list and re-JOINs anything
+it is not in and has no retry pending for. Channels whose retry ladder has been
+fully exhausted are skipped by the audit, so a permanently banned channel isn't
+retried forever; that state is cleared on reconnect and on a manual join.</p>
+<h3 id="reference-connection-liveness-netsplit-recovery">Connection liveness (netsplit recovery)<a class="headerlink" href="#reference-connection-liveness-netsplit-recovery" title="Permanent link">#</a></h3>
+<p>A netsplit frequently leaves the TCP connection <strong>half-open</strong>: the peer stops
+sending but never sends <code>FIN</code> or <code>RST</code>. Nothing surfaces at the socket layer,
+so a bot that only reacts to server <code>PING</code>s will block on the read forever,
+still believing it is connected and joined, until it is restarted by hand.</p>
+<p>The bot guards against this at three levels:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Guard</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ping_interval</code> (default <code>120</code>)</td>
+<td>After this many seconds with no data from the server, send our own <code>PING</code>.</td>
+</tr>
+<tr>
+<td><code>ping_timeout</code> (default <code>90</code>)</td>
+<td>If the server is <em>still</em> silent this long after that <code>PING</code>, declare the link dead, close the socket and let the reconnect loop run.</td>
+</tr>
+<tr>
+<td>TCP keepalive</td>
+<td>Enabled on the socket (60s idle, 15s interval, 4 probes) as a second line of defence under the application-level check.</td>
+</tr>
+</tbody>
+</table></div>
+<p>An <code>ERROR</code> line from the server — sent by most ircds immediately before they
+close a link — also tears the connection down at once rather than waiting for
+the socket to notice.</p>
+<p>Both options can be set globally under <code>bot:</code> or per-network. Because any byte
+from the server counts as proof of life, a busy channel means the keepalive
+<code>PING</code> is rarely sent in practice.</p>
+<h3 id="reference-authentication-flow">Authentication flow<a class="headerlink" href="#reference-authentication-flow" title="Permanent link">#</a></h3>
+<ol>
+<li>If <code>server_password</code> is set, <code>PASS</code> is sent before <code>NICK</code>/<code>USER</code>.</li>
+<li>If <code>sasl</code> is set, <code>CAP REQ :sasl</code> is sent before <code>NICK</code>/<code>USER</code>. On success
+   the bot sends <code>AUTHENTICATE PLAIN</code> → base64(<code>user\0user\0pass</code>) → <code>CAP END</code>.
+   If the server rejects SASL, falls back to NickServ.</li>
+<li>On <code>001</code> (welcome), if SASL didn't auth, NickServ <code>IDENTIFY</code> is sent.</li>
+<li>If <code>ghost: true</code> and the primary nick is taken (<code>433</code>), the bot:
+   - Switches to <code>altnick</code>
+   - Sends <code>PRIVMSG NickServ :GHOST &lt;nick&gt; &lt;password&gt;</code>
+   - Watches for the confirmation notice and then sends <code>NICK &lt;primary&gt;</code></li>
+<li><code>on_connect</code> commands fire immediately on <code>001</code>, independent of authentication.
+   They run whether or not NickServ or SASL auth is configured.</li>
+</ol>
+<h3 id="reference-per-network-identity">Per-network identity<a class="headerlink" href="#reference-per-network-identity" title="Permanent link">#</a></h3>
+<p>Any of the four identity fields (<code>nick</code>, <code>altnick</code>, <code>realname</code>, <code>ident</code>) set
+inside a network entry override the global <code>bot:</code> defaults for that network
+only. This lets the bot present different nicks on different networks:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">bot:
+  nick: &quot;statsbot&quot;          # used everywhere unless overridden
+  altnick: &quot;statsbot_&quot;
+
+networks:
+  - name: &quot;libera&quot;
+    host: &quot;irc.libera.chat&quot;
+    # inherits bot.nick = &quot;statsbot&quot;
+
+  - name: &quot;undernet&quot;
+    host: &quot;irc.undernet.org&quot;
+    nick: &quot;ChanStatsBot&quot;    # overrides bot.nick on Undernet only
+    altnick: &quot;ChanStats_&quot;
+</code></pre></div>
+<p><code>{nick}</code> in <code>on_connect</code> commands substitutes the actual nick the bot is
+currently using on that network (could be <code>altnick</code> if primary was taken).</p>
+<h3 id="reference-multiple-networks">Multiple networks<a class="headerlink" href="#reference-multiple-networks" title="Permanent link">#</a></h3>
+<p>Add more entries to the <code>networks:</code> list — each connects independently:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">networks:
+  - name: &quot;libera&quot;
+    host: &quot;irc.libera.chat&quot;
+    port: 6697
+    ssl: true
+    channels:
+      - &quot;#bots&quot;
+    sasl:
+      username: &quot;statsbot&quot;
+      password: &quot;libera_pass&quot;
+
+  - name: &quot;undernet&quot;
+    host: &quot;irc.undernet.org&quot;
+    port: 6667
+    ssl: false
+    channels:
+      - &quot;#allnitecafe&quot;
+    nickserv_password: &quot;undernet_pass&quot;
+    ghost: true
+    on_connect:
+      - &quot;MODE {nick} +x&quot;
+
+  - name: &quot;ptirc&quot;
+    host: &quot;irc.ptirc.org&quot;
+    port: 6667
+    ssl: false
+    channels:
+      - &quot;#lobby&quot;
+      - &quot;#help&quot;
+</code></pre></div>
+<p>Each network gets its own session, ignore list, and stats namespace. The web
+dashboard groups channels by network automatically.</p>
+<hr />
+<h2 id="reference-stats-tracking">Stats tracking<a class="headerlink" href="#reference-stats-tracking" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">stats:
+  ignore:
+    - &quot;ChanServ&quot;
+    - &quot;*Serv&quot;
+    - &quot;*bot*&quot;
+    - &quot;*!*@services.example.org&quot;  # full hostmask pattern
+  # Channel-specific ignores via PM: /msg statsbot ignore add #chan pattern
+
+  auto_ignore_bots: false   # Auto-ignore nicks with IRC +B umode. Unreliable —
+                             # real users can set +B. Default off; use ignore list.
+
+  expire_days: 30           # Remove nicks not seen for X days (0 = never)
+  log_wordstats: true       # Track word frequency per nick
+  quote_frequency: 5        # Log every Nth message as a random quote.
+                             # First message from any nick is always logged.
+  kick_context: 5           # Lines of channel context saved with each kick
+
+  happy_smileys: [...]      # List of smileys counted as happy (smileys stat)
+  sad_smileys: [...]        # List of smileys counted as sad (sad stat)
+</code></pre></div>
+<h3 id="reference-ignore-patterns">Ignore patterns<a class="headerlink" href="#reference-ignore-patterns" title="Permanent link">#</a></h3>
+<p>Patterns support wildcards (<code>*</code>, <code>?</code>). Two forms are recognised:</p>
+<ul>
+<li><strong>Nick pattern</strong> — no <code>!</code> or <code>@</code>: matches against the nick only</li>
+<li><code>ChanServ</code>, <code>*bot*</code>, <code>*Serv</code></li>
+<li><strong>Hostmask pattern</strong> — contains <code>!</code> or <code>@</code>: matched against <code>nick!user@host</code></li>
+<li><code>*!*@services.ptirc.org</code>, <code>badnick!*@*</code></li>
+</ul>
+<p>Config-level ignores apply network-wide. Channel-specific ignores can be added
+at runtime via PM commands.</p>
+<hr />
+<h2 id="reference-web-dashboard">Web dashboard<a class="headerlink" href="#reference-web-dashboard" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">web:
+  enabled: true
+  host: &quot;0.0.0.0&quot;
+  port: 8033
+  public_url: &quot;&quot;     # e.g. https://stats.yourserver.org
+                     # Used by !stats to generate the channel link.
+                     # If empty, falls back to http://localhost:PORT/
+  title: &quot;IRC Stats&quot;
+  project_url: &quot;https://github.com/TehPeGaSuS/Statsbot&quot;  # link shown in page footers
+</code></pre></div>
+<p>The dashboard serves three pages:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td>Landing page — network cards (whole card is clickable)</td>
+</tr>
+<tr>
+<td><code>/&lt;network&gt;/</code></td>
+<td>Network page — channel cards (whole card is clickable)</td>
+</tr>
+<tr>
+<td><code>/&lt;network&gt;/&lt;channel&gt;/</code></td>
+<td>Full pisg-style channel stats page</td>
+</tr>
+</tbody>
+</table></div>
+<p>The landing page shows each network as a card displaying the network name,
+IRC server address, user count, and channel count. Clicking anywhere on the
+card navigates to the network page. The network page shows each channel as a
+card with tracked users, total words, and total lines; clicking navigates to
+the full channel stats page.</p>
+<p>Live user count on the channel page polls <code>/api/&lt;network&gt;/&lt;channel&gt;/online</code>
+every 30 seconds via JavaScript.</p>
+<hr />
+<h2 id="reference-irc-commands">IRC commands<a class="headerlink" href="#reference-irc-commands" title="Permanent link">#</a></h2>
+<p>The default command prefix is <code>!</code>, set globally under <code>commands.prefix</code> in
+<code>config.yml</code>. If a network already uses <code>!</code> for something else (e.g. Anope
+BotServ fantasy commands), you can override it per network with <code>cmd_prefix</code>:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">commands:
+  prefix: &quot;!&quot;               # global default
+
+networks:
+  - name: &quot;libera&quot;
+    host: &quot;irc.libera.chat&quot;
+    # inherits prefix &quot;!&quot;
+
+  - name: &quot;undernet&quot;
+    host: &quot;irc.undernet.org&quot;
+    cmd_prefix: &quot;.&quot;         # use . on this network instead
+</code></pre></div>
+<h3 id="reference-channel-commands-public">Channel commands (public)<a class="headerlink" href="#reference-channel-commands-public" title="Permanent link">#</a></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>!stats</code></td>
+<td>Link to stats page for this channel</td>
+</tr>
+<tr>
+<td><code>!top [n]</code></td>
+<td>Top N users by words, single line (default 3, max 10)</td>
+</tr>
+<tr>
+<td><code>!quote [nick]</code></td>
+<td>Random quote, optionally from a specific nick</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="reference-pm-commands-msg-statsbot-command">PM commands (<code>/msg statsbot &lt;command&gt;</code>)<a class="headerlink" href="#reference-pm-commands-msg-statsbot-command" title="Permanent link">#</a></h3>
+<p><strong>Authentication:</strong></p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>identify &lt;master_nick&gt; &lt;password&gt;</code></td>
+<td>Authenticate as a master. Works from any nick on any network. Session lasts until you disconnect.</td>
+</tr>
+<tr>
+<td><code>logout</code></td>
+<td>End your session</td>
+</tr>
+<tr>
+<td><code>whoami</code></td>
+<td>Show your current identity</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>Show connected channels and user counts</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Ignore management</strong> (requires auth):</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ignore add [#channel] &lt;pattern&gt;</code></td>
+<td>Add ignore. Omit <code>#channel</code> for network-wide.</td>
+</tr>
+<tr>
+<td><code>ignore del [#channel] &lt;pattern&gt;</code></td>
+<td>Remove ignore</td>
+</tr>
+<tr>
+<td><code>ignore list [#channel]</code></td>
+<td>List ignores, optionally filtered by channel</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Master management</strong> (requires auth):</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>master add &lt;nick&gt;</code></td>
+<td>Add a master (bot will ask for password interactively)</td>
+</tr>
+<tr>
+<td><code>master del &lt;nick&gt;</code></td>
+<td>Remove a master</td>
+</tr>
+<tr>
+<td><code>master list</code></td>
+<td>List all masters</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Configuration</strong> (requires auth):</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>set page [#channel] &lt;url&gt;</code></td>
+<td>Override the stats URL returned by <code>!stats</code></td>
+</tr>
+<tr>
+<td><code>setlang [-network &lt;net&gt;] #channel &lt;lang&gt;</code></td>
+<td>Set the stats page language (<code>en_US</code>, <code>pt_PT</code>, <code>fr_FR</code>, <code>it_IT</code>)</td>
+</tr>
+<tr>
+<td><code>pisg #channel list</code></td>
+<td>Generate a short-lived link to view effective pisg config for a channel</td>
+</tr>
+<tr>
+<td><code>pisg #channel set &lt;key&gt; &lt;value&gt;</code></td>
+<td>Set a per-channel pisg override — takes effect immediately</td>
+</tr>
+<tr>
+<td><code>pisg #channel reset [key]</code></td>
+<td>Remove one override or all of them (no key = all)</td>
+</tr>
+<tr>
+<td><code>rehash</code> / <code>reload</code></td>
+<td>Re-read <code>config.yml</code> from disk and apply changes live — no restart required</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Network management</strong> (requires auth):</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nets</code></td>
+<td>List all networks in the database with host, port, SSL status</td>
+</tr>
+<tr>
+<td><code>chans</code></td>
+<td>List channels tracked on the current network</td>
+</tr>
+<tr>
+<td><code>addnet -name &lt;n&gt; -host &lt;host&gt; -port &lt;port&gt; [-ssl\|-plaintext]</code></td>
+<td>Add a new network and connect immediately. TLS is the default — pass <code>-plaintext</code> to disable.</td>
+</tr>
+<tr>
+<td><code>delnet -name &lt;n&gt;</code></td>
+<td>Disconnect a network and permanently delete <strong>all</strong> its stats</td>
+</tr>
+<tr>
+<td><code>addchan [-network &lt;net&gt;] #channel</code></td>
+<td>Join and start tracking a channel. <code>-network</code> is optional if you're already on that network.</td>
+</tr>
+<tr>
+<td><code>delchan [-network &lt;net&gt;] #channel</code></td>
+<td>Part a channel and permanently delete <strong>all</strong> its stats</td>
+</tr>
+<tr>
+<td><code>join [-network &lt;net&gt;] #channel [key]</code></td>
+<td>Ad-hoc join a channel without adding it to the database. Useful after a ban is lifted or to re-attempt a failed join. Optional <code>key</code> for <code>+k</code> channels.</td>
+</tr>
+<tr>
+<td><code>part [-network &lt;net&gt;] #channel [reason]</code></td>
+<td>Ad-hoc part a channel without removing it from the database. The bot will rejoin it on the next reconnect.</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p><strong><code>join</code>/<code>part</code> vs <code>addchan</code>/<code>delchan</code>:</strong> <code>join</code>/<code>part</code> are runtime-only and
+do <strong>not</strong> touch the database — use them for temporary actions. <code>addchan</code>
+and <code>delchan</code> modify persistent tracking (and <code>delchan</code> deletes stats).</p>
+<p><strong>Destructive operations:</strong> <code>delnet</code> and <code>delchan</code> cascade-delete all stats,
+quotes, URLs, topics, kick logs, karma, and hourly data for that
+network/channel. There is no undo.</p>
+</blockquote>
+<p><strong>Examples:</strong></p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>addnet -name SwiftIRC -host irc.swiftirc.net -port 6697
+addnet -name Rizon -host irc.rizon.net -port 6667 -plaintext
+delnet -name SwiftIRC
+
+addchan #general                        (on current network)
+addchan -network SwiftIRC #general      (on a different network)
+delchan #general
+delchan -network SwiftIRC #general
+
+join #general                           (rejoin after a ban is lifted)
+join #secret hunter2                    (with channel key)
+join -network SwiftIRC #general
+part #general
+part #general going for lunch
+</code></pre></div>
+<hr />
+<h2 id="reference-pisg-style-page-options">pisg-style page options<a class="headerlink" href="#reference-pisg-style-page-options" title="Permanent link">#</a></h2>
+<p>All options go under the <code>pisg:</code> section in <code>config.yml</code>. Names match pisg
+exactly so the <a href="https://pisg.github.io/docs/" target="_blank" rel="noopener">pisg documentation</a> applies.</p>
+<h3 id="reference-per-channel-overrides">Per-channel overrides<a class="headerlink" href="#reference-per-channel-overrides" title="Permanent link">#</a></h3>
+<p>Any option from this section can be overridden for a specific channel in two ways:</p>
+<p><strong>In <code>config.yml</code></strong> under <code>channel_pisg:</code> inside a network entry (applied after <code>rehash</code>):</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">networks:
+  - name: &quot;libera&quot;
+    channels:
+      - &quot;#busy&quot;
+      - &quot;#quiet&quot;
+    channel_pisg:
+      &quot;#busy&quot;:
+        DailyActivity: 90
+        ActiveNicks: 50
+      &quot;#quiet&quot;:
+        ShowBigNumbers: false
+        DailyActivity: 0
+</code></pre></div>
+<p><strong>Via PM</strong> (takes effect immediately, stored in the DB):</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>/msg statsbot pisg #channel set DailyActivity 90
+/msg statsbot pisg #channel set ShowBigNumbers false
+/msg statsbot pisg #channel reset DailyActivity    ← remove override, global applies again
+/msg statsbot pisg #channel reset                  ← remove all overrides for channel
+/msg statsbot pisg #channel list                   ← get a link to view effective config
+</code></pre></div>
+<p>DB overrides (PM) take precedence over <code>channel_pisg:</code> in <code>config.yml</code>, which takes precedence over the global <code>pisg:</code> section.</p>
+<h3 id="reference-main-nick-table">Main nick table<a class="headerlink" href="#reference-main-nick-table" title="Permanent link">#</a></h3>
+<h4 id="reference-dailyactivity"><code>DailyActivity</code><a class="headerlink" href="#reference-dailyactivity" title="Permanent link">#</a></h4>
+<p>Number of days to show in the "Daily activity" bar chart below the hourly
+activity chart. Each bar represents one day; bars scroll horizontally if
+there are more than fit on screen. Set to <code>0</code> to disable the chart entirely.
+<strong>Default:</strong> <code>30</code></p>
+<h4 id="reference-activenicks"><code>ActiveNicks</code><a class="headerlink" href="#reference-activenicks" title="Permanent link">#</a></h4>
+<p>Number of nicks shown in the "Most active nicks" table.
+<strong>Default:</strong> <code>25</code> — pisg default: 25</p>
+<h4 id="reference-activenicks2"><code>ActiveNicks2</code><a class="headerlink" href="#reference-activenicks2" title="Permanent link">#</a></h4>
+<p>Number of nicks shown in the "These didn't make it to the top" secondary list.
+<strong>Default:</strong> <code>10</code> — pisg default: 30</p>
+<h4 id="reference-sortbywords"><code>SortByWords</code><a class="headerlink" href="#reference-sortbywords" title="Permanent link">#</a></h4>
+<p>Sort the main nick table by words (<code>true</code>) or lines (<code>false</code>).
+<strong>Default:</strong> <code>true</code> — pisg default: false (lines)</p>
+<h4 id="reference-showlines"><code>ShowLines</code><a class="headerlink" href="#reference-showlines" title="Permanent link">#</a></h4>
+<p>Show the line count column in the main nick table.
+<strong>Default:</strong> <code>true</code></p>
+<h4 id="reference-showwords"><code>ShowWords</code><a class="headerlink" href="#reference-showwords" title="Permanent link">#</a></h4>
+<p>Show the word count column in the main nick table.
+<strong>Default:</strong> <code>true</code> — pisg default: false</p>
+<h4 id="reference-showwpl"><code>ShowWpl</code><a class="headerlink" href="#reference-showwpl" title="Permanent link">#</a></h4>
+<p>Show the words-per-line column.
+<strong>Default:</strong> <code>true</code> — pisg default: false</p>
+<h4 id="reference-showcpl"><code>ShowCpl</code><a class="headerlink" href="#reference-showcpl" title="Permanent link">#</a></h4>
+<p>Show the characters-per-line column.
+<strong>Default:</strong> <code>false</code> — pisg default: false</p>
+<h4 id="reference-showlastseen"><code>ShowLastSeen</code><a class="headerlink" href="#reference-showlastseen" title="Permanent link">#</a></h4>
+<p>Show when each nick was last seen (e.g. "2 days ago").
+<strong>Default:</strong> <code>true</code></p>
+<h4 id="reference-showrandquote"><code>ShowRandQuote</code><a class="headerlink" href="#reference-showrandquote" title="Permanent link">#</a></h4>
+<p>Show a random quote from each nick in the main table.
+<strong>Default:</strong> <code>true</code></p>
+<h4 id="reference-minquote"><code>MinQuote</code><a class="headerlink" href="#reference-minquote" title="Permanent link">#</a></h4>
+<p>Minimum character length for a quote to be selected for display.
+Falls back to any quote if none found in range.
+<strong>Default:</strong> <code>25</code> — pisg default: 25</p>
+<h4 id="reference-maxquote"><code>MaxQuote</code><a class="headerlink" href="#reference-maxquote" title="Permanent link">#</a></h4>
+<p>Maximum character length for a quote to be selected.
+<strong>Default:</strong> <code>65</code> — pisg default: 65</p>
+<hr />
+<h3 id="reference-big-numbers">Big numbers<a class="headerlink" href="#reference-big-numbers" title="Permanent link">#</a></h3>
+<h4 id="reference-showbignumbers"><code>ShowBigNumbers</code><a class="headerlink" href="#reference-showbignumbers" title="Permanent link">#</a></h4>
+<p>Master switch for the "Big numbers" and "Other interesting numbers" sections.
+Setting this to <code>false</code> hides both sections entirely.
+<strong>Default:</strong> <code>true</code></p>
+<h4 id="reference-bignumbersthreshold"><code>BigNumbersThreshold</code><a class="headerlink" href="#reference-bignumbersthreshold" title="Permanent link">#</a></h4>
+<p>Minimum lines a nick must have to appear in big numbers statistics
+(questions, CAPS, smileys, line lengths, sad faces). Set to <code>"sqrt"</code> for
+automatic threshold (square root of the most active nick's line count).
+<strong>Default:</strong> <code>"sqrt"</code> — pisg default: sqrt</p>
+<h4 id="reference-violentwords"><code>ViolentWords</code><a class="headerlink" href="#reference-violentwords" title="Permanent link">#</a></h4>
+<p>Words considered aggressive/violent. Used to detect <code>/me slaps</code> style actions.
+The first nick mentioned after a violent word is recorded as the victim.
+<strong>Default:</strong> <code>["slaps", "beats", "kicks", "hits", "smacks", "stabs"]</code> — pisg default: <code>slaps beats smacks</code></p>
+<h4 id="reference-foulwords"><code>FoulWords</code><a class="headerlink" href="#reference-foulwords" title="Permanent link">#</a></h4>
+<p>Words considered foul language. Tracked as a percentage of total words.
+<strong>Default:</strong> <code>["ass", "fuck", "shit", "bitch", "cunt", "cock", "dick"]</code></p>
+<blockquote>
+<p><strong>Note:</strong> In Statsbot, individual big number sub-sections (questions, CAPS,
+violence, smiles, etc.) are all controlled by <code>ShowBigNumbers</code>. In pisg they
+were always on when <code>ShowBigNumbers</code> was on. Future versions may add
+individual toggles.</p>
+</blockquote>
+<hr />
+<h3 id="reference-section-toggles">Section toggles<a class="headerlink" href="#reference-section-toggles" title="Permanent link">#</a></h3>
+<h4 id="reference-showtime"><code>ShowTime</code><a class="headerlink" href="#reference-showtime" title="Permanent link">#</a></h4>
+<p>Show the activity time-band bars in the main nick table — coloured bars
+indicating when each nick is most active (four 6-hour bands: night, morning,
+afternoon, evening). pisg equivalent: <code>ShowTime</code>.
+<strong>Default:</strong> <code>true</code> — pisg default: true</p>
+<h4 id="reference-showmostactivebyhour"><code>ShowMostActiveByHour</code><a class="headerlink" href="#reference-showmostactivebyhour" title="Permanent link">#</a></h4>
+<p>Show the "Most active nicks by hour" table, split into four 6-hour bands
+(0–5, 6–11, 12–17, 18–23). pisg equivalent: <code>ShowMostActiveByHour</code>.
+<strong>Default:</strong> <code>true</code> — pisg default: false</p>
+<h4 id="reference-showsmileys"><code>ShowSmileys</code><a class="headerlink" href="#reference-showsmileys" title="Permanent link">#</a></h4>
+<p>Show the smiley frequency table — which specific smileys were used most
+and by whom.
+<strong>Default:</strong> <code>true</code> — pisg default: false</p>
+<h4 id="reference-showmrn"><code>ShowMrn</code><a class="headerlink" href="#reference-showmrn" title="Permanent link">#</a></h4>
+<p>Show the "Most referenced nicks" section — which nicks are mentioned most
+in conversation. Nick casing is preserved as it appears on IRC.
+<strong>Default:</strong> <code>true</code> — pisg default: true</p>
+<h4 id="reference-showmuw"><code>ShowMuw</code><a class="headerlink" href="#reference-showmuw" title="Permanent link">#</a></h4>
+<p>Show the "Most used words" section.
+<strong>Default:</strong> <code>true</code></p>
+<h4 id="reference-showmru"><code>ShowMru</code><a class="headerlink" href="#reference-showmru" title="Permanent link">#</a></h4>
+<p>Show the "Most referenced URLs" section. URLs are deduplicated — repeated
+posts of the same URL increment the count.
+<strong>Default:</strong> <code>true</code> — pisg default: true</p>
+<h4 id="reference-showops"><code>ShowOps</code><a class="headerlink" href="#reference-showops" title="Permanent link">#</a></h4>
+<p>Show the "Ops, voice and halfops" section — who gave ops most, who got
+deopped, who hands out voice, etc. Rendered as pisg-style prose sentences.
+Only appears if op events have actually been recorded; silently omitted on
+channels with no op activity.
+<strong>Default:</strong> <code>true</code> — pisg default: true</p>
+<h4 id="reference-showvoice"><code>ShowVoice</code><a class="headerlink" href="#reference-showvoice" title="Permanent link">#</a></h4>
+<p>Show voice-related sentences within the ops section (+v/-v).
+<strong>Default:</strong> <code>true</code> — pisg default: true</p>
+<h4 id="reference-showhalfops"><code>ShowHalfops</code><a class="headerlink" href="#reference-showhalfops" title="Permanent link">#</a></h4>
+<p>Show halfop sentences within the ops section (+h/-h). Halfops are supported
+on some IRC networks (UnrealIRCd, InspIRCd). Silently omitted if no halfop
+events have been recorded.
+<strong>Default:</strong> <code>true</code> — pisg default: true</p>
+<h4 id="reference-showlegend"><code>ShowLegend</code><a class="headerlink" href="#reference-showlegend" title="Permanent link">#</a></h4>
+<p>Show the page legend/footer with totals (lines, nicks, avg wpl, avg cpl,
+topics set count).
+<strong>Default:</strong> <code>true</code></p>
+<hr />
+<h3 id="reference-history-limits">History limits<a class="headerlink" href="#reference-history-limits" title="Permanent link">#</a></h3>
+<h4 id="reference-wordhistory"><code>WordHistory</code><a class="headerlink" href="#reference-wordhistory" title="Permanent link">#</a></h4>
+<p>Maximum number of words shown in "Most used words".
+<strong>Default:</strong> <code>10</code> — pisg default: 10</p>
+<h4 id="reference-wordlength"><code>WordLength</code><a class="headerlink" href="#reference-wordlength" title="Permanent link">#</a></h4>
+<p>Minimum word length to appear in "Most used words". Words shorter than
+this are filtered from display (but still tracked in the DB).
+<strong>Default:</strong> <code>5</code> — pisg default: 5</p>
+<h4 id="reference-ignorewords"><code>IgnoreWords</code><a class="headerlink" href="#reference-ignorewords" title="Permanent link">#</a></h4>
+<p>Space or list of words to exclude from "Most used words" and "Most referenced
+nicks" detection. Useful for filtering common words.
+<strong>Default:</strong> <code>[]</code> (empty)</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">IgnoreWords: [&quot;there&quot;, &quot;about&quot;, &quot;think&quot;, &quot;would&quot;, &quot;going&quot;]
+</code></pre></div>
+<h4 id="reference-nickhistory"><code>NickHistory</code><a class="headerlink" href="#reference-nickhistory" title="Permanent link">#</a></h4>
+<p>Maximum number of nicks shown in "Most referenced nicks".
+<strong>Default:</strong> <code>5</code> — pisg default: 5</p>
+<h4 id="reference-smileyhistory"><code>SmileyHistory</code><a class="headerlink" href="#reference-smileyhistory" title="Permanent link">#</a></h4>
+<p>Maximum number of smileys shown in the smiley frequency table.
+<strong>Default:</strong> <code>10</code> — pisg default: 10</p>
+<h4 id="reference-urlhistory"><code>UrlHistory</code><a class="headerlink" href="#reference-urlhistory" title="Permanent link">#</a></h4>
+<p>Maximum number of URLs shown in "Most referenced URLs".
+<strong>Default:</strong> <code>10</code> — pisg default: 5</p>
+<h4 id="reference-topichistory"><code>TopicHistory</code><a class="headerlink" href="#reference-topichistory" title="Permanent link">#</a></h4>
+<p>Maximum number of topics shown in "Latest topics".
+<strong>Default:</strong> <code>5</code> — pisg default: 3</p>
+<h4 id="reference-activenicksbyhour"><code>ActiveNicksByHour</code><a class="headerlink" href="#reference-activenicksbyhour" title="Permanent link">#</a></h4>
+<p>Number of rows in the "Most active nicks by hour" table (per band).
+<strong>Default:</strong> <code>10</code> — pisg default: 10</p>
+<hr />
+<h3 id="reference-karma-options">Karma options<a class="headerlink" href="#reference-karma-options" title="Permanent link">#</a></h3>
+<h4 id="reference-showkarma"><code>ShowKarma</code><a class="headerlink" href="#reference-showkarma" title="Permanent link">#</a></h4>
+<p>Show the Karma leaderboard section on the channel stats page. Scores are
+sorted highest to lowest; positive scores are green, negative are red.
+<strong>Default:</strong> <code>true</code></p>
+<h4 id="reference-karmahistory"><code>KarmaHistory</code><a class="headerlink" href="#reference-karmahistory" title="Permanent link">#</a></h4>
+<p>Maximum number of nicks shown in the karma table.
+<strong>Default:</strong> <code>10</code></p>
+<h4 id="reference-how-karma-works">How karma works<a class="headerlink" href="#reference-how-karma-works" title="Permanent link">#</a></h4>
+<p>Users award or deduct karma by appending <code>++</code> or <code>--</code> to a nick in any
+channel message:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>&lt;Alice&gt; Bob++        ← Bob's score +1
+&lt;Alice&gt; Bob--        ← Bob's score -1
+</code></pre></div>
+<p><strong>Rules enforced by the bot:</strong></p>
+<ul>
+<li><strong>Suffix only</strong> — <code>nick++</code> / <code>nick--</code>. Prefix forms (<code>++nick</code>) are ignored.</li>
+<li><strong>Channel membership required</strong> — the target nick must be present in the
+  channel at the time of the message. Messages referencing absent nicks or
+  random words ending in <code>++</code>/<code>--</code> are silently ignored.</li>
+<li><strong>No self-karma</strong> — a user cannot modify their own score.</li>
+<li><strong>Nicks containing <code>--</code> or <code>++</code></strong> are handled correctly. The bot strips
+  exactly the last two characters to find the nick, so <code>Mike----</code> awards −1
+  to nick <code>Mike--</code>, not to nick <code>Mike</code>.</li>
+<li>Karma is stored per-channel; a nick's score on one network/channel is
+  independent of any other.</li>
+</ul>
+<hr />
+<h2 id="reference-database">Database<a class="headerlink" href="#reference-database" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">database:
+  path: &quot;data/stats.db&quot;    # Path to SQLite database file
+</code></pre></div>
+<p>The database is SQLite — zero setup, zero dependencies beyond Python's
+built-in <code>sqlite3</code>. Schema migrations run automatically on startup so
+upgrading Statsbot never requires manual DB changes.</p>
+<hr />
+<h2 id="reference-logging">Logging<a class="headerlink" href="#reference-logging" title="Permanent link">#</a></h2>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-yaml">logging:
+  level: &quot;INFO&quot;             # DEBUG, INFO, WARNING, ERROR
+  file: &quot;data/ircstats.log&quot;
+</code></pre></div>
+<hr />
+<h2 id="reference-differences-from-pisg">Differences from pisg<a class="headerlink" href="#reference-differences-from-pisg" title="Permanent link">#</a></h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>pisg</th>
+<th>Statsbot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data source</td>
+<td>Static log files</td>
+<td>Live IRC bot (real-time)</td>
+</tr>
+<tr>
+<td>Log parsers</td>
+<td>30+ formats</td>
+<td>Not needed — events received directly</td>
+</tr>
+<tr>
+<td>Tracking</td>
+<td>Per-mask (nick!user@host)</td>
+<td>Per-nick</td>
+</tr>
+<tr>
+<td>Nick merging</td>
+<td>Aliases + NickTracking</td>
+<td>Not supported (each nick is its own entry)</td>
+</tr>
+<tr>
+<td>Output</td>
+<td>Static HTML file</td>
+<td>Live Flask web server</td>
+</tr>
+<tr>
+<td>Periods</td>
+<td>One fixed period (log window)</td>
+<td>All-time, today, this week, this month</td>
+</tr>
+<tr>
+<td>Peak users</td>
+<td>Not tracked</td>
+<td>Tracked with timestamp</td>
+</tr>
+<tr>
+<td>Live count</td>
+<td>Not possible</td>
+<td>Yes, polls every 30s</td>
+</tr>
+<tr>
+<td>Karma (<code>nick++</code>)</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Op/voice/halfop stats</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>User pictures</td>
+<td>Yes</td>
+<td>Not yet</td>
+</tr>
+<tr>
+<td>Gender stats</td>
+<td>Yes</td>
+<td>Not yet</td>
+</tr>
+<tr>
+<td>Music charts</td>
+<td>Yes</td>
+<td>Not yet</td>
+</tr>
+<tr>
+<td>Daily activity graph</td>
+<td>Yes</td>
+<td>Yes — scrollable bar chart, configurable per channel</td>
+</tr>
+<tr>
+<td>NickTracking / aliases</td>
+<td>Yes</td>
+<td>Not yet</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="group" id="translating"><h1 class="group-title">Translating</h1>
+<p><strong>Português</strong> · <strong>Français</strong> · <strong>Italiano</strong> · <strong>Nederlands</strong> — see below for your language.</p>
+<hr />
+<div class="alert note">
+<p class="alert-title">Note</p>
+<p>This page shows the English text. The guide is also written in Português, Français, Italiano and Nederlands: see <a href="https://github.com/TehPeGaSuS/Statsbot/blob/main/TRANSLATE.md" target="_blank" rel="noopener">TRANSLATE.md</a>.</p>
+</div>
+<h2 id="translating-how-it-works">How it works<a class="headerlink" href="#translating-how-it-works" title="Permanent link">#</a></h2>
+<p>Statsbot uses standard PO files (<code>locale/&lt;lang&gt;.po</code>). Each entry looks like:</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>msgid &quot;{nick} is a very aggressive person. They attacked others {count} times.&quot;
+msgstr &quot;{nick} é uma pessoa muito agressiva. Atacou outros {count} vezes.&quot;
+</code></pre></div>
+<p>The <code>msgid</code> is the English string — <strong>do not translate or modify <code>msgid</code> lines</strong>.
+Only edit the <code>msgstr</code> line. <code>en_US.po</code> has empty <code>msgstr</code> throughout and serves
+as the reference catalogue; do not add translations to it.</p>
+<h2 id="translating-adding-a-new-language">Adding a new language<a class="headerlink" href="#translating-adding-a-new-language" title="Permanent link">#</a></h2>
+<ol>
+<li>Copy <code>locale/en_US.po</code> to <code>locale/&lt;lang&gt;.po</code> (e.g. <code>locale/de_DE.po</code>)
+   Currently supported: <code>en_US</code>, <code>pt_PT</code>, <code>fr_FR</code>, <code>it_IT</code>, <code>nl_NL</code></li>
+<li>Update the <code>Language:</code> header</li>
+<li>Add your language code to <code>SUPPORTED</code> in <code>i18n.py</code></li>
+<li>Translate every <code>msgstr</code> line</li>
+</ol>
+<h2 id="translating-rules">Rules<a class="headerlink" href="#translating-rules" title="Permanent link">#</a></h2>
+<p><strong>Must keep — these will break the page if removed or renamed:</strong></p>
+<ul>
+<li><code>{nick}</code> — IRC nickname, inserted by the bot</li>
+<li><code>{nick2}</code> — second IRC nickname (used in follower strings)</li>
+<li><code>{count}</code> — a number</li>
+<li><code>{pct}</code> — a percentage value (already formatted, e.g. <code>27.3</code>)</li>
+<li><code>{avg}</code> — an average value</li>
+<li><code>{n}</code> — a number (days, nicks, etc.)</li>
+<li><code>{channel}</code> — channel name (e.g. <code>#portugal</code>)</li>
+<li><code>{network}</code> — network name (e.g. <code>PTirc</code>)</li>
+<li><code>{url}</code> — a URL</li>
+<li><code>{list}</code> — a formatted list</li>
+<li><code>{date}</code> — a formatted date string</li>
+<li><code>{time}</code> — a formatted time string</li>
+<li><code>{by}</code> — attribution string (may be empty)</li>
+<li><code>{quote}</code> — a random quote</li>
+<li><code>{total}</code> — total nick count</li>
+</ul>
+<p>Placeholders can be <strong>reordered</strong> within the sentence to fit your language's
+grammar. You cannot rename them, remove them, or add new ones.</p>
+<p><strong>Must keep — these are not translatable:</strong></p>
+<ul>
+<li>The four time-band labels: <code>0-5</code>, <code>6-11</code>, <code>12-17</code>, <code>18-23</code> — leave as-is.</li>
+<li><code>Karma</code> — proper noun, used as a section title and in the DB.</li>
+<li><code>Nick</code> (column header) — IRC terminology, universally understood.</li>
+<li><code>URL</code>, <code>Smiley</code> — universally understood abbreviations.</li>
+<li><code>:-)</code>  <code>:)</code>  <code>:(</code>  — emoticons in strings like <code>"Smileys :-)"</code> and
+  <code>"happiest :)"</code> — keep them exactly as they appear.</li>
+</ul>
+<p><strong>Weekdays and months:</strong></p>
+<p>These are comma-separated lists. Keep exactly 7 weekdays (Monday first)
+and exactly 12 months. Do not add spaces around commas.</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>msgid &quot;Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday&quot;
+msgstr &quot;lundi,mardi,mercredi,jeudi,vendredi,samedi,dimanche&quot;
+
+msgid &quot;January,February,...,December&quot;
+msgstr &quot;janvier,février,...,décembre&quot;
+</code></pre></div>
+<p><strong>Singular vs plural strings:</strong></p>
+<p>Many stats have two versions — one for <code>{count} = 1</code> and one for <code>{count} &gt; 1</code>.
+Both must be translated, even if your language handles plurals differently.
+The bot always picks the right one based on the count.</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code>msgid &quot;{nick} took voice away {count} time — someone had to.&quot;
+msgstr &quot;{nick} retirou voice {count} vez — alguém tinha de o fazer.&quot;
+
+msgid &quot;{nick} took voice away {count} times — someone had to.&quot;
+msgstr &quot;{nick} retirou voice {count} vezes — alguém tinha de o fazer.&quot;
+</code></pre></div>
+<p><strong>Style:</strong></p>
+<ul>
+<li>Keep the same tone — playful, slightly sarcastic, never mean</li>
+<li>Maintain gender-neutral language (<code>they/their</code> in English; use equivalent
+  neutral forms or inclusive suffixes in your language)</li>
+<li>Keep the <code>!</code> and <code>?</code> punctuation where present — they contribute to the tone</li>
+<li>IRC terms (<code>op</code>, <code>halfop</code>, <code>voice</code>, <code>kick</code>) should not be translated —
+  they are universally understood on IRC</li>
+</ul>
+<hr />
+<hr />
+</section>
+<section class="group" id="changelog"><h1 class="group-title">Changelog</h1>
+<p>All notable changes to Statsbot. The format follows <a href="https://keepachangelog.com/" target="_blank" rel="noopener">Keep a Changelog</a>,
+and versions follow <a href="https://semver.org/" target="_blank" rel="noopener">Semantic Versioning</a>. Everything released before this
+file existed is treated as 1.0.0. Check what you are running with <code>python main.py --version</code>
+(it is also shown in the footer of every stats page).</p>
+<h2 id="changelog-v1-1-0">[1.1.0] - 2026-09-30<a class="headerlink" href="#changelog-v1-1-0" title="Permanent link">#</a></h2>
+<h3 id="changelog-security">Security<a class="headerlink" href="#changelog-security" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Stored cross-site scripting on the stats page.</strong> Text that came from IRC — quotes, topics,
+  kick reasons, <code>/me</code> and example lines, words, URLs, smileys, nicks and channel names — was
+  written into the page without being escaped, so anyone who could talk in a tracked channel
+  could run script in the browser of everyone who opened the page. Everything is now escaped
+  where it is written, and values placed in the page's inline script can no longer close the
+  script tag.</li>
+<li><strong>Host-mask auto-login never worked, and matched too much.</strong> It crashed with a <code>KeyError</code> the
+  moment a mask matched, and a mask without a host part (a bare nick) would have matched on the
+  nick alone — anybody can take a nick on IRC. A mask now has to contain an <code>@</code>
+  (for example <code>*!*@your.host.example</code>).</li>
+<li><code>?period=</code> outside 0–3 is answered with <code>400</code>, and <code>?limit=</code> is limited to 1–100 (<code>-1</code> meant
+  "no limit" to SQLite and returned the whole table).</li>
+</ul>
+<h3 id="changelog-fixed">Fixed<a class="headerlink" href="#changelog-fixed" title="Permanent link">#</a></h3>
+<ul>
+<li>Every line's <code>letters</code> were counted twice.</li>
+<li>The daily activity chart filed a finished day under the next day's date, so today's bar showed
+  yesterday's numbers.</li>
+<li><code>master list</code> over PM failed with an internal error.</li>
+<li>Karma was ignored for someone who had spoken for the first time less than a minute earlier.</li>
+<li><code>-l</code>, <code>-L</code>, <code>-j</code> and <code>-f</code> in a mode string wrongly took the next argument.</li>
+<li>A restart during the midnight hour reset the day (and on Mondays / the 1st the week / month)
+  a second time. The last reset of each kind is now stored in the database, and the week check
+  includes the year.</li>
+<li>The "got beaten" example showed a line about somebody else.</li>
+<li><code>www.</code> links on the page were relative links.</li>
+<li><code>?period=abc</code> and <code>?limit=abc</code> returned HTTP 500.</li>
+</ul>
+<h3 id="changelog-changed">Changed<a class="headerlink" href="#changelog-changed" title="Permanent link">#</a></h3>
+<ul>
+<li><strong><code>##channel</code> and <code>###channel</code> have their own page URLs.</strong> <code>#lifeline</code> stays
+  <code>/Network/lifeline/</code>; <code>##lifeline</code> is <code>/Network/2/lifeline/</code> and <code>###lifeline</code>
+  <code>/Network/3/lifeline/</code> (before, all three shared one address and the wrong channel was shown).
+  Other spellings redirect to the canonical URL.</li>
+<li>The footer shows the version.</li>
+</ul>
+<h3 id="changelog-added">Added<a class="headerlink" href="#changelog-added" title="Permanent link">#</a></h3>
+<ul>
+<li><code>python main.py --version</code>, <code>version.py</code>, this changelog.</li>
+<li>A test suite (<code>python -m pytest</code>) and CI on Python 3.11–3.14, a weekly dependency audit and
+  Dependabot.</li>
+</ul>
+<h3 id="changelog-upgrade-notes">Upgrade notes<a class="headerlink" href="#changelog-upgrade-notes" title="Permanent link">#</a></h3>
+<ul>
+<li><code>git pull</code>, <code>pip install -r requirements.txt</code>, restart the bot. The database updates itself
+  (one new table, <code>scheduler_state</code>). No manual step.</li>
+<li>Statistics that were already stored are not rewritten: the <code>letters</code> totals collected before
+  1.1.0 stay doubled (so "chars per line" of older data is too high), and earlier days on the
+  activity chart stay one day late.</li>
+<li>If you set up host-mask auto-login before, check that each mask contains an <code>@</code>.</li>
+</ul>
+<h2 id="changelog-v1-0-0">[1.0.0]<a class="headerlink" href="#changelog-v1-0-0" title="Permanent link">#</a></h2>
+<p>Everything up to the introduction of version numbers (the last such commit is <code>d3538ac</code>,
+2026-07-28). An older bot cannot report a version, so check the date of its latest commit: from
+2026-09-30 on it has the 1.1.0 fixes.</p>
+<div class="code"><button type="button" class="copy">Copy</button><pre><code class="language-bash">git log -1 --format='%h %cs'
+[[ $(git log -1 --format=%cs) &lt; 2026-09-30 ]] &amp;&amp; echo &quot;OUTDATED: update now&quot; || echo &quot;up to date&quot;
+</code></pre></div>
+</section>
+<footer>Statsbot 1.1.0 &middot; MIT licence &middot; <a href="https://github.com/TehPeGaSuS/Statsbot" target="_blank" rel="noopener">source on GitHub</a>
+&middot; inspired by <a href="https://pisg.github.io/" target="_blank" rel="noopener">pisg</a>.
+This page is generated from README.md, DOCS.md, TRANSLATE.md and CHANGELOG.md.</footer>
+</main>
+</div>
+<script type="application/json" id="search-index">[{"id":"guide-why-statsbot-instead-of-pisg","title":"Why Statsbot instead of pisg?","group":"Guide","text":"pisg Statsbot Data source Parse log files Live IRC connection Setup Configure bot logging + cron + pisg Just run Statsbot Log format support 30+ parsers to maintain Not needed Output Static HTML, regenerated periodically Live web server Stats periods One fixed window All-time, today, week, month Peak users ✗ ✓ with timestamp Live user count ✗ ✓ updates every 30s Karma ( nick++ / nick-- ) ✓ ±1 per pair, nick== resets ✓ cumulative, no reset Op/voice/halfop stats ✓ ✓ Multi-network ✗ ✓ Admin via IRC ✗ ✓ via PM commands Per-channel page config ✗ ✓ via PM or config.yml , live rehash Multilingual stats page ✓ static, per-install ✓ live, per-channel If you already know pisg, the pisg: section in config.yml uses the same option names — ActiveNicks , ShowBigNumbers , WordHistory , etc. — so the pisg docs apply directly."},{"id":"guide-features","title":"Features","group":"Guide","text":"Tracks words, lines, letters, actions, kicks, modes, bans, joins, topics, minutes online, smileys (happy + sad separately), questions, CAPS lines, violent actions, foul language, monologues Karma — nick++ / nick-- suffix syntax; only counts if the target is in the channel; nicks containing -- or ++ are handled correctly (e.g. Mike---- awards −1 to nick Mike-- ) Big numbers — questions, shouting %, CAPS %, violence + victim tracking with example lines, smiles %, sad %, line lengths, monologues, words per line Other interesting numbers — kicks given/received, most actions, most joins, foul language % Most active by hour — 4-band table (0–5, 6–11, 12–17, 18–23) Most used words — filterable by length and ignore list, with last-used-by nick Most referenced nicks — who gets mentioned most in conversation, displayed with original casing Smiley frequency table — which specific smiley used most, and by whom Most referenced URLs — deduplicated with use count and last poster Latest topics with setter and timestamp Random quotes in the main table — length-filtered (MinQuote/MaxQuote), first message always logged so new speakers never show blank Period tabs — all-time, today, this week, this month Peak users with date Live user count badge, updates every 30 seconds Multi-network — connect to Libera, Undernet, PTirc simultaneously Runtime network management — add/remove networks and channels live via PM commands, no restart required; config.yml seeds the DB on first run only Per-channel pi"},{"id":"guide-requirements","title":"Requirements","group":"Guide","text":"Python 3.11+ A virtualenv (required on Debian 12+, Ubuntu 24.04+, and any distro that ships PEP 668 — direct pip install into the system Python is blocked)"},{"id":"guide-quick-start","title":"Quick start","group":"Guide","text":"# 1. Clone git clone https://github.com/TehPeGaSuS/Statsbot.git cd Statsbot # 2. Create and activate a virtualenv python3 -m venv .venv source .venv/bin/activate # 3. Install dependencies pip install -r requirements.txt # 4. Configure cp config/config.yml.example config/config.yml nano config/config.yml # set your networks, channels, nick # 5. Set up master password(s) — interactive wizard python main.py --setup # 6. Run python main.py Debian 12+ / Ubuntu 24.04+ note: these distros enforce PEP 668 and block pip install outside a virtualenv. Always use .venv as shown above. The web dashboard is at http://localhost:8033/ by default."},{"id":"guide-configuration-overview","title":"Configuration overview","group":"Guide","text":"bot: # nick, altnick, realname, ident networks: # list of IRC servers and channels stats: # tracking options, ignore lists, smiley lists web: # dashboard host/port/public_url commands: # prefix, flood protection pisg: # page layout (pisg-compatible option names) database: # SQLite path logging: # level and log file See DOCS.md for the complete reference."},{"id":"guide-irc-commands","title":"IRC commands","group":"Guide","text":""},{"id":"guide-channel-commands","title":"Channel commands","group":"Guide","text":"Command Description !stats Link to the stats page for this channel !top [n] Top N users by words (default 3, max 10) !quote [nick] Random quote, optionally from a specific nick"},{"id":"guide-pm-commands-msg-statsbot-command","title":"PM commands (/msg statsbot )","group":"Guide","text":"Command Description identify Authenticate — works from any nick on any network logout / whoami / status Session management ignore add [#chan] Add ignore (network-wide if no #chan ) ignore del [#chan] Remove ignore ignore list [#chan] List ignores master add Add master (bot asks for password interactively) master del / master list Manage masters set page [#chan] Override !stats URL for a channel nets List all networks (host, port, SSL status) chans List channels tracked on the current network addnet -name -host -port [-ssl\\|-plaintext] Add network and connect immediately (TLS by default) delnet -name Remove network and delete all its stats addchan [-network ] #channel Join and track a channel delchan [-network ] #channel Part channel and delete all its stats join [-network ] #channel [key] Ad-hoc join without adding to DB (useful after a ban is lifted) part [-network ] #channel [reason] Ad-hoc part without removing from DB"},{"id":"guide-stats-page-url-structure","title":"Stats page URL structure","group":"Guide","text":"http://yourserver:8033/ — all networks (clickable cards) http://yourserver:8033// — channels on a network (clickable cards) http://yourserver:8033/// — full pisg-style stats page http://yourserver:8033///?period=1 — today is the channel name without its # . Channels with more than one # are three different channels, so they get the number of hashes in front: Channel Address #lifeline //lifeline/ ##lifeline //2/lifeline/ ###lifeline //3/lifeline/ Period values: 0 = all-time (default), 1 = today, 2 = this week, 3 = this month. Set web.public_url in config so !stats generates proper external links: web: public_url: \"https://stats.yourserver.org\""},{"id":"guide-karma","title":"Karma","group":"Guide","text":"Users can award or deduct karma points by appending ++ or -- to a nick: Bob++ Bob-- Rules: - Suffix only — nick++ and nick-- ; prefix forms ( ++nick ) are not recognised - Channel membership — the target nick must currently be in the channel; random words ending in ++ / -- are silently ignored - No self-karma — you cannot modify your own score - Nicks containing -- or ++ are handled correctly: Mike---- strips exactly the last two characters, awarding −1 to nick Mike-- Karma scores appear in the Karma section of the channel stats page, sorted highest to lowest. Negative scores are shown in red. Toggle with ShowKarma in the pisg: config section."},{"id":"guide-running-as-a-service","title":"Running as a service","group":"Guide","text":"Two options: a user unit (recommended — no root required, starts on login or boot if lingering is enabled) or a system unit (runs as a dedicated user, requires root to install)."},{"id":"guide-user-unit-recommended","title":"User unit (recommended)","group":"Guide","text":"# ~/.config/systemd/user/statsbot.service [Unit] Description=Statsbot IRC statistics bot After=network.target [Service] Type=simple WorkingDirectory=%h/Statsbot ExecStart=%h/Statsbot/.venv/bin/python main.py Restart=on-failure RestartSec=30 Environment=PYTHONUNBUFFERED=1 [Install] WantedBy=default.target # Install and start systemctl --user daemon-reload systemctl --user enable --now statsbot # Optional: keep running after logout (requires root once) loginctl enable-linger $USER # Useful commands systemctl --user status statsbot journalctl --user -u statsbot -f %h expands to your home directory. Adjust WorkingDirectory and ExecStart if you cloned Statsbot somewhere other than ~/Statsbot ."},{"id":"guide-system-unit","title":"System unit","group":"Guide","text":"Use this if you want Statsbot to run as a dedicated system user (e.g. statsbot ) rather than your own account. # /etc/systemd/system/statsbot.service [Unit] Description=Statsbot IRC statistics bot After=network.target [Service] Type=simple User=statsbot WorkingDirectory=/opt/statsbot ExecStart=/opt/statsbot/.venv/bin/python main.py Restart=on-failure RestartSec=30 Environment=PYTHONUNBUFFERED=1 [Install] WantedBy=multi-user.target # Create a dedicated user (no login shell, no home directory) sudo useradd -r -s /usr/sbin/nologin -d /opt/statsbot statsbot sudo mkdir -p /opt/statsbot sudo chown statsbot:statsbot /opt/statsbot # Install and start (as root) sudo systemctl daemon-reload sudo systemctl enable --now statsbot # Logs sudo journalctl -u statsbot -f"},{"id":"guide-project-structure","title":"Project structure","group":"Guide","text":"Statsbot/ ├── main.py # Entry point, --setup wizard, --version ├── version.py # The version number (see CHANGELOG.md) ├── slugs.py # Channel name URL path (#a, ##a and ###a differ) ├── CHANGELOG.md ├── tests/ # pytest suite: python -m pytest ├── tools/build_docs.py # builds docs/index.html from README/DOCS/TRANSLATE/CHANGELOG ├── docs/ # the generated documentation site (what Cloudflare serves) ├── wrangler.jsonc # Cloudflare Workers config for the documentation site ├── config/ │ └── config.yml # All configuration ├── bot/ │ ├── auth.py # Master auth — sessions, bcrypt, auto-auth via mask │ ├── connector.py # Async IRC connection, RFC 1459 parser, WHO handler │ ├── parser.py # Message parsing: words, smileys, caps, violent, foul │ ├── sensors.py # Event handlers — stats, quotes, karma, monologues │ └── scheduler.py # Daily/weekly/monthly stat resets ├── database/ │ └── models.py # SQLite schema, all queries, auto-migrations ├── irc/ │ ├── commands.py # Channel commands: !stats, !top, !quote │ └── pm_commands.py # PM admin: identify, ignore, master, set └── web/ ├── dashboard.py # Flask: landing, network pages, JSON API, pisg config view ├── pisg_config_page.py # Read-only per-channel pisg config page (token-gated) └── pisg_page.py # Full pisg-style channel stats page"},{"id":"guide-contributing","title":"Contributing","group":"Guide","text":"Issues and pull requests are welcome. If you're adding a feature, please: Follow the existing code style (no external deps beyond requirements.txt ) Add a test in tests/ ( pip install -r requirements-dev.txt && python -m pytest ) For a user-visible change, bump version.py and add a section to CHANGELOG.md After editing README.md , DOCS.md , TRANSLATE.md , CHANGELOG.md or version.py , run python tools/build_docs.py to regenerate the documentation site ( docs/index.html ); a test fails if you forget Update DOCS.md if you add or change a config option Want to add or improve a translation? See TRANSLATE.md — it covers the rules, the placeholders, and what not to translate, in English, Portuguese, French and Italian. If you're familiar with pisg, feature parity PRs are especially welcome — see What's not yet implemented for what's missing."},{"id":"guide-whats-not-yet-implemented-vs-pisg","title":"What's not yet implemented vs pisg","group":"Guide","text":"pisg feature Status User pictures Not yet, probably never will Gender stats Not yet, probably never will NickTracking / nick aliases Not yet, probably never will Music charts ( now playing: ) Not yet, probably never will All other pisg features are implemented. Contributions welcome."},{"id":"reference-bot-settings","title":"Bot settings","group":"Configuration reference","text":"bot: nick: \"statsbot\" # Primary nick altnick: \"statsbot_\" # Fallback nick if primary is taken realname: \"IRC Stats Bot\" ident: \"statsbot\" # Masters are configured via: python main.py --setup Masters (users allowed to run admin commands) are stored in the database with bcrypt-hashed passwords. Use python main.py --setup to add them interactively. See PM commands for runtime management."},{"id":"reference-network-settings","title":"Network settings","group":"Configuration reference","text":"config.yml is a seed file, not the source of truth. On first run, networks and channels from config.yml are inserted into the database ( INSERT OR IGNORE ). After that the database wins. Add, remove, or modify networks and channels at runtime using PM commands — no restart required. networks: - name: \"libera\" # Internal name — used in URLs and DB host: \"irc.libera.chat\" port: 6697 # 6667 plain, 6697 SSL ssl: true channels: - \"#yourchannel\" # ── Authentication (pick one or combine) ────────────────────────────── # SASL PLAIN — preferred on modern networks (Libera, OFTC, hackint …) sasl: username: \"statsbot\" password: \"your_password\" # NickServ IDENTIFY — legacy, works on most networks including Undernet # nickserv_password: \"your_password\" # Nick ghosting — if primary nick is taken, switch to altnick and reclaim # the primary nick via NickServ. Requires nickserv_password or sasl.password. # ghost: true # ghost_command: \"GHOST\" # Use \"RELEASE\" for DALnet (default: GHOST) # Server password — for BNCs or private servers that require PASS # server_password: \"your_password\" # ── Post-connect commands ───────────────────────────────────────────── # Sent after authentication completes. {nick} = current bot nick. # on_connect: # - \"MODE {nick} +x\" # request cloak (Undernet, others) # - \"UMODE2 +x\" # alternative cloak (UnrealIRCd) # - \"MODE {nick} +B\" # set bot flag # ── Per-channel pisg overrides ──────────────────────────────────────── # Any key from the global pisg: section can be o"},{"id":"reference-channel-join-retries","title":"Channel join retries","group":"Configuration reference","text":"The bot tracks join state per channel. When the server confirms a self-JOIN the channel is marked joined and any pending retry is cancelled. If the join fails with one of the numerics below, a retry is scheduled with join_retry_delay seconds between attempts, up to join_retries total: Numeric Meaning 437 Nick/channel temporarily unavailable (DALnet) 471 Channel is full ( +l ) 473 Invite-only ( +i ) 474 Banned from channel ( +b ) 475 Bad channel key ( +k ) 477 Channel requires a registered nick / SASL Both options can also be set globally under bot: and are overridden per-network when present. Defaults: 5 retries, 30 second delay. A JOIN can also get no answer at all — no join echo and no error numeric. That happens routinely during a netsplit, when the JOIN reaches a server that is desynced or still merging. join_confirm_timeout (default 30 , 0 disables) arms a watchdog per JOIN; if nothing comes back in that window the join enters the same retry ladder above. As a final backstop, every channel_audit_interval seconds (default 120 , 0 disables) the bot sweeps its configured channel list and re-JOINs anything it is not in and has no retry pending for. Channels whose retry ladder has been fully exhausted are skipped by the audit, so a permanently banned channel isn't retried forever; that state is cleared on reconnect and on a manual join."},{"id":"reference-connection-liveness-netsplit-recovery","title":"Connection liveness (netsplit recovery)","group":"Configuration reference","text":"A netsplit frequently leaves the TCP connection half-open : the peer stops sending but never sends FIN or RST . Nothing surfaces at the socket layer, so a bot that only reacts to server PING s will block on the read forever, still believing it is connected and joined, until it is restarted by hand. The bot guards against this at three levels: Guard Behaviour ping_interval (default 120 ) After this many seconds with no data from the server, send our own PING . ping_timeout (default 90 ) If the server is still silent this long after that PING , declare the link dead, close the socket and let the reconnect loop run. TCP keepalive Enabled on the socket (60s idle, 15s interval, 4 probes) as a second line of defence under the application-level check. An ERROR line from the server — sent by most ircds immediately before they close a link — also tears the connection down at once rather than waiting for the socket to notice. Both options can be set globally under bot: or per-network. Because any byte from the server counts as proof of life, a busy channel means the keepalive PING is rarely sent in practice."},{"id":"reference-authentication-flow","title":"Authentication flow","group":"Configuration reference","text":"If server_password is set, PASS is sent before NICK / USER . If sasl is set, CAP REQ :sasl is sent before NICK / USER . On success the bot sends AUTHENTICATE PLAIN → base64( user\\0user\\0pass ) → CAP END . If the server rejects SASL, falls back to NickServ. On 001 (welcome), if SASL didn't auth, NickServ IDENTIFY is sent. If ghost: true and the primary nick is taken ( 433 ), the bot: - Switches to altnick - Sends PRIVMSG NickServ :GHOST - Watches for the confirmation notice and then sends NICK on_connect commands fire immediately on 001 , independent of authentication. They run whether or not NickServ or SASL auth is configured."},{"id":"reference-per-network-identity","title":"Per-network identity","group":"Configuration reference","text":"Any of the four identity fields ( nick , altnick , realname , ident ) set inside a network entry override the global bot: defaults for that network only. This lets the bot present different nicks on different networks: bot: nick: \"statsbot\" # used everywhere unless overridden altnick: \"statsbot_\" networks: - name: \"libera\" host: \"irc.libera.chat\" # inherits bot.nick = \"statsbot\" - name: \"undernet\" host: \"irc.undernet.org\" nick: \"ChanStatsBot\" # overrides bot.nick on Undernet only altnick: \"ChanStats_\" {nick} in on_connect commands substitutes the actual nick the bot is currently using on that network (could be altnick if primary was taken)."},{"id":"reference-multiple-networks","title":"Multiple networks","group":"Configuration reference","text":"Add more entries to the networks: list — each connects independently: networks: - name: \"libera\" host: \"irc.libera.chat\" port: 6697 ssl: true channels: - \"#bots\" sasl: username: \"statsbot\" password: \"libera_pass\" - name: \"undernet\" host: \"irc.undernet.org\" port: 6667 ssl: false channels: - \"#allnitecafe\" nickserv_password: \"undernet_pass\" ghost: true on_connect: - \"MODE {nick} +x\" - name: \"ptirc\" host: \"irc.ptirc.org\" port: 6667 ssl: false channels: - \"#lobby\" - \"#help\" Each network gets its own session, ignore list, and stats namespace. The web dashboard groups channels by network automatically."},{"id":"reference-stats-tracking","title":"Stats tracking","group":"Configuration reference","text":"stats: ignore: - \"ChanServ\" - \"*Serv\" - \"*bot*\" - \"*!*@services.example.org\" # full hostmask pattern # Channel-specific ignores via PM: /msg statsbot ignore add #chan pattern auto_ignore_bots: false # Auto-ignore nicks with IRC +B umode. Unreliable — # real users can set +B. Default off; use ignore list. expire_days: 30 # Remove nicks not seen for X days (0 = never) log_wordstats: true # Track word frequency per nick quote_frequency: 5 # Log every Nth message as a random quote. # First message from any nick is always logged. kick_context: 5 # Lines of channel context saved with each kick happy_smileys: [...] # List of smileys counted as happy (smileys stat) sad_smileys: [...] # List of smileys counted as sad (sad stat)"},{"id":"reference-ignore-patterns","title":"Ignore patterns","group":"Configuration reference","text":"Patterns support wildcards ( * , ? ). Two forms are recognised: Nick pattern — no ! or @ : matches against the nick only ChanServ , *bot* , *Serv Hostmask pattern — contains ! or @ : matched against nick!user@host *!*@services.ptirc.org , badnick!*@* Config-level ignores apply network-wide. Channel-specific ignores can be added at runtime via PM commands."},{"id":"reference-web-dashboard","title":"Web dashboard","group":"Configuration reference","text":"web: enabled: true host: \"0.0.0.0\" port: 8033 public_url: \"\" # e.g. https://stats.yourserver.org # Used by !stats to generate the channel link. # If empty, falls back to http://localhost:PORT/ title: \"IRC Stats\" project_url: \"https://github.com/TehPeGaSuS/Statsbot\" # link shown in page footers The dashboard serves three pages: URL Description / Landing page — network cards (whole card is clickable) // Network page — channel cards (whole card is clickable) /// Full pisg-style channel stats page The landing page shows each network as a card displaying the network name, IRC server address, user count, and channel count. Clicking anywhere on the card navigates to the network page. The network page shows each channel as a card with tracked users, total words, and total lines; clicking navigates to the full channel stats page. Live user count on the channel page polls /api///online every 30 seconds via JavaScript."},{"id":"reference-irc-commands","title":"IRC commands","group":"Configuration reference","text":"The default command prefix is ! , set globally under commands.prefix in config.yml . If a network already uses ! for something else (e.g. Anope BotServ fantasy commands), you can override it per network with cmd_prefix : commands: prefix: \"!\" # global default networks: - name: \"libera\" host: \"irc.libera.chat\" # inherits prefix \"!\" - name: \"undernet\" host: \"irc.undernet.org\" cmd_prefix: \".\" # use . on this network instead"},{"id":"reference-channel-commands-public","title":"Channel commands (public)","group":"Configuration reference","text":"Command Description !stats Link to stats page for this channel !top [n] Top N users by words, single line (default 3, max 10) !quote [nick] Random quote, optionally from a specific nick"},{"id":"reference-pm-commands-msg-statsbot-command","title":"PM commands (/msg statsbot )","group":"Configuration reference","text":"Authentication: Command Description identify Authenticate as a master. Works from any nick on any network. Session lasts until you disconnect. logout End your session whoami Show your current identity status Show connected channels and user counts Ignore management (requires auth): Command Description ignore add [#channel] Add ignore. Omit #channel for network-wide. ignore del [#channel] Remove ignore ignore list [#channel] List ignores, optionally filtered by channel Master management (requires auth): Command Description master add Add a master (bot will ask for password interactively) master del Remove a master master list List all masters Configuration (requires auth): Command Description set page [#channel] Override the stats URL returned by !stats setlang [-network ] #channel Set the stats page language ( en_US , pt_PT , fr_FR , it_IT ) pisg #channel list Generate a short-lived link to view effective pisg config for a channel pisg #channel set Set a per-channel pisg override — takes effect immediately pisg #channel reset [key] Remove one override or all of them (no key = all) rehash / reload Re-read config.yml from disk and apply changes live — no restart required Network management (requires auth): Command Description nets List all networks in the database with host, port, SSL status chans List channels tracked on the current network addnet -name -host -port [-ssl\\|-plaintext] Add a new network and connect immediately. TLS is the default — pass -plaintext to disable. de"},{"id":"reference-pisg-style-page-options","title":"pisg-style page options","group":"Configuration reference","text":"All options go under the pisg: section in config.yml . Names match pisg exactly so the pisg documentation applies."},{"id":"reference-per-channel-overrides","title":"Per-channel overrides","group":"Configuration reference","text":"Any option from this section can be overridden for a specific channel in two ways: In config.yml under channel_pisg: inside a network entry (applied after rehash ): networks: - name: \"libera\" channels: - \"#busy\" - \"#quiet\" channel_pisg: \"#busy\": DailyActivity: 90 ActiveNicks: 50 \"#quiet\": ShowBigNumbers: false DailyActivity: 0 Via PM (takes effect immediately, stored in the DB): /msg statsbot pisg #channel set DailyActivity 90 /msg statsbot pisg #channel set ShowBigNumbers false /msg statsbot pisg #channel reset DailyActivity ← remove override, global applies again /msg statsbot pisg #channel reset ← remove all overrides for channel /msg statsbot pisg #channel list ← get a link to view effective config DB overrides (PM) take precedence over channel_pisg: in config.yml , which takes precedence over the global pisg: section."},{"id":"reference-main-nick-table","title":"Main nick table","group":"Configuration reference","text":"DailyActivity # Number of days to show in the \"Daily activity\" bar chart below the hourly activity chart. Each bar represents one day; bars scroll horizontally if there are more than fit on screen. Set to 0 to disable the chart entirely. Default: 30 ActiveNicks # Number of nicks shown in the \"Most active nicks\" table. Default: 25 — pisg default: 25 ActiveNicks2 # Number of nicks shown in the \"These didn't make it to the top\" secondary list. Default: 10 — pisg default: 30 SortByWords # Sort the main nick table by words ( true ) or lines ( false ). Default: true — pisg default: false (lines) ShowLines # Show the line count column in the main nick table. Default: true ShowWords # Show the word count column in the main nick table. Default: true — pisg default: false ShowWpl # Show the words-per-line column. Default: true — pisg default: false ShowCpl # Show the characters-per-line column. Default: false — pisg default: false ShowLastSeen # Show when each nick was last seen (e.g. \"2 days ago\"). Default: true ShowRandQuote # Show a random quote from each nick in the main table. Default: true MinQuote # Minimum character length for a quote to be selected for display. Falls back to any quote if none found in range. Default: 25 — pisg default: 25 MaxQuote # Maximum character length for a quote to be selected. Default: 65 — pisg default: 65"},{"id":"reference-big-numbers","title":"Big numbers","group":"Configuration reference","text":"ShowBigNumbers # Master switch for the \"Big numbers\" and \"Other interesting numbers\" sections. Setting this to false hides both sections entirely. Default: true BigNumbersThreshold # Minimum lines a nick must have to appear in big numbers statistics (questions, CAPS, smileys, line lengths, sad faces). Set to \"sqrt\" for automatic threshold (square root of the most active nick's line count). Default: \"sqrt\" — pisg default: sqrt ViolentWords # Words considered aggressive/violent. Used to detect /me slaps style actions. The first nick mentioned after a violent word is recorded as the victim. Default: [\"slaps\", \"beats\", \"kicks\", \"hits\", \"smacks\", \"stabs\"] — pisg default: slaps beats smacks FoulWords # Words considered foul language. Tracked as a percentage of total words. Default: [\"ass\", \"fuck\", \"shit\", \"bitch\", \"cunt\", \"cock\", \"dick\"] Note: In Statsbot, individual big number sub-sections (questions, CAPS, violence, smiles, etc.) are all controlled by ShowBigNumbers . In pisg they were always on when ShowBigNumbers was on. Future versions may add individual toggles."},{"id":"reference-section-toggles","title":"Section toggles","group":"Configuration reference","text":"ShowTime # Show the activity time-band bars in the main nick table — coloured bars indicating when each nick is most active (four 6-hour bands: night, morning, afternoon, evening). pisg equivalent: ShowTime . Default: true — pisg default: true ShowMostActiveByHour # Show the \"Most active nicks by hour\" table, split into four 6-hour bands (0–5, 6–11, 12–17, 18–23). pisg equivalent: ShowMostActiveByHour . Default: true — pisg default: false ShowSmileys # Show the smiley frequency table — which specific smileys were used most and by whom. Default: true — pisg default: false ShowMrn # Show the \"Most referenced nicks\" section — which nicks are mentioned most in conversation. Nick casing is preserved as it appears on IRC. Default: true — pisg default: true ShowMuw # Show the \"Most used words\" section. Default: true ShowMru # Show the \"Most referenced URLs\" section. URLs are deduplicated — repeated posts of the same URL increment the count. Default: true — pisg default: true ShowOps # Show the \"Ops, voice and halfops\" section — who gave ops most, who got deopped, who hands out voice, etc. Rendered as pisg-style prose sentences. Only appears if op events have actually been recorded; silently omitted on channels with no op activity. Default: true — pisg default: true ShowVoice # Show voice-related sentences within the ops section (+v/-v). Default: true — pisg default: true ShowHalfops # Show halfop sentences within the ops section (+h/-h). Halfops are supported on some IRC networks (U"},{"id":"reference-history-limits","title":"History limits","group":"Configuration reference","text":"WordHistory # Maximum number of words shown in \"Most used words\". Default: 10 — pisg default: 10 WordLength # Minimum word length to appear in \"Most used words\". Words shorter than this are filtered from display (but still tracked in the DB). Default: 5 — pisg default: 5 IgnoreWords # Space or list of words to exclude from \"Most used words\" and \"Most referenced nicks\" detection. Useful for filtering common words. Default: [] (empty) IgnoreWords: [\"there\", \"about\", \"think\", \"would\", \"going\"] NickHistory # Maximum number of nicks shown in \"Most referenced nicks\". Default: 5 — pisg default: 5 SmileyHistory # Maximum number of smileys shown in the smiley frequency table. Default: 10 — pisg default: 10 UrlHistory # Maximum number of URLs shown in \"Most referenced URLs\". Default: 10 — pisg default: 5 TopicHistory # Maximum number of topics shown in \"Latest topics\". Default: 5 — pisg default: 3 ActiveNicksByHour # Number of rows in the \"Most active nicks by hour\" table (per band). Default: 10 — pisg default: 10"},{"id":"reference-karma-options","title":"Karma options","group":"Configuration reference","text":"ShowKarma # Show the Karma leaderboard section on the channel stats page. Scores are sorted highest to lowest; positive scores are green, negative are red. Default: true KarmaHistory # Maximum number of nicks shown in the karma table. Default: 10 How karma works # Users award or deduct karma by appending ++ or -- to a nick in any channel message: Bob++ ← Bob's score +1 Bob-- ← Bob's score -1 Rules enforced by the bot: Suffix only — nick++ / nick-- . Prefix forms ( ++nick ) are ignored. Channel membership required — the target nick must be present in the channel at the time of the message. Messages referencing absent nicks or random words ending in ++ / -- are silently ignored. No self-karma — a user cannot modify their own score. Nicks containing -- or ++ are handled correctly. The bot strips exactly the last two characters to find the nick, so Mike---- awards −1 to nick Mike-- , not to nick Mike . Karma is stored per-channel; a nick's score on one network/channel is independent of any other."},{"id":"reference-database","title":"Database","group":"Configuration reference","text":"database: path: \"data/stats.db\" # Path to SQLite database file The database is SQLite — zero setup, zero dependencies beyond Python's built-in sqlite3 . Schema migrations run automatically on startup so upgrading Statsbot never requires manual DB changes."},{"id":"reference-logging","title":"Logging","group":"Configuration reference","text":"logging: level: \"INFO\" # DEBUG, INFO, WARNING, ERROR file: \"data/ircstats.log\""},{"id":"reference-differences-from-pisg","title":"Differences from pisg","group":"Configuration reference","text":"Feature pisg Statsbot Data source Static log files Live IRC bot (real-time) Log parsers 30+ formats Not needed — events received directly Tracking Per-mask (nick!user@host) Per-nick Nick merging Aliases + NickTracking Not supported (each nick is its own entry) Output Static HTML file Live Flask web server Periods One fixed period (log window) All-time, today, this week, this month Peak users Not tracked Tracked with timestamp Live count Not possible Yes, polls every 30s Karma ( nick++ ) Yes Yes Op/voice/halfop stats Yes Yes User pictures Yes Not yet Gender stats Yes Not yet Music charts Yes Not yet Daily activity graph Yes Yes — scrollable bar chart, configurable per channel NickTracking / aliases Yes Not yet"},{"id":"translating-how-it-works","title":"How it works","group":"Translating","text":"Statsbot uses standard PO files ( locale/.po ). Each entry looks like: msgid \"{nick} is a very aggressive person. They attacked others {count} times.\" msgstr \"{nick} é uma pessoa muito agressiva. Atacou outros {count} vezes.\" The msgid is the English string — do not translate or modify msgid lines . Only edit the msgstr line. en_US.po has empty msgstr throughout and serves as the reference catalogue; do not add translations to it."},{"id":"translating-adding-a-new-language","title":"Adding a new language","group":"Translating","text":"Copy locale/en_US.po to locale/.po (e.g. locale/de_DE.po ) Currently supported: en_US , pt_PT , fr_FR , it_IT , nl_NL Update the Language: header Add your language code to SUPPORTED in i18n.py Translate every msgstr line"},{"id":"translating-rules","title":"Rules","group":"Translating","text":"Must keep — these will break the page if removed or renamed: {nick} — IRC nickname, inserted by the bot {nick2} — second IRC nickname (used in follower strings) {count} — a number {pct} — a percentage value (already formatted, e.g. 27.3 ) {avg} — an average value {n} — a number (days, nicks, etc.) {channel} — channel name (e.g. #portugal ) {network} — network name (e.g. PTirc ) {url} — a URL {list} — a formatted list {date} — a formatted date string {time} — a formatted time string {by} — attribution string (may be empty) {quote} — a random quote {total} — total nick count Placeholders can be reordered within the sentence to fit your language's grammar. You cannot rename them, remove them, or add new ones. Must keep — these are not translatable: The four time-band labels: 0-5 , 6-11 , 12-17 , 18-23 — leave as-is. Karma — proper noun, used as a section title and in the DB. Nick (column header) — IRC terminology, universally understood. URL , Smiley — universally understood abbreviations. :-) :) :( — emoticons in strings like \"Smileys :-)\" and \"happiest :)\" — keep them exactly as they appear. Weekdays and months: These are comma-separated lists. Keep exactly 7 weekdays (Monday first) and exactly 12 months. Do not add spaces around commas. msgid \"Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday\" msgstr \"lundi,mardi,mercredi,jeudi,vendredi,samedi,dimanche\" msgid \"January,February,...,December\" msgstr \"janvier,février,...,décembre\" Singular vs plural strings: Many stats ha"},{"id":"changelog-v1-1-0","title":"[1.1.0] - 2026-09-30","group":"Changelog","text":""},{"id":"changelog-security","title":"Security","group":"Changelog","text":"Stored cross-site scripting on the stats page. Text that came from IRC — quotes, topics, kick reasons, /me and example lines, words, URLs, smileys, nicks and channel names — was written into the page without being escaped, so anyone who could talk in a tracked channel could run script in the browser of everyone who opened the page. Everything is now escaped where it is written, and values placed in the page's inline script can no longer close the script tag. Host-mask auto-login never worked, and matched too much. It crashed with a KeyError the moment a mask matched, and a mask without a host part (a bare nick) would have matched on the nick alone — anybody can take a nick on IRC. A mask now has to contain an @ (for example *!*@your.host.example ). ?period= outside 0–3 is answered with 400 , and ?limit= is limited to 1–100 ( -1 meant \"no limit\" to SQLite and returned the whole table)."},{"id":"changelog-fixed","title":"Fixed","group":"Changelog","text":"Every line's letters were counted twice. The daily activity chart filed a finished day under the next day's date, so today's bar showed yesterday's numbers. master list over PM failed with an internal error. Karma was ignored for someone who had spoken for the first time less than a minute earlier. -l , -L , -j and -f in a mode string wrongly took the next argument. A restart during the midnight hour reset the day (and on Mondays / the 1st the week / month) a second time. The last reset of each kind is now stored in the database, and the week check includes the year. The \"got beaten\" example showed a line about somebody else. www. links on the page were relative links. ?period=abc and ?limit=abc returned HTTP 500."},{"id":"changelog-changed","title":"Changed","group":"Changelog","text":"##channel and ###channel have their own page URLs. #lifeline stays /Network/lifeline/ ; ##lifeline is /Network/2/lifeline/ and ###lifeline /Network/3/lifeline/ (before, all three shared one address and the wrong channel was shown). Other spellings redirect to the canonical URL. The footer shows the version."},{"id":"changelog-added","title":"Added","group":"Changelog","text":"python main.py --version , version.py , this changelog. A test suite ( python -m pytest ) and CI on Python 3.11–3.14, a weekly dependency audit and Dependabot."},{"id":"changelog-upgrade-notes","title":"Upgrade notes","group":"Changelog","text":"git pull , pip install -r requirements.txt , restart the bot. The database updates itself (one new table, scheduler_state ). No manual step. Statistics that were already stored are not rewritten: the letters totals collected before 1.1.0 stay doubled (so \"chars per line\" of older data is too high), and earlier days on the activity chart stay one day late. If you set up host-mask auto-login before, check that each mask contains an @ ."},{"id":"changelog-v1-0-0","title":"[1.0.0]","group":"Changelog","text":"Everything up to the introduction of version numbers (the last such commit is d3538ac , 2026-07-28). An older bot cannot report a version, so check the date of its latest commit: from 2026-09-30 on it has the 1.1.0 fixes. git log -1 --format='%h %cs' [[ $(git log -1 --format=%cs) < 2026-09-30 ]] && echo \"OUTDATED: update now\" || echo \"up to date\""}]</script>
+<script>
+(function(){
+var root=document.documentElement;
+try{var t=localStorage.getItem('statsbot-docs-theme');if(t)root.setAttribute('data-theme',t)}catch(e){}
+document.getElementById('theme').addEventListener('click',function(){
+  var light=root.getAttribute('data-theme')?root.getAttribute('data-theme')==='light'
+    :window.matchMedia('(prefers-color-scheme: light)').matches;
+  var next=light?'dark':'light';root.setAttribute('data-theme',next);
+  try{localStorage.setItem('statsbot-docs-theme',next)}catch(e){}});
+document.getElementById('menu').addEventListener('click',function(){document.body.classList.toggle('nav-open')});
+document.querySelector('nav').addEventListener('click',function(e){if(e.target.tagName==='A')document.body.classList.remove('nav-open')});
+document.querySelectorAll('.copy').forEach(function(b){b.addEventListener('click',function(){
+  var code=b.parentNode.querySelector('code').innerText;
+  var done=function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1200)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(code).then(done,done)}else{done()}})});
+/* sidebar: open the section being read */
+var heads=[].slice.call(document.querySelectorAll('main h2[id]'));
+var navs={};document.querySelectorAll('.nav-h2').forEach(function(d){navs[d.firstChild.getAttribute('href').slice(1)]=d});
+function spy(){var cur=null,y=window.scrollY+90;heads.forEach(function(h){if(h.offsetTop<=y)cur=h.id});
+  Object.keys(navs).forEach(function(k){navs[k].classList.toggle('open',k===cur)})}
+window.addEventListener('scroll',spy,{passive:true});spy();
+/* search */
+var index=JSON.parse(document.getElementById('search-index').textContent);
+var q=document.getElementById('q'),box=document.getElementById('results'),sel=-1;
+function esc(s){return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function mark(s,terms){s=esc(s);terms.forEach(function(t){if(t)s=s.replace(new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>')});return s}
+function search(){
+  var terms=q.value.toLowerCase().split(/\s+/).filter(Boolean);sel=-1;
+  if(!terms.length){box.style.display='none';return}
+  var hits=[];index.forEach(function(e){var title=e.title.toLowerCase(),text=e.text.toLowerCase(),score=0,ok=true;
+    terms.forEach(function(t){var a=title.indexOf(t)>=0,b=text.indexOf(t)>=0;if(!a&&!b)ok=false;score+=a?10:0;score+=b?1:0});
+    if(ok)hits.push([score,e])});
+  hits.sort(function(a,b){return b[0]-a[0]});hits=hits.slice(0,10);
+  if(!hits.length){box.innerHTML='<a><small>No results</small></a>';box.style.display='block';return}
+  box.innerHTML=hits.map(function(h){var e=h[1],at=Math.max(0,e.text.toLowerCase().indexOf(terms[0])-40);
+    return'<a href="#'+e.id+'"><b>'+mark(e.title,terms)+'</b> <small>'+esc(e.group)+'</small><small>'
+      +mark(e.text.substr(at,150),terms)+'</small></a>'}).join('');
+  box.style.display='block'}
+q.addEventListener('input',search);
+box.addEventListener('click',function(){box.style.display='none'});
+document.addEventListener('keydown',function(e){
+  if(e.key==='/'&&document.activeElement!==q){e.preventDefault();q.focus();return}
+  if(document.activeElement!==q)return;
+  var items=[].slice.call(box.querySelectorAll('a[href]'));
+  if(e.key==='Escape'){q.value='';box.style.display='none';q.blur()}
+  else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!items.length)return;
+    sel=(sel+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;items.forEach(function(a,i){a.classList.toggle('sel',i===sel)})}
+  else if(e.key==='Enter'&&items.length){location.hash=items[Math.max(sel,0)].getAttribute('href');box.style.display='none'}});
+})();
+</script>
+</body>
+</html>
