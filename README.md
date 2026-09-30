@@ -40,7 +40,7 @@ live web dashboard — no log files, no cron jobs, no static HTML generation.
 
 > [!NOTE]
 > Statsbot is, pretty much, feature-complete — but the door is always open.\
-> After all these commits, Statsbot does everything PISG does, except it doesn't need log files,\
+> After all these commits, Statsbot does everything the classic PISG does, except it doesn't need log files,\
 > doesn't need a cron job, doesn't generate static HTML, and doesn't make you feel like it's 2003.\
 > It connects to IRC, watches what happens, and serves live stats — no logs, no hassle, no excuses.\
 > Is it finished? Pretty much. Is it perfect? Probably not. Found a bug? Open an issue. Have a wild idea? Open a PR.\
@@ -52,21 +52,26 @@ live web dashboard — no log files, no cron jobs, no static HTML generation.
 
 ## Why Statsbot instead of pisg?
 
+Compared with [pisg](https://github.com/PISG/pisg) 1.0a (2026-09-21). pisg is the model for
+the page, and it does things Statsbot does not (see the end of this file); the difference is
+where the numbers come from.
+
 | | pisg | Statsbot |
 |---|---|---|
-| Data source | Parse log files | Live IRC connection |
-| Setup | Configure bot logging + cron + pisg | Just run Statsbot |
-| Log format support | 30+ parsers to maintain | Not needed |
-| Output | Static HTML, regenerated periodically | Live web server |
-| Stats periods | One fixed window | All-time, today, week, month |
+| Data source | Parses IRC log files | Live IRC connection |
+| Setup | A bot that writes logs, a scheduler, and pisg (its guided `setup.pl` helps) | Just run Statsbot |
+| Log formats | 46 parsers, one per client / bot format, each to keep in step with its client | Not needed: Statsbot is the client, it reads the IRC protocol itself |
+| Output | Static HTML, regenerated on a schedule | Live web server |
+| Stats periods | Whatever the logs cover, plus a chart of the last N days | All-time, today, week, month (tabs) |
 | Peak users | ✗ | ✓ with timestamp |
 | Live user count | ✗ | ✓ updates every 30s |
 | Karma (`nick++` / `nick--`) | ✓ ±1 per pair, `nick==` resets | ✓ cumulative, no reset |
 | Op/voice/halfop stats | ✓ | ✓ |
-| Multi-network | ✗ | ✓ |
-| Admin via IRC | ✗ | ✓ via PM commands |
-| Per-channel page config | ✗ | ✓ via PM or `config.yml`, live rehash |
-| Multilingual stats page | ✓ static, per-install | ✓ live, per-channel |
+| Several networks | ✓ one config can list channels of different networks, each read from its own log | ✓ one live process connects to all of them |
+| Managed from IRC | Users can set their own info (optional Eggdrop script) | Channels, networks, ignores and page options over PM |
+| Per-channel page options | ✓ `<channel>` blocks override `<set>` | ✓ via PM or `config.yml`, live rehash |
+| Languages | 30 (the new 1.0a sections: English and French only) | 5 (en, pt, fr, it, nl), per channel |
+| Colour schemes | 14 | One, light or dark |
 
 If you already know pisg, the `pisg:` section in `config.yml` uses the same
 option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
@@ -193,7 +198,8 @@ See **[DOCS.md](DOCS.md)** for the complete reference.
 | `ignore list [#chan]` | List ignores |
 | `master add <nick>` | Add master (bot asks for password interactively) |
 | `master del <nick>` / `master list` | Manage masters |
-| `set page [#chan] <url>` | Override `!stats` URL for a channel |\n| `setlang [-network <net>] #channel <lang>` | Set stats page language for a channel (`en_US`, `pt_PT`, `fr_FR`, `it_IT`) |\n| `pisg #channel list` | Get a link to view the effective pisg config for a channel |\n| `pisg #channel set <key> <value>` | Set a per-channel pisg override (takes effect immediately) |\n| `pisg #channel reset [key]` | Remove one override, or all of them if no key given |\n| `rehash` / `reload` | Re-read `config.yml` from disk and apply changes live |
+| `set page [#chan] <url>` | Override `!stats` URL for a channel |
+| `setlang [-network <net>] #channel <lang>` | Set stats page language for a channel (`en_US`, `pt_PT`, `fr_FR`, `it_IT`) |\n| `pisg #channel list` | Get a link to view the effective pisg config for a channel |\n| `pisg #channel set <key> <value>` | Set a per-channel pisg override (takes effect immediately) |\n| `pisg #channel reset [key]` | Remove one override, or all of them if no key given |\n| `rehash` / `reload` | Re-read `config.yml` from disk and apply changes live |
 | `nets` | List all networks (host, port, SSL status) |
 | `chans` | List channels tracked on the current network |
 | `addnet -name <n> -host <host> -port <port> [-ssl\|-plaintext]` | Add network and connect immediately (TLS by default) |
@@ -399,5 +405,7 @@ see [What's not yet implemented](#whats-not-yet-implemented-vs-pisg) for what's 
 | Gender stats | Not yet, probably never will |
 | NickTracking / nick aliases | Not yet, probably never will |
 | Music charts (`now playing:`) | Not yet, probably never will |
+| pisg 1.0a: who-talks-to-whom map, closest pairs, social roles, time personalities, "who carries the channel", signature words, channel overview | Not yet |
+| pisg 1.0a: extra colour schemes, section navigation menu, landing page that compares channels | Not yet (Statsbot has a landing page and light / dark) |
 
-All other pisg features are implemented. Contributions welcome.
+Everything else the classic pisg pages had is implemented. Contributions welcome.

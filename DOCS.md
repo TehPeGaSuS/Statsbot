@@ -700,16 +700,21 @@ logging:
 
 ## Differences from pisg
 
+Compared with [pisg](https://github.com/PISG/pisg) 1.0a (2026-09-21).
+
 | Feature | pisg | Statsbot |
 |---------|------|----------|
-| Data source | Static log files | Live IRC bot (real-time) |
-| Log parsers | 30+ formats | Not needed — events received directly |
+| Data source | Log files | Live IRC bot (real-time) |
+| Log parsers | 46 formats, one per client / bot | Not needed — Statsbot is the client and receives the events directly, so no client's log format can break it |
 | Tracking | Per-mask (nick!user@host) | Per-nick |
-| Nick merging | Aliases + NickTracking | Not supported (each nick is its own entry) |
+| Nick merging | Aliases + NickTracking (an optional script merges nicks by account) | Not supported (each nick is its own entry) |
 | Output | Static HTML file | Live Flask web server |
-| Periods | One fixed period (log window) | All-time, today, this week, this month |
+| Periods | Whatever the logs cover, plus a last-N-days chart | All-time, today, this week, this month |
 | Peak users | Not tracked | Tracked with timestamp |
 | Live count | Not possible | Yes, polls every 30s |
+| Several networks | Channels of different networks in one config, each from its own log | One live process for all networks |
+| Per-channel options | `<channel>` blocks override `<set>` | Per channel via PM or `config.yml` |
+| Languages | 30 | 5 (en, pt, fr, it, nl) |
 | Karma (`nick++`) | Yes | Yes |
 | Op/voice/halfop stats | Yes | Yes |
 | User pictures | Yes | Not yet |
@@ -717,3 +722,5 @@ logging:
 | Music charts | Yes | Not yet |
 | Daily activity graph | Yes | Yes — scrollable bar chart, configurable per channel |
 | NickTracking / aliases | Yes | Not yet |
+| Relation map, social roles, closest pairs, time personalities (new in 1.0a) | Yes | Not yet |
+| Colour schemes | 14 | One (light / dark) |
