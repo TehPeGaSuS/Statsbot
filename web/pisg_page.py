@@ -9,7 +9,19 @@ import logging
 import time
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
+from html import escape as _html_escape
 from i18n import t, get_lang, format_date_long, tn
+
+
+def _e(value) -> str:
+    """HTML-escape anything that came from IRC (nicks, quotes, topics, URLs, ...) before it is
+    written into the page. Everything not produced by this code itself must go through here."""
+    return _html_escape("" if value is None else str(value), quote=True)
+
+
+def _js(value) -> str:
+    """A value for the page's inline <script>: JSON that cannot close the script element."""
+    return json.dumps(value).replace("</", "<\\/").replace("<!--", "<\\!--")
 
 
 def _ts_date(ts: int) -> str:
@@ -203,10 +215,10 @@ def build_page(network: str, channel: str, period: int, config: dict,
                      if c.lower() != channel.lower()]
     if sibling_chans:
         links = " ".join(
-            f'<a href="/{network}/{c[1:]}/" '
+            f'<a href="/{_e(network)}/{_e(c[1:])}/" '
             f'style="font-size:.78rem;color:var(--blue);padding:.2rem .6rem;'
             f'border:1px solid var(--border);border-radius:12px;'
-            f'text-decoration:none">{c}</a>'
+            f'text-decoration:none">{_e(c)}</a>'
             for c in sibling_chans
         )
         chan_switcher = f'<div style="display:flex;gap:.4rem;flex-wrap:wrap">{links}</div>'
@@ -226,11 +238,11 @@ def build_page(network: str, channel: str, period: int, config: dict,
         start_dt  = datetime.fromtimestamp(tracking_start, tz=timezone.utc)
         days_tracked = max(1, (datetime.now(timezone.utc) - start_dt).days)
         t_period = t("During this {n}-day reporting period, a total of {total} different nicks were represented on {channel}.", lang,
-                     n=days_tracked, total=total_users, channel=channel)
+                     n=days_tracked, total=total_users, channel=_e(channel))
     else:
         days_tracked = 0
         t_period = t("All-time statistics for {channel} — {total} different nicks represented.", lang,
-                     total=total_users, channel=channel)
+                     total=total_users, channel=_e(channel))
 
     # ── HTML construction ─────────────────────────────────────────────────────
     H = []  # HTML buffer
@@ -239,7 +251,7 @@ def build_page(network: str, channel: str, period: int, config: dict,
     def section(title_str):
         h(f'<h2 class="section-title">{title_str}</h2>')
     def hicell(content, small=None, example=None):
-        ex_html = f'<br><span class="small"><b>{t("For example, like this:", lang)}</b><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{example}</span>' if example else ""
+        ex_html = f'<br><span class="small"><b>{t("For example, like this:", lang)}</b><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{_e(example)}</span>' if example else ""
         extra = f'<br><span class="small">{small}</span>' if small else ""
         h(f'<tr><td class="hicell">{content}{ex_html}{extra}</td></tr>')
     # ── Page header ───────────────────────────────────────────────────────────
@@ -248,7 +260,7 @@ def build_page(network: str, channel: str, period: int, config: dict,
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{channel} @ {network} — {title}</title>
+<title>{_e(channel)} @ {_e(network)} — {_e(title)}</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 :root {{
@@ -465,10 +477,10 @@ b {{ color: var(--cyan); }}
 <body>
 <div class="page-header">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.4rem">
-    <a href="/{network}/">← {network}</a>
+    <a href="/{_e(network)}/">← {_e(network)}</a>
     {chan_switcher}
   </div>
-  <h1>{channel} <span style="color:var(--muted);font-size:1rem">on {network}</span>
+  <h1>{_e(channel)} <span style="color:var(--muted);font-size:1rem">on {_e(network)}</span>
     <span id="live-count">●</span>
   </h1>
   <p class="subtitle" data-utc="{now_iso}" data-i18n-gen="{t_gen}"><span class="local-time">{t_gen}</span></p>
@@ -613,7 +625,7 @@ b {{ color: var(--cyan); }}
 
         h(f'<tr{rank_cls}>')
         h(f'<td class="rank">{i+1}</td>')
-        h(f'<td><span class="nick-name">{nick}</span><br>'
+        h(f'<td><span class="nick-name">{_e(nick)}</span><br>'
           f'<div class="bar-wrap"><div class="bar-fill" style="width:{pct}%"></div></div></td>')
         if show_lines: h(f'<td class="val" data-val="{lines}">{lines:,}</td>')
         if show_words: h(f'<td class="val" data-val="{words}">{words:,}</td>')
@@ -623,7 +635,7 @@ b {{ color: var(--cyan); }}
             _nh = json.dumps(nick_hours_raw.get(nick, [0]*24))
             h(f'<td class="tz-bands" data-hours="{_nh}" style="white-space:nowrap"></td>')
         if show_lastseen: h(f'<td class="small" data-val="{_last_ts}">{last}</td>')
-        if show_quote: h(f'<td class="quote-cell" title="{q}"><div>{q}</div></td>')
+        if show_quote: h(f'<td class="quote-cell" title="{_e(q)}"><div>{_e(q)}</div></td>')
         h('</tr>')
 
     h('</tbody></table></div>')
@@ -678,7 +690,7 @@ b {{ color: var(--cyan); }}
 
             h('<tr>')
             h(f'<td class="rank">{top_n + i + 1}</td>')
-            h(f'<td><span class="nick-name">{nick}</span><br>'
+            h(f'<td><span class="nick-name">{_e(nick)}</span><br>'
               f'<div class="bar-wrap"><div class="bar-fill" style="width:{pct}%"></div></div></td>')
             if show_lines: h(f'<td class="val" data-val="{lines}">{lines:,}</td>')
             if show_words: h(f'<td class="val" data-val="{words}">{words:,}</td>')
@@ -688,7 +700,7 @@ b {{ color: var(--cyan); }}
                 _nh = json.dumps(nick_hours_raw.get(nick, [0]*24))
                 h(f'<td class="tz-bands" data-hours="{_nh}" style="white-space:nowrap"></td>')
             if show_lastseen: h(f'<td class="small" data-val="{_last_ts}">{last}</td>')
-            if show_quote:    h(f'<td class="quote-cell" title="{q}"><div>{q}</div></td>')
+            if show_quote:    h(f'<td class="quote-cell" title="{_e(q)}"><div>{_e(q)}</div></td>')
             h('</tr>')
         h('</tbody></table></div></div>')
     # "By the way, there were X other nicks"
@@ -711,8 +723,8 @@ b {{ color: var(--cyan); }}
             ranked = sorted(qdata, key=lambda n: qdata[n][0]/qdata[n][1], reverse=True)
             n1, (q1, l1) = ranked[0], qdata[ranked[0]]
             pct1 = f"{q1/l1*100:.1f}"
-            text = t("Is {nick} a little bit slower than the rest, or just asking too many questions?  {pct}% lines contained a question!", lang, nick=f"<b>{n1}</b>", pct=pct1)
-            sub  = t("{nick} didn't know that much either. {pct}% of their lines were questions.", lang, nick=f"<b>{ranked[1]}</b>", pct=f"{qdata[ranked[1]][0]/qdata[ranked[1]][1]*100:.1f}") if len(ranked) > 1 else None
+            text = t("Is {nick} a little bit slower than the rest, or just asking too many questions?  {pct}% lines contained a question!", lang, nick=f"<b>{_e(n1)}</b>", pct=pct1)
+            sub  = t("{nick} didn't know that much either. {pct}% of their lines were questions.", lang, nick=f"<b>{_e(ranked[1])}</b>", pct=f"{qdata[ranked[1]][0]/qdata[ranked[1]][1]*100:.1f}") if len(ranked) > 1 else None
             _bignum_row(text, sub)
 
     # Shouting (CAPS)
@@ -726,13 +738,13 @@ b {{ color: var(--cyan); }}
             n1, (c1, l1) = ranked[0], cdata[ranked[0]]
             pct1 = f"{c1/l1*100:.1f}"
             ex1  = nick_stats.get(n1, {}).get("caps_ex", None)
-            ex1_fmt = f"&lt;{n1}&gt; {ex1}" if ex1 else None
+            ex1_fmt = f"<{n1}> {ex1}" if ex1 else None
             if float(pct1) >= 10:
-                text1 = t("The loudest one was {nick}, who yelled {pct}% of the time!", lang, nick=f"<b>{n1}</b>", pct=pct1)
+                text1 = t("The loudest one was {nick}, who yelled {pct}% of the time!", lang, nick=f"<b>{_e(n1)}</b>", pct=pct1)
                 sub1  = None
                 if len(ranked) > 1:
                     p2 = f"{cdata[ranked[1]][0]/cdata[ranked[1]][1]*100:.1f}"
-                    sub1 = t("Another old yeller was {nick}, who shouted {pct}% of the time!", lang, nick=f"<b>{ranked[1]}</b>", pct=p2)
+                    sub1 = t("Another old yeller was {nick}, who shouted {pct}% of the time!", lang, nick=f"<b>{_e(ranked[1])}</b>", pct=p2)
                 hicell(text1, sub1, example=ex1_fmt)
 
             # Entry 2 — shift-key / Caps-Lock (rank 1 if low %, otherwise rank 2+)
@@ -744,13 +756,13 @@ b {{ color: var(--cyan); }}
                 ns = shift_candidates[0]
                 ps = f"{cdata[ns][0]/cdata[ns][1]*100:.1f}"
                 exs = nick_stats.get(ns, {}).get("caps_ex", None)
-                exs_fmt = f"&lt;{ns}&gt; {exs}" if exs else None
-                text2 = t("It seems that {nick}'s shift-key is hanging: {pct}% of the time they wrote UPPERCASE.", lang, nick=f"<b>{ns}</b>", pct=ps)
+                exs_fmt = f"<{ns}> {exs}" if exs else None
+                text2 = t("It seems that {nick}'s shift-key is hanging: {pct}% of the time they wrote UPPERCASE.", lang, nick=f"<b>{_e(ns)}</b>", pct=ps)
                 sub2  = None
                 if len(shift_candidates) > 1:
                     ns2 = shift_candidates[1]
                     ps2 = f"{cdata[ns2][0]/cdata[ns2][1]*100:.1f}"
-                    sub2 = t("{nick} just forgot to deactivate their Caps-Lock. They wrote UPPERCASE {pct}% of the time.", lang, nick=f"<b>{ns2}</b>", pct=ps2)
+                    sub2 = t("{nick} just forgot to deactivate their Caps-Lock. They wrote UPPERCASE {pct}% of the time.", lang, nick=f"<b>{_e(ns2)}</b>", pct=ps2)
                 hicell(text2, sub2, example=exs_fmt)
 
     # Violent
@@ -759,8 +771,8 @@ b {{ color: var(--cyan); }}
         vt = [r for r in vt if r["value"] > 0]
         if vt:
             _vc = vt[0]["value"]
-            text = tn("{nick} is a very aggressive person. They attacked others {count} time.", "{nick} is a very aggressive person. They attacked others {count} times.", _vc, lang, nick=f"<b>{vt[0]['nick']}</b>", count=f"<b>{_vc}</b>")
-            sub  = t("{nick} can't control their aggressions, either. They picked on others {count} times.", lang, nick=f"<b>{vt[1]['nick']}</b>", count=f"<b>{vt[1]['value']}</b>") if len(vt) > 1 else None
+            text = tn("{nick} is a very aggressive person. They attacked others {count} time.", "{nick} is a very aggressive person. They attacked others {count} times.", _vc, lang, nick=f"<b>{_e(vt[0]['nick'])}</b>", count=f"<b>{_e(_vc)}</b>")
+            sub  = t("{nick} can't control their aggressions, either. They picked on others {count} times.", lang, nick=f"<b>{_e(vt[1]['nick'])}</b>", count=f"<b>{_e(vt[1]['value'])}</b>") if len(vt) > 1 else None
             with get_conn() as _vconn:
                 _vrow = _vconn.execute(
                     "SELECT s.violent_ex FROM stats s JOIN nicks n ON n.id=s.nick_id "
@@ -774,8 +786,8 @@ b {{ color: var(--cyan); }}
             at = [r for r in at if r["value"] > 0]
             if at:
                 _ac = at[0]["value"]
-                atext = tn("{nick} seems to be unliked. They got beaten {count} time.", "{nick} seems to be unliked. They got beaten {count} times.", _ac, lang, nick=f"<b>{at[0]['nick']}</b>", count=f"<b>{_ac}</b>")
-                asub  = t("{nick} seems to be unliked too. They got beaten {count} times.", lang, nick=f"<b>{at[1]['nick']}</b>", count=f"<b>{at[1]['value']}</b>") if len(at) > 1 else None
+                atext = tn("{nick} seems to be unliked. They got beaten {count} time.", "{nick} seems to be unliked. They got beaten {count} times.", _ac, lang, nick=f"<b>{_e(at[0]['nick'])}</b>", count=f"<b>{_e(_ac)}</b>")
+                asub  = t("{nick} seems to be unliked too. They got beaten {count} times.", lang, nick=f"<b>{_e(at[1]['nick'])}</b>", count=f"<b>{_e(at[1]['value'])}</b>") if len(at) > 1 else None
                 with get_conn() as _aconn:
                     _arow = _aconn.execute(
                         "SELECT s.violent_ex FROM stats s JOIN nicks n ON n.id=s.nick_id "
@@ -803,8 +815,8 @@ b {{ color: var(--cyan); }}
             ranked = sorted(sdata, key=lambda n: sdata[n][0]/sdata[n][1], reverse=True)
             n1, (s1, l1) = ranked[0], sdata[ranked[0]]
             pct1 = f"{s1/l1*100:.1f}"
-            text = t("{nick} brings happiness to the world. {pct}% of their lines contained smiling faces. :)", lang, nick=f"<b>{n1}</b>", pct=pct1)
-            sub  = t("{nick} isn't a sad person either, smiling {pct}% of the time.", lang, nick=f"<b>{ranked[1]}</b>", pct=f"{sdata[ranked[1]][0]/sdata[ranked[1]][1]*100:.1f}") if len(ranked) > 1 else None
+            text = t("{nick} brings happiness to the world. {pct}% of their lines contained smiling faces. :)", lang, nick=f"<b>{_e(n1)}</b>", pct=pct1)
+            sub  = t("{nick} isn't a sad person either, smiling {pct}% of the time.", lang, nick=f"<b>{_e(ranked[1])}</b>", pct=f"{sdata[ranked[1]][0]/sdata[ranked[1]][1]*100:.1f}") if len(ranked) > 1 else None
             _bignum_row(text, sub)
         else:
             _bignum_row(t("Nobody smiles in this channel! Cheer up, everyone.", lang))
@@ -817,8 +829,8 @@ b {{ color: var(--cyan); }}
             ranked = sorted(sddata, key=lambda n: sddata[n][0]/sddata[n][1], reverse=True)
             n1, (s1, l1) = ranked[0], sddata[ranked[0]]
             pct1 = f"{s1/l1*100:.1f}"
-            text = t("{nick} seems to be sad at the moment: {pct}% of their lines contained sad faces. :(", lang, nick=f"<b>{n1}</b>", pct=pct1)
-            sub  = t("{nick} is also a sad person, crying {pct}% of the time.", lang, nick=f"<b>{ranked[1]}</b>", pct=f"{sddata[ranked[1]][0]/sddata[ranked[1]][1]*100:.1f}") if len(ranked) > 1 else None
+            text = t("{nick} seems to be sad at the moment: {pct}% of their lines contained sad faces. :(", lang, nick=f"<b>{_e(n1)}</b>", pct=pct1)
+            sub  = t("{nick} is also a sad person, crying {pct}% of the time.", lang, nick=f"<b>{_e(ranked[1])}</b>", pct=f"{sddata[ranked[1]][0]/sddata[ranked[1]][1]*100:.1f}") if len(ranked) > 1 else None
             _bignum_row(text, sub)
         else:
             _bignum_row(t("Nobody is sad in this channel! What a happy channel. :-)", lang))
@@ -832,17 +844,17 @@ b {{ color: var(--cyan); }}
             shortest = min(ldata, key=ldata.get)
             ch_avg   = sum(ldata.values()) / len(ldata)
             _bignum_row(
-                t("{nick} wrote the longest lines, averaging {avg} letters per line.", lang, nick=f"<b>{longest}</b>", avg=f"{ldata[longest]:.1f}"),
-                t("{channel} average was {avg} letters per line.", lang, channel=channel, avg=f"{ch_avg:.1f}")
+                t("{nick} wrote the longest lines, averaging {avg} letters per line.", lang, nick=f"<b>{_e(longest)}</b>", avg=f"{ldata[longest]:.1f}"),
+                t("{channel} average was {avg} letters per line.", lang, channel=_e(channel), avg=f"{ch_avg:.1f}")
             )
             if longest != shortest:
                 # Find second shortest for "tight-lipped too" sub
                 sorted_short = sorted(ldata, key=ldata.get)
                 short_sub = (t("{nick} was tight-lipped, too, averaging {avg} characters.", lang,
-                               nick=f"<b>{sorted_short[1]}</b>", avg=f"{ldata[sorted_short[1]]:.1f}")
+                               nick=f"<b>{_e(sorted_short[1])}</b>", avg=f"{ldata[sorted_short[1]]:.1f}")
                              if len(sorted_short) > 1 and sorted_short[1] != longest else None)
                 _bignum_row(
-                    t("{nick} wrote the shortest lines, averaging {avg} characters per line.", lang, nick=f"<b>{shortest}</b>", avg=f"{ldata[shortest]:.1f}"),
+                    t("{nick} wrote the shortest lines, averaging {avg} characters per line.", lang, nick=f"<b>{_e(shortest)}</b>", avg=f"{ldata[shortest]:.1f}"),
                     short_sub
                 )
 
@@ -853,17 +865,17 @@ b {{ color: var(--cyan); }}
             top_words_n = sorted(wdata_total, key=wdata_total.get, reverse=True)
             tw1 = top_words_n[0]
             sub_words = (t("{nick}'s faithful follower, {nick2}, didn't speak so much: {count} words.", lang,
-                           nick=tw1, nick2=f"<b>{top_words_n[1]}</b>",
+                           nick=_e(tw1), nick2=f"<b>{_e(top_words_n[1])}</b>",
                            count=f"{wdata_total[top_words_n[1]]:,}")
                          if len(top_words_n) > 1 else None)
-            _bignum_row(t("{nick} spoke a total of {count} words!", lang, nick=f"<b>{tw1}</b>", count=f"{wdata_total[tw1]:,}"), sub_words)
+            _bignum_row(t("{nick} spoke a total of {count} words!", lang, nick=f"<b>{_e(tw1)}</b>", count=f"{wdata_total[tw1]:,}"), sub_words)
         wpl_data = {n: nick_stats[n].get("words", 0) / max(nick_stats[n].get("lines", 1), 1)
                     for n in qualified if nick_stats[n].get("words", 0) > 0}
         if wpl_data:
             best_wpl   = max(wpl_data, key=wpl_data.get)
             ch_avg_wpl = total_words / total_lines if total_lines else 0
             _bignum_row(
-                t("{nick} wrote an average of {avg} words per line.", lang, nick=f"<b>{best_wpl}</b>", avg=f"{wpl_data[best_wpl]:.2f}"),
+                t("{nick} wrote an average of {avg} words per line.", lang, nick=f"<b>{_e(best_wpl)}</b>", avg=f"{wpl_data[best_wpl]:.2f}"),
                 t("Channel average was {avg} words per line.", lang, avg=f"{ch_avg_wpl:.2f}")
             )
 
@@ -905,7 +917,7 @@ b {{ color: var(--cyan); }}
                                        f'height:15px;vertical-align:middle;margin-right:4px"></span>')
                             else:
                                 bar = ''
-                            h(f'<td class="byhour-cell">{bar}{bnick}'
+                            h(f'<td class="byhour-cell">{bar}{_e(bnick)}'
                               f'<span class="cnt"> - {bcnt}</span></td>')
                         else:
                             h('<td></td>')
@@ -921,9 +933,9 @@ b {{ color: var(--cyan); }}
         for i_w, w in enumerate(top_words_ch):
             last = w.get("last_used_by") or ""
             h(f'<tr><td class="rank">{i_w+1}</td>'
-              f'<td style="font-family:monospace">{w["word"]}</td>'
+              f'<td style="font-family:monospace">{_e(w["word"])}</td>'
               f'<td class="val">{w["count"]}</td>'
-              f'<td class="small">{last}</td></tr>')
+              f'<td class="small">{_e(last)}</td></tr>')
         h('</tbody></table></div>')
 
     # ── Most referenced nicks ─────────────────────────────────────────────────
@@ -933,8 +945,8 @@ b {{ color: var(--cyan); }}
           f'<th class="rank">#</th><th>{t("Nick",lang)}</th><th>{t("Number of Uses",lang)}</th><th>{t("Last by",lang)}</th>'
           '</tr></thead><tbody>')
         for i, r in enumerate(nick_refs):
-            h(f'<tr><td class="rank">{i+1}</td><td class="nick-name">{r["mentioned"]}</td>'
-              f'<td class="val">{r["count"]}</td><td class="small">{r.get("by_nick","")}</td></tr>')
+            h(f'<tr><td class="rank">{i+1}</td><td class="nick-name">{_e(r["mentioned"])}</td>'
+              f'<td class="val">{r["count"]}</td><td class="small">{_e(r.get("by_nick",""))}</td></tr>')
         h('</tbody></table></div>')
 
     # ── Smiley frequency ──────────────────────────────────────────────────────
@@ -944,8 +956,8 @@ b {{ color: var(--cyan); }}
           f'<th class="rank">#</th><th>{t("Smiley",lang)}</th><th>{t("Uses",lang)}</th><th>{t("Top user",lang)}</th>'
           '</tr></thead><tbody>')
         for i, r in enumerate(top_smileys):
-            h(f'<tr><td class="rank">{i+1}</td><td style="font-size:1.1rem">{r["smiley"]}</td>'
-              f'<td class="val">{r["total"]}</td><td class="small">{r.get("top_user","")}</td></tr>')
+            h(f'<tr><td class="rank">{i+1}</td><td style="font-size:1.1rem">{_e(r["smiley"])}</td>'
+              f'<td class="val">{r["total"]}</td><td class="small">{_e(r.get("top_user",""))}</td></tr>')
         h('</tbody></table></div>')
 
     # ── Karma ─────────────────────────────────────────────────────────────────
@@ -959,14 +971,14 @@ b {{ color: var(--cyan); }}
             colour = "var(--green)" if score > 0 else "var(--red)"
             sign   = "+" if score > 0 else ""
             h(f'<tr><td class="rank">{i+1}</td>'
-              f'<td class="nick-name">{r["nick"]}</td>'
+              f'<td class="nick-name">{_e(r["nick"])}</td>'
               f'<td class="val" style="color:{colour}">{sign}{score}</td></tr>')
         top_nicks = {r["nick"].lower() for r in karma_top}
         for r in karma_bottom:
             if r["nick"].lower() not in top_nicks:
                 score = r["score"]
                 h(f'<tr><td class="rank">—</td>'
-                  f'<td class="nick-name">{r["nick"]}</td>'
+                  f'<td class="nick-name">{_e(r["nick"])}</td>'
                   f'<td class="val" style="color:var(--red)">{score}</td></tr>')
         h('</tbody></table></div>')
 
@@ -979,9 +991,10 @@ b {{ color: var(--cyan); }}
         for u in recent_urls:
             url = u["url"]
             disp = url[:70] + "…" if len(url) > 70 else url
-            h(f'<tr><td><a href="{url}" target="_blank" rel="noopener" style="color:var(--blue)">{disp}</a></td>'
+            href = url if url.lower().startswith(("http://", "https://")) else "http://" + url
+            h(f'<tr><td><a href="{_e(href)}" target="_blank" rel="noopener" style="color:var(--blue)">{_e(disp)}</a></td>'
               f'<td class="val">{u.get("count", 1)}</td>'
-              f'<td class="small">{u.get("nick","")}</td>'
+              f'<td class="small">{_e(u.get("nick",""))}</td>'
               f'<td class="small">{_ago(u["ts"], lang)}</td></tr>')
         h('</tbody></table></div>')
 
@@ -1003,8 +1016,8 @@ b {{ color: var(--cyan); }}
                 _twhen = ""
             _topic_clean = strip_irc(_tp["topic"] or "")
             h(f'<tr>'
-              f'<td class="topic-text" style="font-style:italic">{_topic_clean}</td>'
-              f'<td style="font-weight:bold;white-space:nowrap">{_twhen} by {_tp["set_by"]}</td>'
+              f'<td class="topic-text" style="font-style:italic">{_e(_topic_clean)}</td>'
+              f'<td style="font-weight:bold;white-space:nowrap">{_twhen} by {_e(_tp["set_by"])}</td>'
               f'</tr>')
         _tc = len(recent_topics)
         h(f'<tr><td colspan="2" style="text-align:center;font-size:.78rem;color:var(--muted)">'
@@ -1021,8 +1034,8 @@ b {{ color: var(--cyan); }}
         kt = [r for r in kt if r["value"] > 0]
         if kt:
             _kv = kt[0]["value"]
-            text = tn("{nick} wasn't very popular, getting kicked {count} time!", "{nick} wasn't very popular, getting kicked {count} times!", _kv, lang, nick=f"<b>{kt[0]['nick']}</b>", count=_kv)
-            sub  = t("{nick} seemed to be hated too: {count} kicks were received.", lang, nick=f"<b>{kt[1]['nick']}</b>", count=kt[1]['value']) if len(kt) > 1 else None
+            text = tn("{nick} wasn't very popular, getting kicked {count} time!", "{nick} wasn't very popular, getting kicked {count} times!", _kv, lang, nick=f"<b>{_e(kt[0]['nick'])}</b>", count=_kv)
+            sub  = t("{nick} seemed to be hated too: {count} kicks were received.", lang, nick=f"<b>{_e(kt[1]['nick'])}</b>", count=kt[1]['value']) if len(kt) > 1 else None
             # Find the most recent kick for this nick for the example line
             _kick_ex = next((k for k in recent_kicks if k["victim"].lower() == kt[0]["nick"].lower()), None)
             if not _kick_ex and recent_kicks:
@@ -1041,8 +1054,8 @@ b {{ color: var(--cyan); }}
         kg = [r for r in kg if r["value"] > 0]
         if kg:
             _kg0v = kg[0]["value"]
-            text = tn("{nick} is either insane or just a fair op, kicking a total of {count} person!", "{nick} is either insane or just a fair op, kicking a total of {count} people!", _kg0v, lang, nick=f"<b>{kg[0]['nick']}</b>", count=_kg0v)
-            sub  = t("{nick}'s faithful follower, {nick2}, kicked about {count} people.", lang, nick=kg[0]['nick'], nick2=f"<b>{kg[1]['nick']}</b>", count=kg[1]['value']) if len(kg) > 1 else None
+            text = tn("{nick} is either insane or just a fair op, kicking a total of {count} person!", "{nick} is either insane or just a fair op, kicking a total of {count} people!", _kg0v, lang, nick=f"<b>{_e(kg[0]['nick'])}</b>", count=_kg0v)
+            sub  = t("{nick}'s faithful follower, {nick2}, kicked about {count} people.", lang, nick=_e(kg[0]['nick']), nick2=f"<b>{_e(kg[1]['nick'])}</b>", count=kg[1]['value']) if len(kg) > 1 else None
             _bignum_row(text, sub)
 
 
@@ -1059,53 +1072,53 @@ b {{ color: var(--cyan); }}
         ot = [r for r in _get_opvoice_top("op_taken", 3) if r["value"] > 0]
         if og:
             _ogv = og[0]["value"]
-            text = tn("{nick} donated {count} op in the channel.", "{nick} donated {count} ops in the channel.", _ogv, lang, nick=f"<b>{og[0]['nick']}</b>", count=_ogv)
-            sub  = t("{nick} was also generous with ops, giving {count} times.", lang, nick=f"<b>{og[1]['nick']}</b>", count=og[1]['value']) if len(og) > 1 else None
+            text = tn("{nick} donated {count} op in the channel.", "{nick} donated {count} ops in the channel.", _ogv, lang, nick=f"<b>{_e(og[0]['nick'])}</b>", count=_ogv)
+            sub  = t("{nick} was also generous with ops, giving {count} times.", lang, nick=f"<b>{_e(og[1]['nick'])}</b>", count=og[1]['value']) if len(og) > 1 else None
             hicell(text, sub)
         else:
-            hicell(t("Strange, no op was given on {channel}!", lang, channel=channel))
+            hicell(t("Strange, no op was given on {channel}!", lang, channel=_e(channel)))
         if ot:
             _otv = ot[0]["value"]
-            text = tn("{nick} is the channel sheriff with {count} deop.", "{nick} is the channel sheriff with {count} deops.", _otv, lang, nick=f"<b>{ot[0]['nick']}</b>", count=f"<b>{_otv}</b>")
-            sub  = t("{nick} also took ops away {count} times.", lang, nick=f"<b>{ot[1]['nick']}</b>", count=ot[1]['value']) if len(ot) > 1 else None
+            text = tn("{nick} is the channel sheriff with {count} deop.", "{nick} is the channel sheriff with {count} deops.", _otv, lang, nick=f"<b>{_e(ot[0]['nick'])}</b>", count=f"<b>{_e(_otv)}</b>")
+            sub  = t("{nick} also took ops away {count} times.", lang, nick=f"<b>{_e(ot[1]['nick'])}</b>", count=ot[1]['value']) if len(ot) > 1 else None
             hicell(text, sub)
         elif og:
-            hicell(t("Wow, no op was taken on {channel}!", lang, channel=channel))
+            hicell(t("Wow, no op was taken on {channel}!", lang, channel=_e(channel)))
 
     if show_halfops:
         hog = [r for r in _get_opvoice_top("halfop_given", 3) if r["value"] > 0]
         hot = [r for r in _get_opvoice_top("halfop_taken", 3) if r["value"] > 0]
         if hog:
             _hv = hog[0]["value"]
-            text = tn("{nick} likes to share half-ops, giving them out {count} time.", "{nick} likes to share half-ops, giving them out {count} times.", _hv, lang, nick=f"<b>{hog[0]['nick']}</b>", count=_hv)
-            sub  = t("{nick} also gave halfops {count} times.", lang, nick=f"<b>{hog[1]['nick']}</b>", count=hog[1]['value']) if len(hog) > 1 else None
+            text = tn("{nick} likes to share half-ops, giving them out {count} time.", "{nick} likes to share half-ops, giving them out {count} times.", _hv, lang, nick=f"<b>{_e(hog[0]['nick'])}</b>", count=_hv)
+            sub  = t("{nick} also gave halfops {count} times.", lang, nick=f"<b>{_e(hog[1]['nick'])}</b>", count=hog[1]['value']) if len(hog) > 1 else None
             hicell(text, sub)
         else:
-            hicell(t("Strange, no halfop was given on {channel}!", lang, channel=channel))
+            hicell(t("Strange, no halfop was given on {channel}!", lang, channel=_e(channel)))
         if hot:
             _htv = hot[0]["value"]
-            text = tn("{nick} took half-ops away {count} time.", "{nick} took half-ops away {count} times.", _htv, lang, nick=f"<b>{hot[0]['nick']}</b>", count=_htv)
+            text = tn("{nick} took half-ops away {count} time.", "{nick} took half-ops away {count} times.", _htv, lang, nick=f"<b>{_e(hot[0]['nick'])}</b>", count=_htv)
             hicell(text)
         elif hog:
-            hicell(t("Wow, no halfop was taken on {channel}!", lang, channel=channel))
+            hicell(t("Wow, no halfop was taken on {channel}!", lang, channel=_e(channel)))
 
     if show_voice:
         vg = [r for r in _get_opvoice_top("voice_given", 3) if r["value"] > 0]
         vt = [r for r in _get_opvoice_top("voice_taken", 3) if r["value"] > 0]
         if vg:
             _vgv = vg[0]["value"]
-            text = tn("{nick} gave voice {count} time.", "{nick} gave voice {count} times.", _vgv, lang, nick=f"<b>{vg[0]['nick']}</b>", count=f"<b>{_vgv}</b>")
-            sub  = t("{nick} was also quite vocal about giving voice, {count} times.", lang, nick=f"<b>{vg[1]['nick']}</b>", count=vg[1]['value']) if len(vg) > 1 else None
+            text = tn("{nick} gave voice {count} time.", "{nick} gave voice {count} times.", _vgv, lang, nick=f"<b>{_e(vg[0]['nick'])}</b>", count=f"<b>{_e(_vgv)}</b>")
+            sub  = t("{nick} was also quite vocal about giving voice, {count} times.", lang, nick=f"<b>{_e(vg[1]['nick'])}</b>", count=vg[1]['value']) if len(vg) > 1 else None
             hicell(text, sub)
         else:
-            hicell(t("Strange, no voices were given on {channel}!", lang, channel=channel))
+            hicell(t("Strange, no voices were given on {channel}!", lang, channel=_e(channel)))
         if vt:
             _vtv = vt[0]["value"]
-            text = tn("{nick} silenced people {count} time.", "{nick} silenced people {count} times.", _vtv, lang, nick=f"<b>{vt[0]['nick']}</b>", count=f"<b>{_vtv}</b>")
-            sub  = t("{nick} also silenced people {count} times.", lang, nick=f"<b>{vt[1]['nick']}</b>", count=vt[1]['value']) if len(vt) > 1 else None
+            text = tn("{nick} silenced people {count} time.", "{nick} silenced people {count} times.", _vtv, lang, nick=f"<b>{_e(vt[0]['nick'])}</b>", count=f"<b>{_e(_vtv)}</b>")
+            sub  = t("{nick} also silenced people {count} times.", lang, nick=f"<b>{_e(vt[1]['nick'])}</b>", count=vt[1]['value']) if len(vt) > 1 else None
             hicell(text, sub)
         elif vg:
-            hicell(t("No voices were taken on {channel}!", lang, channel=channel))
+            hicell(t("No voices were taken on {channel}!", lang, channel=_e(channel)))
 
     # Most actions
     if pisg.get("ShowBigNumbers", True):
@@ -1113,8 +1126,8 @@ b {{ color: var(--cyan); }}
         ac = [r for r in ac if r["value"] > 0]
         if ac:
             _acv = ac[0]["value"]
-            text = tn("{nick} always lets us know what they're doing: {count} action.", "{nick} always lets us know what they're doing: {count} actions.", _acv, lang, nick=f"<b>{ac[0]['nick']}</b>", count=_acv)
-            sub  = t("Also, {nick} tells us what's up with {count} actions.", lang, nick=f"<b>{ac[1]['nick']}</b>", count=ac[1]['value']) if len(ac) > 1 else None
+            text = tn("{nick} always lets us know what they're doing: {count} action.", "{nick} always lets us know what they're doing: {count} actions.", _acv, lang, nick=f"<b>{_e(ac[0]['nick'])}</b>", count=_acv)
+            sub  = t("Also, {nick} tells us what's up with {count} actions.", lang, nick=f"<b>{_e(ac[1]['nick'])}</b>", count=ac[1]['value']) if len(ac) > 1 else None
             ax   = nick_stats.get(ac[0]["nick"], {}).get("action_ex", None)
             hicell(text, sub, example=ax)
         else:
@@ -1126,8 +1139,8 @@ b {{ color: var(--cyan); }}
         if mdata:
             ranked = sorted(mdata, key=mdata.get, reverse=True)
             _mc  = mdata[ranked[0]]
-            text = tn("{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} time!", "{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} times!", _mc, lang, nick=f"<b>{ranked[0]}</b>", count=f"<b>{_mc}</b>")
-            sub  = t("Another lonely one was {nick}, who managed to hit {count} times.", lang, nick=f"<b>{ranked[1]}</b>", count=mdata[ranked[1]]) if len(ranked) > 1 else None
+            text = tn("{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} time!", "{nick} talks to themselves a lot. They wrote over 5 lines in a row {count} times!", _mc, lang, nick=f"<b>{_e(ranked[0])}</b>", count=f"<b>{_e(_mc)}</b>")
+            sub  = t("Another lonely one was {nick}, who managed to hit {count} times.", lang, nick=f"<b>{_e(ranked[1])}</b>", count=mdata[ranked[1]]) if len(ranked) > 1 else None
             _bignum_row(text, sub)
 
     # Most joins
@@ -1136,7 +1149,7 @@ b {{ color: var(--cyan); }}
         jn = [r for r in jn if r["value"] > 0]
         if jn:
             _jv = jn[0]["value"]
-            _bignum_row(tn("{nick} couldn't decide whether to stay or go: {count} join.", "{nick} couldn't decide whether to stay or go: {count} joins.", _jv, lang, nick=f"<b>{jn[0]['nick']}</b>", count=_jv))
+            _bignum_row(tn("{nick} couldn't decide whether to stay or go: {count} join.", "{nick} couldn't decide whether to stay or go: {count} joins.", _jv, lang, nick=f"<b>{_e(jn[0]['nick'])}</b>", count=_jv))
 
     # Most foul
     if pisg.get("ShowBigNumbers", True) and qualified:
@@ -1145,10 +1158,10 @@ b {{ color: var(--cyan); }}
         if fdata:
             ranked_f = sorted(fdata, key=fdata.get, reverse=True)
             pct1f = f"{fdata[ranked_f[0]]*100:.1f}"
-            text  = t("{nick} has quite a potty mouth. {pct}% of their words were foul language.", lang, nick=f"<b>{ranked_f[0]}</b>", pct=pct1f)
-            sub   = t("{nick} also makes sailors blush, {pct}% of the time.", lang, nick=f"<b>{ranked_f[1]}</b>", pct=f"{fdata[ranked_f[1]]*100:.1f}") if len(ranked_f) > 1 else None
+            text  = t("{nick} has quite a potty mouth. {pct}% of their words were foul language.", lang, nick=f"<b>{_e(ranked_f[0])}</b>", pct=pct1f)
+            sub   = t("{nick} also makes sailors blush, {pct}% of the time.", lang, nick=f"<b>{_e(ranked_f[1])}</b>", pct=f"{fdata[ranked_f[1]]*100:.1f}") if len(ranked_f) > 1 else None
             _fex  = nick_stats.get(ranked_f[0], {}).get("foul_ex", None)
-            ex    = f"&lt;{ranked_f[0]}&gt; {_fex}" if _fex else None
+            ex    = f"<{ranked_f[0]}> {_fex}" if _fex else None
             hicell(text, sub, example=ex)
         else:
             _bignum_row(t("Nobody is foul-mouthed here! Remarkable.", lang))
@@ -1158,7 +1171,7 @@ b {{ color: var(--cyan); }}
     # ── Stats summary ──────────────────────────────────────────────────────────
     if True:
         avg_wpl = f"{total_words/total_lines:.1f}" if total_lines else "0"
-        by_str  = f" by {maintainer}" if maintainer else ""
+        by_str  = f" by {_e(maintainer)}" if maintainer else ""
         topic_count = len(recent_topics)
         h(f'''<div class="legend">
   <b>{t("Total lines", lang)}:</b> {total_lines:,} &nbsp;·&nbsp;
@@ -1166,11 +1179,11 @@ b {{ color: var(--cyan); }}
   <b>{t("Avg words/line", lang)}:</b> {avg_wpl} &nbsp;·&nbsp;
   <b>{t("Avg chars/line", lang)}:</b> {avg_cpl}<br>
   <b>{t("Topics set", lang)}:</b> {topic_count} {t("{n} times", lang, n="")}<br>
-  <br>Stats for <b>{channel}</b> on <b>{network}</b>{by_str}
+  <br>Stats for <b>{_e(channel)}</b> on <b>{_e(network)}</b>{by_str}
 </div>''')
 
     # ── Footer ────────────────────────────────────────────────────────────────
-    h(f'<div class="footer"><a href="{project_url}" style="color:var(--muted)">Statsbot</a> — Inspired by <a href="https://pisg.github.io/" style="color:var(--muted)">PISG</a> by Morten Brix Pedersen and others</div>')
+    h(f'<div class="footer"><a href="{_e(project_url)}" style="color:var(--muted)">Statsbot</a> — Inspired by <a href="https://pisg.github.io/" style="color:var(--muted)">PISG</a> by Morten Brix Pedersen and others</div>')
     h('<button class="theme-toggle" id="themeToggle" title="Toggle light/dark"></button>')
     h('</div>') # /container
 
@@ -1284,8 +1297,8 @@ if (document.getElementById('dailyChart')) {{
 
 // Live user count
 (function() {{
-  const net = {json.dumps(network)};
-  const chanSlug = {json.dumps(channel.lstrip('#'))};
+  const net = {_js(network)};
+  const chanSlug = {_js(channel.lstrip('#'))};
   function update() {{
     fetch(`/api/${{net}}/${{chanSlug}}/online`)
       .then(r => r.json())
