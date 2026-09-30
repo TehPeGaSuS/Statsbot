@@ -1,10 +1,9 @@
 version: 2
 updates:
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+  # Keep the GitHub Actions used by the workflows up to date.
+  # Python packages are deliberately NOT listed: with "requirements.txt" (>= ranges) Dependabot
+  # only raises the minimum version, which would force everybody onto the newest releases without
+  # fixing anything. Vulnerabilities are reported by the weekly "Dependency audit" workflow.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
