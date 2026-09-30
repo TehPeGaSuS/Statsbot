@@ -10,6 +10,7 @@ Public channel commands — lightweight, point to the web page for detail.
 import logging
 import time
 from i18n import t, get_lang
+from slugs import channel_url_path
 
 log = logging.getLogger("commands")
 
@@ -72,7 +73,7 @@ class CommandHandler:
             # Lowercase so the link lands on the canonical URL directly —
             # the channel's live IRC casing (server-assigned, can drift after
             # a netsplit) would otherwise 301-redirect on every click.
-            chan_slug = channel.lstrip("#").lower()
+            chan_slug = channel_url_path(channel)
             public_url = web.get("public_url", "")
             if public_url:
                 url = f"{public_url.rstrip('/')}/{self.network}/{chan_slug}/"

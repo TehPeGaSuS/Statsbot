@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import List, Dict, Optional
 from html import escape as _html_escape
 from i18n import t, get_lang, format_date_long, tn
+from slugs import channel_url_path
 
 
 def _e(value) -> str:
@@ -215,7 +216,7 @@ def build_page(network: str, channel: str, period: int, config: dict,
                      if c.lower() != channel.lower()]
     if sibling_chans:
         links = " ".join(
-            f'<a href="/{_e(network)}/{_e(c[1:])}/" '
+            f'<a href="/{_e(network)}/{_e(channel_url_path(c))}/" '
             f'style="font-size:.78rem;color:var(--blue);padding:.2rem .6rem;'
             f'border:1px solid var(--border);border-radius:12px;'
             f'text-decoration:none">{_e(c)}</a>'
@@ -1299,7 +1300,7 @@ if (document.getElementById('dailyChart')) {{
 // Live user count
 (function() {{
   const net = {_js(network)};
-  const chanSlug = {_js(channel.lstrip('#'))};
+  const chanSlug = {_js(channel_url_path(channel))};
   function update() {{
     fetch(`/api/${{net}}/${{chanSlug}}/online`)
       .then(r => r.json())

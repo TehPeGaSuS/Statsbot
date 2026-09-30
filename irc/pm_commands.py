@@ -24,6 +24,8 @@ Commands:
 import logging
 import time
 
+from slugs import channel_url_path
+
 log = logging.getLogger("pm_commands")
 
 
@@ -381,7 +383,7 @@ class PMCommandHandler:
             self.send(nick, "web.public_url is not set in config — cannot generate link.")
             return
         token    = generate_pisg_token(self.network, channel)
-        chan_slug = channel.lstrip("#").lower()
+        chan_slug = channel_url_path(channel)
         url      = f"{public_url}/{self.network}/{chan_slug}/pisg?token={token}"
         self.send(nick, f"pisg config for {channel}: {url}  (valid 5 min, single use)")
 

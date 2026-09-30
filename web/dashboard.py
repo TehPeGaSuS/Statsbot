@@ -12,9 +12,12 @@ from typing import Optional
 
 from flask import Flask, render_template_string, jsonify, abort, request, redirect, url_for
 
+from slugs import channel_slug, channel_from_slug, channel_url_path
+
 log = logging.getLogger("dashboard")
 
 app = Flask(__name__)
+app.add_template_filter(channel_url_path, "channel_url_path")
 _config = {}
 _db_path = "data/stats.db"
 # Live channel member counts — updated by connectors via register_connector()
@@ -242,9 +245,8 @@ def network_stats(network: str):
 @app.route("/<network>/<path:channel>/")
 @app.route("/<network>/<path:channel>")
 def channel_stats(network: str, channel: str):
-    channel = channel.rstrip("/")
-    if not channel.startswith("#"):
-        channel = "#" + channel
+    requested = channel.rstrip("/")
+    channel = channel_from_slug(requested)
     period = _period_arg()
 
     canonical_net = _canonical_network(network)
@@ -253,10 +255,10 @@ def channel_stats(network: str, channel: str):
     canonical_chan = _canonical_channel(canonical_net, channel)
     if canonical_chan is None:
         abort(404)
-    if canonical_net != network or canonical_chan != channel:
-        chan_url = canonical_chan.lstrip("#")
+    canonical_slug = channel_slug(canonical_chan)
+    if canonical_net != network or canonical_slug != requested:
         return redirect(
-            url_for("channel_stats", network=canonical_net, channel=chan_url)
+            url_for("channel_stats", network=canonical_net, channel=canonical_slug)
             + (f"?period={period}" if period else ""),
             301
         )
@@ -273,9 +275,7 @@ def channel_stats(network: str, channel: str):
 @app.route("/<network>/<path:channel>/pisg")
 def channel_pisg_config(network: str, channel: str):
     """Read-only pisg config view, protected by a short-lived token."""
-    channel = channel.rstrip("/")
-    if not channel.startswith("#"):
-        channel = "#" + channel
+    channel = channel_from_slug(channel)
 
     token = request.args.get("token", "")
     entry = _pisg_tokens.get(token)
@@ -301,9 +301,7 @@ def channel_pisg_config(network: str, channel: str):
 
 @app.route("/api/<network>/<path:channel>/online")
 def api_online(network: str, channel: str):
-    if not channel.startswith("#"):
-        channel = "#" + channel
-    channel = channel.rstrip("/")
+    channel = channel_from_slug(channel)
     network  = _canonical_network(network)  or network
     channel  = _canonical_channel(network, channel) or channel
     count = get_online_count(network, channel)
@@ -312,8 +310,7 @@ def api_online(network: str, channel: str):
 
 @app.route("/api/<network>/<path:channel>/top")
 def api_top(network: str, channel: str):
-    if not channel.startswith("#"):
-        channel = "#" + channel
+    channel = channel_from_slug(channel)
     from database.models import get_top
     stat = request.args.get("stat", "lines")
     period = _period_arg()
@@ -328,8 +325,7 @@ def api_top(network: str, channel: str):
 
 @app.route("/api/<network>/<path:channel>/nick/<nick>")
 def api_nick(network: str, channel: str, nick: str):
-    if not channel.startswith("#"):
-        channel = "#" + channel
+    channel = channel_from_slug(channel)
     from database.models import get_nick_all_stats, get_hourly_activity, get_conn
     period = _period_arg()
     s = get_nick_all_stats(nick, network, channel, period)
@@ -473,7 +469,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahom
   {% if channels %}
   <div class="chan-grid">
     {% for ch in channels %}
-    <a class="chan-card" href="/{{ network }}/{{ ch.name[1:] }}/">
+    <a class="chan-card" href="/{{ network }}/{{ ch.name|channel_url_path }}/">
       <div class="cn">{{ ch.name }}</div>
       <div class="stat-row"><span class="sk">Tracked users</span><span class="sv">{{ ch.users }}</span></div>
       <div class="stat-row"><span class="sk">Total words</span><span class="sv">{{ "{:,}".format(ch.words) }}</span></div>
@@ -1079,8 +1075,7 @@ new Chart(ctx, {
 // Live user count — poll every 30s
 (function() {
   const net = {{ network|tojson }};
-  const chan = {{ channel|tojson }};
-  const chanSlug = chan.startsWith('#') ? chan.slice(1) : chan;
+  const chanSlug = {{ channel|channel_url_path|tojson }};
   const url = `/api/${net}/${chanSlug}/online`;
 
   function updateOnline() {
