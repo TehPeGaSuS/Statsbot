@@ -60,7 +60,7 @@ where the numbers come from.
 |---|---|---|
 | Data source | Parses IRC log files | Live IRC connection |
 | Setup | A bot that writes logs, a scheduler, and pisg (its guided `setup.pl` helps) | Just run Statsbot |
-| Log formats | 46 parsers, one per client / bot format, each to keep in step with its client | Not needed: Statsbot is the client, it reads the IRC protocol itself |
+| Log formats | 46 parsers, one per client / bot format, each to keep in step with its client (its WeeChat parser, unchanged since 2016, reads none of the lines WeeChat 4.8+ writes by default) | Not needed: Statsbot is the client, it reads the IRC protocol itself |
 | Output | Static HTML, regenerated on a schedule | Live web server |
 | Stats periods | Whatever the logs cover, plus a chart of the last N days | All-time, today, week, month (tabs) |
 | Peak users | ✗ | ✓ with timestamp |
