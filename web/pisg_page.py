@@ -509,6 +509,7 @@ b {{ color: var(--cyan); }}
         active = ' active' if i == period else ''
         h(f'<a class="tab{active}" href="?period={i}{_lang_param}">{pn}</a>')
     h('</div>')
+    h(f'<noscript><p class="small" style="margin:.6rem 0">{t("JavaScript is off: the charts, the time-of-day bars and the language and theme switches need it. All the numbers below work without it.", lang)}</p></noscript>')
     # Language switcher — native language names
     _lang_labels = {
         "en_US": "English",

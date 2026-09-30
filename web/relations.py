@@ -298,7 +298,9 @@ CSS = """
 #rel.dim .edge{opacity:.06}#rel.dim .node{opacity:.28}
 #rel.dim .edge.on{opacity:.9}#rel.dim .node.on{opacity:1}
 #rel .off{display:none}
-#rel .rel-controls{display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;justify-content:center;font-size:.85rem;color:var(--muted);margin-top:.4rem}
+#rel .js-only{display:none}
+#rel.js .rel-controls{display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;justify-content:center;font-size:.85rem;color:var(--muted);margin-top:.4rem}
+#rel.js .rel-hint.js-only{display:block}
 #rel .rel-controls input{vertical-align:middle;width:9rem}
 #rel .rel-hint{text-align:center;color:var(--muted);font-size:.8rem;margin:.2rem 0}
 """
@@ -306,6 +308,7 @@ CSS = """
 JS = r"""
 (function(){
 var root=document.getElementById('rel');if(!root)return;
+root.classList.add('js');        /* shows the hint and the sliders: without JavaScript they would do nothing */
 var svg=root.querySelector('svg'),nodes=[].slice.call(root.querySelectorAll('.node')),edges=[].slice.call(root.querySelectorAll('.edge'));
 var kIn=root.querySelector('#rel-k'),wIn=root.querySelector('#rel-w'),kOut=root.querySelector('#rel-kv'),wOut=root.querySelector('#rel-wv');
 var pinned=null;
@@ -343,7 +346,7 @@ def render(graph: Optional[dict], labels: Dict[str, str]) -> str:
     nodes, edges = graph["nodes"], graph["edges"]
     heaviest = max(e["w"] for e in edges) if edges else 1
     parts = ['<div id="rel"><style>', CSS, "</style>",
-             f'<p class="rel-hint">{_e(labels.get("hint", ""))}</p>',
+             f'<p class="rel-hint js-only">{_e(labels.get("hint", ""))}</p>',
              f'<p class="rel-hint">{_e(labels.get("caption", ""))}</p>' if labels.get("caption") else "",
              '<svg viewBox="-470 -470 940 940" role="img" '
              f'aria-label="{_e(labels.get("aria", "Who talks to whom"))}" xmlns="http://www.w3.org/2000/svg">']
@@ -374,7 +377,7 @@ def render(graph: Optional[dict], labels: Dict[str, str]) -> str:
     parts.append("</svg>")
     shown = len(nodes)
     parts.append(
-        '<div class="rel-controls">'
+        '<div class="rel-controls js-only">'
         f'<label>{_e(labels.get("nicks", "Nicks"))} <input id="rel-k" type="range" min="{min(MIN_NODES, shown)}" '
         f'max="{shown}" value="{shown}"> <b id="rel-kv">{shown}</b></label>'
         f'<label>{_e(labels.get("links", "Links of at least"))} <input id="rel-w" type="range" min="1" '

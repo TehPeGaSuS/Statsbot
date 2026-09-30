@@ -512,3 +512,6 @@ msgstr "Par"
 
 msgid "Mentions"
 msgstr "Menções"
+
+msgid "JavaScript is off: the charts, the time-of-day bars and the language and theme switches need it. All the numbers below work without it."
+msgstr "O JavaScript está desligado: os gráficos, as barras por hora e os seletores de idioma e tema precisam dele. Todos os números abaixo funcionam sem ele."

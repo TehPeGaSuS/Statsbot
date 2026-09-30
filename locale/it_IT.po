@@ -512,3 +512,6 @@ msgstr "Coppia"
 
 msgid "Mentions"
 msgstr "Menzioni"
+
+msgid "JavaScript is off: the charts, the time-of-day bars and the language and theme switches need it. All the numbers below work without it."
+msgstr "JavaScript è disattivato: i grafici, le barre orarie e i selettori di lingua e tema ne hanno bisogno. Tutti i numeri qui sotto funzionano senza."

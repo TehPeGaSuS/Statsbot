@@ -277,3 +277,30 @@ class TestOnThePage:
         from web.pisg_config_page import _PISG_DEFAULTS
         for key in relations.OPTION_DEFAULTS:
             assert key in _PISG_DEFAULTS
+
+
+class TestWithoutJavaScript:
+    """Progressive enhancement: the picture is complete on its own; only the interactive bits need JS."""
+
+    def test_the_hint_and_the_sliders_are_hidden_until_the_script_runs(self):
+        out = relations.render(relations.build_graph(big_channel(), 40), {"hint": "hover it"})
+        assert '<p class="rel-hint js-only">' in out and '<div class="rel-controls js-only">' in out
+        assert "#rel .js-only{display:none}" in relations.CSS                # hidden by default...
+        assert "root.classList.add('js')" in relations.JS                    # ...and shown by the script
+        assert "#rel.js .rel-controls{display:flex" in relations.CSS
+
+    def test_the_caption_stays_visible_without_javascript(self):
+        out = relations.render(relations.build_graph(big_channel(), 40), {"caption": "colours are groups"})
+        assert 'class="rel-hint">colours are groups' in out                   # no js-only on it
+
+    def test_every_node_and_link_is_in_the_markup(self):
+        g = relations.build_graph(big_channel(), 40)
+        out = relations.render(g, {})
+        assert out.count('class="node"') == len(g["nodes"])
+        assert out.count("<title>") == len(g["nodes"]) + len(g["edges"])       # tooltips need no script either
+
+
+def test_the_page_tells_readers_without_javascript_what_is_missing(client, talking_channel):
+    page = client.get("/Net/chan/").get_data(as_text=True)
+    assert "<noscript>" in page and "JavaScript is off" in page
+    assert "JavaScript est désactivé" in client.get("/Net/chan/?lang=fr_FR").get_data(as_text=True)
