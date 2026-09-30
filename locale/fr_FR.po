@@ -477,3 +477,38 @@ msgid "{count} topic set"
 msgid_plural "{count} topics set"
 msgstr[0] "{count} sujet défini"
 msgstr[1] "{count} sujets définis"
+
+# ── Who talks to whom (relation map) ─────────────────────────────────────
+
+msgid "Who talks to whom"
+msgstr "Qui parle à qui"
+
+msgid "Hover or click a nick to see who it talks to."
+msgstr "Survolez ou cliquez sur un pseudo pour voir à qui il parle."
+
+msgid "Showing the {n} most connected of {total} nicks. Colours are groups of people who mostly talk to each other."
+msgstr "Les {n} pseudos les plus connectés sur {total}. Les couleurs sont des groupes de personnes qui se parlent surtout entre elles."
+
+msgid "Colours are groups of people who mostly talk to each other."
+msgstr "Les couleurs sont des groupes de personnes qui se parlent surtout entre elles."
+
+msgid "Nicks"
+msgstr "Pseudos"
+
+msgid "Links of at least"
+msgstr "Liens d'au moins"
+
+msgid "{a} ↔ {b}: {w} mentions ({a} → {b}: {ab}, {b} → {a}: {ba})"
+msgstr "{a} ↔ {b} : {w} mentions ({a} → {b} : {ab}, {b} → {a} : {ba})"
+
+msgid "{nick}: {links} links, {w} mentions"
+msgstr "{nick} : {links} liens, {w} mentions"
+
+msgid "Closest pairs"
+msgstr "Paires les plus proches"
+
+msgid "Pair"
+msgstr "Paire"
+
+msgid "Mentions"
+msgstr "Mentions"

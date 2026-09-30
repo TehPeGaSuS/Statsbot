@@ -260,6 +260,22 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_smiley_freq ON smiley_freq(network, channel);
 
         -- Nick references (which nicks are mentioned most in messages)
+        -- Who talks to whom: one row per direction (from_nick mentioned to_nick) with a counter
+        -- per period (c0 all-time, c1 today, c2 week, c3 month), for the relation map.
+        CREATE TABLE IF NOT EXISTS nick_pairs (
+            network     TEXT NOT NULL,
+            channel     TEXT NOT NULL COLLATE NOCASE,
+            from_nick   TEXT NOT NULL COLLATE NOCASE,
+            to_nick     TEXT NOT NULL COLLATE NOCASE,
+            c0          INTEGER DEFAULT 0,
+            c1          INTEGER DEFAULT 0,
+            c2          INTEGER DEFAULT 0,
+            c3          INTEGER DEFAULT 0,
+            last_at     INTEGER DEFAULT 0,
+            PRIMARY KEY (network, channel, from_nick, to_nick)
+        );
+        CREATE INDEX IF NOT EXISTS idx_nick_pairs_chan ON nick_pairs(network, channel);
+
         CREATE TABLE IF NOT EXISTS nick_refs (
             network     TEXT NOT NULL,
             channel     TEXT NOT NULL COLLATE NOCASE,
@@ -908,6 +924,9 @@ def reset_period(period: int):
         # clear this period's bucket too so day/week/month reflect only
         # activity since the last reset, instead of accumulating forever.
         conn.execute("DELETE FROM hourly_activity WHERE period=?", (period,))
+        # the relation map keeps one counter column per period (c0 = all-time is never reset)
+        if period in (1, 2, 3):
+            conn.execute(f"UPDATE nick_pairs SET c{period}=0")
 
 
 # ─── Channel / Nick Listing ───────────────────────────────────────────────────
@@ -1221,6 +1240,50 @@ def get_top_nick_refs(network: str, channel: str, limit: int = 10) -> List[Dict]
         """, (network, channel, limit)).fetchall()
         return [dict(r) for r in rows]
 
+# ─── Who talks to whom (relation map) ─────────────────────────────────────────
+
+def add_pair(network: str, channel: str, from_nick: str, to_nick: str) -> None:
+    """Count one line in which `from_nick` mentioned `to_nick` (all periods in one write)."""
+    if not from_nick or not to_nick or from_nick.lower() == to_nick.lower():
+        return
+    now = int(time.time())
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO nick_pairs(network,channel,from_nick,to_nick,c0,c1,c2,c3,last_at)
+               VALUES(?,?,?,?,1,1,1,1,?)
+               ON CONFLICT(network,channel,from_nick,to_nick) DO UPDATE SET
+                 c0=c0+1, c1=c1+1, c2=c2+1, c3=c3+1, last_at=excluded.last_at""",
+            (network, channel, from_nick, to_nick, now)
+        )
+
+
+def get_pairs(network: str, channel: str, period: int = 0, limit: int = 5000) -> List[Dict]:
+    """The directed pair counts of a period, heaviest first, at most `limit` rows.
+
+    The limit keeps the work bounded on a channel with hundreds of talkers: the rows that
+    are left out are, by definition, the lightest ones."""
+    if period not in (0, 1, 2, 3):
+        raise ValueError(f"Unknown period: {period}")
+    col = f"c{period}"
+    with get_conn() as conn:
+        rows = conn.execute(
+            f"""SELECT from_nick, to_nick, {col} AS n FROM nick_pairs
+                WHERE network=? AND channel=? AND {col}>0
+                ORDER BY {col} DESC, from_nick, to_nick LIMIT ?""",
+            (network, channel, limit)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def prune_pairs(keep_days: int = 60, keep_min: int = 3) -> int:
+    """Forget pairs that were seen fewer than `keep_min` times and not for `keep_days` days,
+    so the table cannot grow for ever on a big channel. Returns the number of rows removed."""
+    cutoff = int(time.time()) - keep_days * 86400
+    with get_conn() as conn:
+        cur = conn.execute("DELETE FROM nick_pairs WHERE c0<? AND last_at<?", (keep_min, cutoff))
+        return cur.rowcount
+
+
 # ─── Example lines ────────────────────────────────────────────────────────────
 
 def set_example(nick_id: int, kind: str, text: str):
@@ -1386,6 +1449,7 @@ def delete_network(name: str) -> None:
         conn.execute("DELETE FROM hourly_users WHERE network=?", (name,))
         conn.execute("DELETE FROM peaks WHERE network=?", (name,))
         conn.execute("DELETE FROM nick_refs WHERE network=?", (name,))
+        conn.execute("DELETE FROM nick_pairs WHERE network=?", (name,))
         conn.execute("DELETE FROM smiley_freq WHERE network=?", (name,))
         conn.execute("DELETE FROM karma WHERE network=?", (name,))
         conn.execute("DELETE FROM chanlog WHERE network=?", (name,))
@@ -1448,6 +1512,8 @@ def delete_channel(network: str, channel: str) -> None:
                      (network, channel))
         conn.execute("DELETE FROM nick_refs WHERE network=? AND channel=?",
                      (network, channel))
+        conn.execute("DELETE FROM nick_pairs WHERE network=? AND channel=?",
+                     (network, channel))
         conn.execute("DELETE FROM smiley_freq WHERE nick_id IN "
                      "(SELECT id FROM nicks WHERE network=? AND channel=?)",
                      (network, channel))
@@ -1499,6 +1565,11 @@ def delete_nick_stats(network: str, pattern: str, channel: str = None) -> int:
                     (network, channel, nick_name)
                 )
                 conn.execute(
+                    "DELETE FROM nick_pairs WHERE network=? AND channel=? "
+                    "AND (from_nick=? COLLATE NOCASE OR to_nick=? COLLATE NOCASE)",
+                    (network, channel, nick_name, nick_name)
+                )
+                conn.execute(
                     "DELETE FROM karma WHERE network=? AND channel=? AND nick=? COLLATE NOCASE",
                     (network, channel, nick_name)
                 )
@@ -1506,6 +1577,11 @@ def delete_nick_stats(network: str, pattern: str, channel: str = None) -> int:
                 conn.execute(
                     "DELETE FROM nick_refs WHERE network=? AND mentioned=? COLLATE NOCASE",
                     (network, nick_name)
+                )
+                conn.execute(
+                    "DELETE FROM nick_pairs WHERE network=? "
+                    "AND (from_nick=? COLLATE NOCASE OR to_nick=? COLLATE NOCASE)",
+                    (network, nick_name, nick_name)
                 )
                 conn.execute(
                     "DELETE FROM karma WHERE network=? AND nick=? COLLATE NOCASE",

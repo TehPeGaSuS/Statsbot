@@ -15,7 +15,7 @@ from database.models import (
     add_quote, add_url, add_kick, add_topic, add_chanlog,
     get_chanlog, update_peak, reset_period, snapshot_daily, trim_daily_activity,
     touch_nick, is_ignored, add_master,
-    set_example
+    set_example, add_pair, prune_pairs
 )
 from bot.parser import parse_message, count_words, count_letters, count_smileys, count_questions
 
@@ -45,6 +45,7 @@ class Sensors:
         self.log_wordstats = config.get("stats", {}).get("log_wordstats", True)
         self.quote_freq = config.get("stats", {}).get("quote_frequency", 5)
         self.kick_context = config.get("stats", {}).get("kick_context", 5)
+        self.pair_keep_days = config.get("stats", {}).get("pair_keep_days", 60)
         self.log_urls = config.get("pisg", {}).get("UrlHistory", 10) > 0
         self._quote_counters = {}   # (network, chan) -> int
         self._minute_tracker = {}   # (network, chan) -> set of nick_ids active this minute
@@ -64,6 +65,7 @@ class Sensors:
         self.log_wordstats = config.get("stats", {}).get("log_wordstats", True)
         self.quote_freq  = config.get("stats", {}).get("quote_frequency", 5)
         self.kick_context = config.get("stats", {}).get("kick_context", 5)
+        self.pair_keep_days = config.get("stats", {}).get("pair_keep_days", 60)
         self.log_urls    = pisg.get("UrlHistory", 10) > 0
         self.cmd_prefix  = config.get("commands", {}).get("prefix", "!")
         self._load_statics(config)
@@ -165,6 +167,9 @@ class Sensors:
         for mentioned in find_nick_refs(text, _known):
             if mentioned.lower() != nick.lower():
                 incr_nick_ref(self.network, channel, mentioned, nick)
+                # who talks to whom (relation map); somebody on the ignore list is left out
+                if not is_ignored(mentioned, self.network, channel=channel):
+                    add_pair(self.network, channel, nick, mentioned)
 
         # Karma tracking — detect nick++ / nick-- (suffix only).
         # Rule: strip exactly the last two chars (++ or --) from the token;
@@ -465,6 +470,7 @@ class Sensors:
         snapshot_daily()
         reset_period(1)
         trim_daily_activity(365)
+        prune_pairs(self.pair_keep_days)
         log.info("Daily stats reset.")
 
     def on_weekly_reset(self):

@@ -179,6 +179,10 @@ pisg:
   ShowHalfops: false           # halfops section (disabled by default)
   ShowKarma: true
   KarmaHistory: 10
+  ShowRelations: true          # "Who talks to whom": a map of the most connected nicks + closest pairs
+  RelationNicks: 40            # nicks in the map (5-60); the reader can show fewer
+  RelationMinWeight: 0         # mentions a link needs to show at first (0 = automatic)
+  RelationPairs: 10            # rows in the "Closest pairs" table
   ShowMru: true
   ShowLegend: true
 

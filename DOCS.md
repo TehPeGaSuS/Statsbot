@@ -638,6 +638,30 @@ Number of rows in the "Most active nicks by hour" table (per band).
 
 ---
 
+### Relation map options
+
+The "Who talks to whom" section draws the nicks that talk to each other most, on a ring: people who
+mostly talk to each other are grouped in the same coloured arc, and the width of a link is the
+number of mentions. Below it, the "Closest pairs" table lists the strongest links. A link is counted
+each time a line mentions a nick that is in the channel. The section follows the period tabs.
+
+#### `ShowRelations`
+Show the section. **Default:** `true`
+
+#### `RelationNicks`
+How many nicks the map draws (5-60), chosen by how connected they are. The reader can show fewer with
+a slider. **Default:** `40`
+
+#### `RelationMinWeight`
+Mentions a link needs to be visible at first; the reader can change it with a slider. `0` picks a value
+that shows about two links per nick. **Default:** `0`
+
+#### `RelationPairs`
+Rows in the "Closest pairs" table (0 hides it). **Default:** `10`
+
+The pairs are kept in the database; ones seen fewer than three times and not for `stats.pair_keep_days`
+days (default `60`) are forgotten every night.
+
 ### Karma options
 
 #### `ShowKarma`
@@ -722,5 +746,6 @@ Compared with [pisg](https://github.com/PISG/pisg) 1.0a (2026-09-21).
 | Music charts | Yes | Not yet |
 | Daily activity graph | Yes | Yes — scrollable bar chart, configurable per channel |
 | NickTracking / aliases | Yes | Not yet |
-| Relation map, social roles, closest pairs, time personalities (new in 1.0a) | Yes | Not yet |
+| Relation map and closest pairs (new in 1.0a) | Yes | Yes — a ring with communities, meant for big channels |
+| Social roles, time personalities (new in 1.0a) | Yes | Not yet |
 | Colour schemes | 14 | One (light / dark) |

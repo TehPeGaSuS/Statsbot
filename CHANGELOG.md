@@ -5,6 +5,25 @@ and versions follow [Semantic Versioning](https://semver.org/). Everything relea
 file existed is treated as 1.0.0. Check what you are running with `python main.py --version`
 (it is also shown in the footer of every stats page).
 
+## [1.3.0] - 2026-10-01
+
+### Added
+- **"Who talks to whom"**: a map of the most connected nicks and a "Closest pairs" table. It is
+  meant for busy channels, where a free-form graph turns into a hairball: it draws only the core
+  (40 nicks by default, 60 at most) on a ring, groups the people who mostly talk to each other into
+  colour-coded arcs, orders them so that strong links are short, and fades weak links. Hover or click a
+  nick to see only its links; two sliders show fewer nicks or only the stronger links. The layout is
+  computed by the bot, so the drawing stays small however many people talk. It follows the
+  all-time / today / week / month tabs.
+- Options `ShowRelations`, `RelationNicks`, `RelationMinWeight` and `RelationPairs` (see DOCS.md);
+  the setting `stats.pair_keep_days` (default 60) says how long a pair seen fewer than 3 times is kept.
+- Translations of the new section (pt, fr, it, nl).
+
+### Upgrade notes
+- A new table (`nick_pairs`) is created automatically. The map has no history: pairs are counted
+  from the moment you update, so it fills up as people talk (a mention of a nick that is in the
+  channel counts as a link).
+
 ## [1.2.0] - 2026-09-30
 
 ### Added

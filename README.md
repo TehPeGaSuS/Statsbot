@@ -84,6 +84,8 @@ option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
 - Tracks **words, lines, letters, actions, kicks, modes, bans, joins, topics,
   minutes online, smileys (happy + sad separately), questions, CAPS lines,
   violent actions, foul language, monologues**
+- **Who talks to whom** — a map of the most connected nicks (people who mostly talk to each other
+  are grouped in coloured arcs; built to stay readable on busy channels) and a table of the closest pairs
 - **Karma** — `nick++` / `nick--` suffix syntax; only counts if the target is
   in the channel; nicks containing `--` or `++` are handled correctly
   (e.g. `Mike----` awards −1 to nick `Mike--`)
@@ -405,7 +407,7 @@ see [What's not yet implemented](#whats-not-yet-implemented-vs-pisg) for what's 
 | Gender stats | Not yet, probably never will |
 | NickTracking / nick aliases | Not yet, probably never will |
 | Music charts (`now playing:`) | Not yet, probably never will |
-| pisg 1.0a: who-talks-to-whom map, closest pairs, social roles, time personalities, "who carries the channel", signature words, channel overview | Not yet |
+| pisg 1.0a: social roles, time personalities, "who carries the channel", signature words, channel overview | Not yet |
 | pisg 1.0a: extra colour schemes, section navigation menu, landing page that compares channels | Not yet (Statsbot has a landing page and light / dark) |
 
 Everything else the classic pisg pages had is implemented. Contributions welcome.

@@ -428,3 +428,37 @@ msgstr ""
 msgid "{count} topic set"
 msgstr ""
 
+# ── Who talks to whom (relation map) ─────────────────────────────────────
+
+msgid "Who talks to whom"
+msgstr "Wie praat met wie"
+
+msgid "Hover or click a nick to see who it talks to."
+msgstr "Beweeg over een nick of klik erop om te zien met wie die praat."
+
+msgid "Showing the {n} most connected of {total} nicks. Colours are groups of people who mostly talk to each other."
+msgstr "De {n} meest verbonden nicks van {total}. De kleuren zijn groepen mensen die vooral met elkaar praten."
+
+msgid "Colours are groups of people who mostly talk to each other."
+msgstr "De kleuren zijn groepen mensen die vooral met elkaar praten."
+
+msgid "Nicks"
+msgstr "Nicks"
+
+msgid "Links of at least"
+msgstr "Verbindingen van minstens"
+
+msgid "{a} ↔ {b}: {w} mentions ({a} → {b}: {ab}, {b} → {a}: {ba})"
+msgstr "{a} ↔ {b}: {w} vermeldingen ({a} → {b}: {ab}, {b} → {a}: {ba})"
+
+msgid "{nick}: {links} links, {w} mentions"
+msgstr "{nick}: {links} verbindingen, {w} vermeldingen"
+
+msgid "Closest pairs"
+msgstr "Hechtste paren"
+
+msgid "Pair"
+msgstr "Paar"
+
+msgid "Mentions"
+msgstr "Vermeldingen"

@@ -12,6 +12,7 @@ from typing import List, Dict, Optional
 from html import escape as _html_escape
 from i18n import t, get_lang, format_date_long, tn
 from slugs import channel_url_path
+from web import relations as _relations
 from version import __version__, DEFAULT_DOCS_URL
 
 
@@ -73,7 +74,7 @@ def build_page(network: str, channel: str, period: int, config: dict,
         get_daily_activity, snapshot_today,
         get_top_smileys, get_top_nick_refs, get_quote_for_nick,
         get_random_quote, get_example,
-        get_karma_top, get_karma_bottom
+        get_karma_top, get_karma_bottom, get_pairs
     )
 
     pisg = dict(config.get("pisg", {}))
@@ -81,6 +82,11 @@ def build_page(network: str, channel: str, period: int, config: dict,
     from i18n import SUPPORTED
     lang = lang_override if lang_override and lang_override in SUPPORTED else get_lang(network, channel)
     lang_code = lang.split("_")[0]  # BCP-47: en_US -> en, pt_PT -> pt, nl_NL -> nl
+
+    # options of the relation map: defaults first, so that a per-channel override (a string) is
+    # turned into the right type below
+    for _k, _v in _relations.OPTION_DEFAULTS.items():
+        pisg.setdefault(_k, _v)
 
     # Apply per-channel pisg overrides from DB (set via PM: pisg #chan key value)
     from database.models import get_pisg_channel_overrides
@@ -122,6 +128,7 @@ def build_page(network: str, channel: str, period: int, config: dict,
     nick_refs    = get_top_nick_refs(network, channel, pisg.get("NickHistory", 5)) if pisg.get("ShowMrn", True) else []
     karma_top    = get_karma_top(network, channel, pisg.get("KarmaHistory", 10)) if pisg.get("ShowKarma", True) else []
     karma_bottom = get_karma_bottom(network, channel, 5) if pisg.get("ShowKarma", True) else []
+    rel_pairs    = get_pairs(network, channel, period, 5000) if pisg.get("ShowRelations", True) else []
 
     # Per-nick hourly band totals (used by ShowTime and ShowMostActiveByHour)
     _bands_def = [(0,5), (6,11), (12,17), (18,23)]
@@ -965,6 +972,40 @@ b {{ color: var(--cyan); }}
             h(f'<tr><td class="rank">{i+1}</td><td style="font-size:1.1rem">{_e(r["smiley"])}</td>'
               f'<td class="val">{r["total"]}</td><td class="small">{_e(r.get("top_user",""))}</td></tr>')
         h('</tbody></table></div>')
+
+    # ── Who talks to whom ─────────────────────────────────────────────────────
+    if pisg.get("ShowRelations", True) and rel_pairs:
+        rel_graph = _relations.build_graph(
+            rel_pairs,
+            _relations.clamp_int(pisg.get("RelationNicks"), _relations.DEFAULT_NODES, _relations.MIN_NODES, _relations.MAX_NODES),
+            _relations.clamp_int(pisg.get("RelationMinWeight"), 0, 0, 1000000))
+        if rel_graph:
+            shown_n, everyone_n = len(rel_graph["nodes"]), rel_graph["everyone"]
+            section(t("Who talks to whom", lang))
+            h(_relations.render(rel_graph, {
+                "aria":       t("Who talks to whom", lang),
+                "hint":       t("Hover or click a nick to see who it talks to.", lang),
+                "caption":    (t("Showing the {n} most connected of {total} nicks. Colours are groups of people who mostly talk to each other.",
+                                 lang, n=shown_n, total=everyone_n)
+                               if everyone_n > shown_n else
+                               t("Colours are groups of people who mostly talk to each other.", lang)),
+                "nicks":      t("Nicks", lang),
+                "links":      t("Links of at least", lang),
+                "link_title": t("{a} ↔ {b}: {w} mentions ({a} → {b}: {ab}, {b} → {a}: {ba})", lang),
+                "nick_title": t("{nick}: {links} links, {w} mentions", lang),
+            }))
+            top_pairs = _relations.closest_pairs(rel_pairs, _relations.clamp_int(pisg.get("RelationPairs"), 10, 0, 50))
+            if top_pairs:
+                section(t("Closest pairs", lang))
+                h('<div class="tscroll"><table class="info-table"><thead><tr>'
+                  f'<th class="rank">#</th><th>{t("Pair", lang)}</th><th>{t("Mentions", lang)}</th>'
+                  '</tr></thead><tbody>')
+                for i, r in enumerate(top_pairs):
+                    h(f'<tr><td class="rank">{i+1}</td>'
+                      f'<td class="nick-name">{_e(r["a"])} &harr; {_e(r["b"])}</td>'
+                      f'<td class="val" title="{_e(r["a"])} &rarr; {_e(r["b"])}: {r["ab"]} &middot; '
+                      f'{_e(r["b"])} &rarr; {_e(r["a"])}: {r["ba"]}">{r["w"]}</td></tr>')
+                h('</tbody></table></div>')
 
     # ── Karma ─────────────────────────────────────────────────────────────────
     if pisg.get("ShowKarma", True) and (karma_top or karma_bottom):
