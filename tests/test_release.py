@@ -36,3 +36,20 @@ def test_the_readme_starts_with_the_update_warning():
     assert head[0] == "# Statsbot" and head[2] == "> [!WARNING]"
     assert "2026-09-30" in readme.split("A modern IRC statistics bot")[0]   # the cut-off date for unversioned bots
     assert "CHANGELOG.md" in readme.split("A modern IRC statistics bot")[0]
+
+
+def test_every_page_that_links_to_the_repository_shows_the_version(db, sensors, tmp_path):
+    from conftest import CHAN, NET, make_config
+    from web import dashboard
+    sensors.on_privmsg("alice", "a@h", CHAN, "hello there everyone")
+    cfg = make_config(); cfg["web"] = {}
+    dashboard.set_config(cfg, str(tmp_path / "data" / "stats.db"))
+    client = dashboard.app.test_client()
+    for url in ("/", f"/{NET}/", f"/{NET}/chan/"):
+        html = client.get(url).get_data(as_text=True)
+        assert f"Statsbot {__version__}</a>" in html, f"{url} does not show the version next to the repository link"
+
+
+def test_the_unused_channel_template_also_shows_the_version():
+    from web import dashboard
+    assert "Statsbot {{ statsbot_version }}</a>" in dashboard.CHANNEL_TMPL
