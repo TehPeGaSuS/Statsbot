@@ -119,7 +119,6 @@ class Sensors:
         if parsed["foul"]:
             incr(nick_id, "foul", parsed["foul"])
             set_example(nick_id, "foul_ex", text)
-        incr(nick_id, "letters", parsed["letters"])
 
         # Per-smiley frequency
         if parsed["smiley_freq"] and self.log_wordstats:
@@ -162,6 +161,7 @@ class Sensors:
         # Always include the current speaker in _known — they're definitely present
         if nick not in _known and not any(n.lower() == nick.lower() for n in _known):
             _known = list(_known) + [nick]
+            self._nick_cache[_cache_key] = (self._nick_cache.get(_cache_key, (_time.time(), []))[0], _known)
         for mentioned in find_nick_refs(text, _known):
             if mentioned.lower() != nick.lower():
                 incr_nick_ref(self.network, channel, mentioned, nick)
@@ -384,6 +384,8 @@ class Sensors:
         # e.g. "+oov" with ["Nick1", "Nick2", "Nick3"] → [(o,+,Nick1), (o,+,Nick2), (v,+,Nick3)]
         # Mode chars that consume a target parameter:
         _TARGETED = set("oOvVhHbBeEIkqlLjf")
+        # these only take a parameter when being set: "-l" has no argument on any server
+        _ONLY_WHEN_ADDING = set("lLjf")
         adding = True
         target_idx = 0
         for ch in mode_str:
@@ -391,7 +393,7 @@ class Sensors:
                 adding = True
             elif ch == '-':
                 adding = False
-            elif ch in _TARGETED:
+            elif ch in _TARGETED and not (ch in _ONLY_WHEN_ADDING and not adding):
                 target_nick = mode_targets[target_idx] if target_idx < len(mode_targets) else None
                 target_idx += 1
 

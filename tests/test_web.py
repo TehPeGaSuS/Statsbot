@@ -70,6 +70,19 @@ class TestApi:
     def test_a_nonsense_limit_is_not_a_server_error(self, client, busy_channel):
         assert client.get(f"/api/{NET}/chan/top?limit=abc").status_code < 500
 
+    def test_a_period_outside_the_four_is_a_client_error(self, client, busy_channel):
+        assert client.get(f"/{NET}/chan/?period=9").status_code == 400
+        assert client.get(f"/api/{NET}/chan/top?period=-1").status_code == 400
+
+    def test_a_negative_limit_does_not_dump_the_whole_table(self, client, busy_channel):
+        # LIMIT -1 means "no limit" in SQLite
+        assert len(client.get(f"/api/{NET}/chan/top?limit=-1").get_json()) == 1
+
+    def test_the_limit_has_a_ceiling(self, client, busy_channel, sensors):
+        for i in range(120):
+            sensors.on_privmsg(f"n{i:03d}", "u@h", CHAN, "hello there everyone")
+        assert len(client.get(f"/api/{NET}/chan/top?limit=1000").get_json()) == 100
+
     def test_a_stat_name_cannot_smuggle_sql(self, client, busy_channel, db):
         client.get(f"/api/{NET}/chan/top?stat=lines;DROP TABLE stats")
         assert db.get_top(NET, CHAN, "lines")

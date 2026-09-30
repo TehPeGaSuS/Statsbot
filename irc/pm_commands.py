@@ -250,7 +250,7 @@ class PMCommandHandler:
             else:
                 for m in masters:
                     masks = m.get("masks") or "(no masks)"
-                    self.send(nick, f"  {m['nick']}  masks: {masks}")
+                    self.send(nick, f"  {m['pattern']}  masks: {masks}")
 
         elif subcmd == "add":
             if not target:

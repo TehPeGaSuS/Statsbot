@@ -129,6 +129,15 @@ def _canonical_channel(network: str, channel: str):
         return row["channel"].lower() if row else None
 
 
+def _period_arg() -> int:
+    """?period= as 0 (all-time), 1 (today), 2 (week) or 3 (month). A number outside that range is a 400;
+    something that is not a number falls back to all-time. Neither may be a 500."""
+    period = request.args.get("period", 0, type=int)
+    if period is None or period not in (0, 1, 2, 3):
+        abort(400, "period must be 0, 1, 2 or 3")
+    return period
+
+
 @app.route("/")
 def index():
     from database.models import get_channels, count_users, get_conn
@@ -236,7 +245,7 @@ def channel_stats(network: str, channel: str):
     channel = channel.rstrip("/")
     if not channel.startswith("#"):
         channel = "#" + channel
-    period = int(request.args.get("period", 0))
+    period = _period_arg()
 
     canonical_net = _canonical_network(network)
     if canonical_net is None:
@@ -307,8 +316,9 @@ def api_top(network: str, channel: str):
         channel = "#" + channel
     from database.models import get_top
     stat = request.args.get("stat", "lines")
-    period = int(request.args.get("period", 0))
-    limit = int(request.args.get("limit", 10))
+    period = _period_arg()
+    limit = request.args.get("limit", 10, type=int)     # not a number -> the default
+    limit = max(1, min(limit, 100))                      # LIMIT -1 would mean "everything" in SQLite
     try:
         rows = get_top(network, channel, stat, period, limit)
         return jsonify(rows)
@@ -321,7 +331,7 @@ def api_nick(network: str, channel: str, nick: str):
     if not channel.startswith("#"):
         channel = "#" + channel
     from database.models import get_nick_all_stats, get_hourly_activity, get_conn
-    period = int(request.args.get("period", 0))
+    period = _period_arg()
     s = get_nick_all_stats(nick, network, channel, period)
     if not s:
         abort(404)

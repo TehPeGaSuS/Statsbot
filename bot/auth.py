@@ -103,9 +103,13 @@ class AuthManager:
         full = f"{nick.lower()}!{host.lower()}"
         for master in list_masters_global():
             for mask in (master.get("masks") or "").split():
-                if fnmatch.fnmatch(full, mask.lower()) or fnmatch.fnmatch(nick.lower(), mask.lower()):
+                # A mask has to name a host ("*!*@host.example"). A bare nick is never enough:
+                # anybody can take somebody else's nick on IRC.
+                if "@" not in mask:
+                    continue
+                if fnmatch.fnmatch(full, mask.lower()):
                     if not self.is_authed(network, nick):
-                        self.create_session(network, nick, host, master["nick"])
+                        self.create_session(network, nick, host, master["pattern"])
                         return True
         return False
 

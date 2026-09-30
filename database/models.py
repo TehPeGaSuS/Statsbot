@@ -310,6 +310,12 @@ def init_db():
         );
 
         -- Bot channel registry
+        -- Small key/value store for state that must survive a restart (last period resets, ...)
+        CREATE TABLE IF NOT EXISTS scheduler_state (
+            key   TEXT PRIMARY KEY,
+            value TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS bot_channels (
             network  TEXT NOT NULL,
             channel  TEXT NOT NULL COLLATE NOCASE,
@@ -791,10 +797,28 @@ def get_chanlog(network: str, channel: str, limit: int = 10) -> List[Dict]:
 
 # ─── Period Reset ─────────────────────────────────────────────────────────────
 
-def snapshot_daily():
-    """Snapshot today's period=1 totals into daily_activity before the daily reset."""
-    from datetime import date as _date
-    today = _date.today().isoformat()
+def get_state(key: str, default: Optional[str] = None) -> Optional[str]:
+    with get_conn() as conn:
+        row = conn.execute("SELECT value FROM scheduler_state WHERE key=?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
+def set_state(key: str, value: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO scheduler_state(key,value) VALUES(?,?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, value))
+
+
+def snapshot_daily(day=None):
+    """Snapshot the finished day's period=1 totals into daily_activity before the daily reset.
+
+    The scheduler calls this in the first minutes after midnight, so the day that just ended
+    is *yesterday*: that is the default. Pass `day` (a date or ISO string) to say otherwise."""
+    from datetime import date as _date, timedelta
+    if day is None:
+        day = _date.today() - timedelta(days=1)
+    today = day.isoformat() if hasattr(day, "isoformat") else str(day)
     with get_conn() as conn:
         rows = conn.execute("""
             SELECT n.network, n.channel,
@@ -810,8 +834,8 @@ def snapshot_daily():
                     INSERT INTO daily_activity(network, channel, date, lines, words)
                     VALUES(?,?,?,?,?)
                     ON CONFLICT(network, channel, date) DO UPDATE SET
-                        lines = lines + excluded.lines,
-                        words = words + excluded.words
+                        lines = MAX(lines, excluded.lines),
+                        words = MAX(words, excluded.words)
                 """, (row["network"], row["channel"], today,
                       row["lines"], row["words"]))
 

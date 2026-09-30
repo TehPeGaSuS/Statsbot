@@ -70,8 +70,6 @@ class TestDailyReset:
         make_scheduler()._tick(datetime(2026, 10, 8, 0, 0, 30))
         assert [d["date"] for d in db.get_daily_activity(NET, CHAN)] == ["2026-10-07"]
 
-    @pytest.mark.xfail(reason="_last_day lives only in memory: restarting the bot during the 00:xx hour "
-                              "resets today's stats a second time", strict=True)
     def test_restarting_during_the_midnight_hour_does_not_wipe_todays_stats(self, make_scheduler, sensors, db):
         make_scheduler()._tick(datetime(2026, 10, 7, 0, 0, 30))      # normal midnight reset
         chat(sensors)                                                  # 25 minutes of chat
@@ -108,3 +106,27 @@ class TestWeeklyAndMonthly:
         s = Scheduler([sensors], [Broken()], {})
         with pytest.raises(RuntimeError):      # _tick itself propagates; run() logs it and carries on
             s._tick(datetime(2026, 10, 7, 12, 0))
+
+
+class TestResetsSurviveARestart:
+    def test_a_restart_in_the_midnight_hour_does_not_reset_the_week_or_month_again(self, make_scheduler, sensors, db):
+        make_scheduler()._tick(datetime(2026, 6, 1, 0, 0, 30))         # Monday the 1st: all three reset
+        chat(sensors)
+        make_scheduler()._tick(datetime(2026, 6, 1, 0, 40, 30))        # restart 40 minutes later
+        assert periods(db) == [3, 3, 3, 3]
+
+    def test_the_same_week_number_a_year_later_still_resets(self, make_scheduler, sensors, db):
+        s = make_scheduler(); chat(sensors)
+        s._tick(datetime(2025, 12, 29, 0, 0, 30))                      # Monday of ISO week 2026-W01
+        chat(sensors)
+        s._tick(datetime(2026, 12, 28, 0, 0, 30))                      # a year later, a Monday again
+        assert periods(db)[2] == 0
+
+    def test_the_state_is_stored_in_the_database(self, make_scheduler, db):
+        make_scheduler()._tick(datetime(2026, 10, 7, 0, 0, 30))
+        assert db.get_state("last_daily_reset") == "2026-10-07"
+
+    def test_a_broken_state_table_does_not_stop_the_scheduler(self, sensors, monkeypatch):
+        import database.models as m
+        monkeypatch.setattr(m, "get_state", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("no table")))
+        Scheduler([sensors], [FakeConnector()], {})._tick(datetime(2026, 10, 7, 0, 0, 30))
