@@ -15,6 +15,8 @@ import threading
 
 import yaml
 
+from version import __version__
+
 # Global asyncio queue for runtime reload signals
 # Web thread and PM commands post events here; the async loop consumes them
 reload_queue: asyncio.Queue = None
@@ -100,6 +102,7 @@ def main():
     parser.add_argument("--init-db", action="store_true")
     parser.add_argument("--setup", action="store_true",
                         help="Configure master nicks and passwords")
+    parser.add_argument("--version", action="version", version=f"Statsbot {__version__}")
     args = parser.parse_args()
 
     global _config_path
@@ -107,6 +110,7 @@ def main():
     config = load_config(args.config)
     setup_logging(config)
     log = logging.getLogger("main")
+    log.info("Statsbot %s starting.", __version__)
 
     db_path = config.get("database", {}).get("path", "data/stats.db")
     os.makedirs(os.path.dirname(db_path), exist_ok=True)

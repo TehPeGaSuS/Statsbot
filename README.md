@@ -1,5 +1,31 @@
 # Statsbot
 
+> [!WARNING]
+> **Update if your bot is older than commit `bd2c456` (2026-09-30).**
+> Earlier versions have a security hole in the public stats page: text from IRC (quotes,
+> topics, kick reasons, `/me` lines, words, URLs) was not escaped, so anyone who can talk in a
+> channel the bot tracks could run script in the browser of everybody who opens that channel's
+> page. Host-mask auto-login was also broken (and would have matched on a bare nick).
+>
+> Version numbers only start with 1.1.0, so an older bot cannot tell you its version
+> (`python main.py --version` does not exist there). Check the commit instead:
+>
+> ```bash
+> git log -1 --format='%h %cd' --date=short     # the last unfixed commit is d3538ac (2026-07-28)
+> git merge-base --is-ancestor bd2c456 HEAD && echo "up to date" || echo "OUTDATED: update now"
+> ```
+>
+> To update:
+>
+> ```bash
+> git pull
+> pip install -r requirements.txt
+> # restart the bot; the database updates itself
+> python main.py --version        # 1.1.0 or newer
+> ```
+>
+> Details and upgrade notes: **[CHANGELOG.md](CHANGELOG.md)**.
+
 A modern IRC statistics bot inspired by [pisg](https://pisg.github.io/), built
 for the 21st century. Instead of parsing log files after the fact, Statsbot
 connects to IRC as a bot, collects statistics in real time, and serves a
@@ -186,6 +212,15 @@ http://yourserver:8033/<network>/<channel>/    — full pisg-style stats page
 http://yourserver:8033/<network>/<channel>/?period=1   — today
 ```
 
+`<channel>` is the channel name without its `#`. Channels with more than one `#` are three
+different channels, so they get the number of hashes in front:
+
+| Channel | Address |
+|---|---|
+| `#lifeline` | `/<network>/lifeline/` |
+| `##lifeline` | `/<network>/2/lifeline/` |
+| `###lifeline` | `/<network>/3/lifeline/` |
+
 Period values: `0` = all-time (default), `1` = today, `2` = this week, `3` = this month.
 
 Set `web.public_url` in config so `!stats` generates proper external links:
@@ -306,7 +341,11 @@ sudo journalctl -u statsbot -f
 
 ```
 Statsbot/
-├── main.py                  # Entry point, --setup wizard
+├── main.py                  # Entry point, --setup wizard, --version
+├── version.py               # The version number (see CHANGELOG.md)
+├── slugs.py                 # Channel name <-> URL path (#a, ##a and ###a differ)
+├── CHANGELOG.md
+├── tests/                   # pytest suite: python -m pytest
 ├── config/
 │   └── config.yml           # All configuration
 ├── bot/
@@ -333,7 +372,8 @@ Statsbot/
 Issues and pull requests are welcome. If you're adding a feature, please:
 
 - Follow the existing code style (no external deps beyond `requirements.txt`)
-- Add a test in the relevant `python -c` style check if possible
+- Add a test in `tests/` (`pip install -r requirements-dev.txt && python -m pytest`)
+- For a user-visible change, bump `version.py` and add a section to `CHANGELOG.md`
 - Update `DOCS.md` if you add or change a config option
 
 Want to add or improve a translation? See **[TRANSLATE.md](TRANSLATE.md)** —

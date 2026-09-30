@@ -12,6 +12,7 @@ from typing import List, Dict, Optional
 from html import escape as _html_escape
 from i18n import t, get_lang, format_date_long, tn
 from slugs import channel_url_path
+from version import __version__
 
 
 def _e(value) -> str:
@@ -1185,7 +1186,7 @@ b {{ color: var(--cyan); }}
 </div>''')
 
     # ── Footer ────────────────────────────────────────────────────────────────
-    h(f'<div class="footer"><a href="{_e(project_url)}" style="color:var(--muted)">Statsbot</a> — Inspired by <a href="https://pisg.github.io/" style="color:var(--muted)">PISG</a> by Morten Brix Pedersen and others</div>')
+    h(f'<div class="footer"><a href="{_e(project_url)}" style="color:var(--muted)">Statsbot {_e(__version__)}</a> — Inspired by <a href="https://pisg.github.io/" style="color:var(--muted)">PISG</a> by Morten Brix Pedersen and others</div>')
     h('<button class="theme-toggle" id="themeToggle" title="Toggle light/dark"></button>')
     h('</div>') # /container
 
