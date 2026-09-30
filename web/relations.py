@@ -22,6 +22,7 @@ import math
 from typing import Dict, List, Optional
 
 MIN_NODES = 5
+MIN_MAP_NODES = 4           # below this a ring is a silly picture: only the pairs table is shown
 MAX_NODES = 60
 DEFAULT_NODES = 40
 EDGES_PER_NODE = 4          # hard cap on drawn links: EDGES_PER_NODE * number of nicks
@@ -30,7 +31,8 @@ RING = 300                  # radius of the ring in the SVG's own units
 GAP = 1.6                   # extra room, in node slots, between two communities
 
 # the page options of this section (pisg-style names), with their defaults
-OPTION_DEFAULTS = {"ShowRelations": True, "RelationNicks": DEFAULT_NODES, "RelationMinWeight": 0, "RelationPairs": 10}
+OPTION_DEFAULTS = {"ShowRelations": True, "RelationNicks": DEFAULT_NODES, "RelationMinWeight": 0, "RelationPairs": 10,
+                   "RelationMap": "closed"}          # "closed" (default), "open" or "off"
 
 
 def clamp_int(value, default: int, low: int, high: int) -> int:
@@ -284,11 +286,14 @@ def _curve(a: dict, b: dict) -> str:
     return f"M{a['x']} {a['y']}Q{round(cx, 1)} {round(cy, 1)} {b['x']} {b['y']}"
 
 
+SUMMARY = "Show the map ({n} nicks)"
 LINK_TITLE = "{a} ↔ {b}: {w} mentions ({a} → {b}: {ab}, {b} → {a}: {ba})"
 NICK_TITLE = "{nick}: {links} links, {w} mentions"
 
 CSS = """
 #rel{margin:1rem 0}
+#rel summary{cursor:pointer;color:var(--blue);padding:.4rem 0}
+#rel summary:hover{text-decoration:underline}
 #rel svg{display:block;width:100%;max-width:820px;height:auto;margin:0 auto}
 #rel .edge{fill:none;stroke-linecap:round;opacity:var(--o,.5);transition:opacity .15s}
 #rel .edge.x{stroke:var(--muted)}
@@ -311,10 +316,11 @@ var root=document.getElementById('rel');if(!root)return;
 root.classList.add('js');        /* shows the hint and the sliders: without JavaScript they would do nothing */
 var svg=root.querySelector('svg'),nodes=[].slice.call(root.querySelectorAll('.node')),edges=[].slice.call(root.querySelectorAll('.edge'));
 var kIn=root.querySelector('#rel-k'),wIn=root.querySelector('#rel-w'),kOut=root.querySelector('#rel-kv'),wOut=root.querySelector('#rel-wv');
+var w0=+root.getAttribute('data-start-weight')||1;      /* used when there is no slider for it */
 var pinned=null;
-function visibleNode(n){return +n.getAttribute('data-rank')<+kIn.value}
+function visibleNode(n){return !kIn||+n.getAttribute('data-rank')<+kIn.value}
 function apply(){
-  var k=+kIn.value,w=+wIn.value;kOut.textContent=k;wOut.textContent=w;
+  var w=wIn?+wIn.value:w0;if(kOut)kOut.textContent=kIn.value;if(wOut)wOut.textContent=w;
   nodes.forEach(function(n){n.classList.toggle('off',!visibleNode(n))});
   edges.forEach(function(e){var a=nodes[+e.getAttribute('data-a')],b=nodes[+e.getAttribute('data-b')];
     e.classList.toggle('off',!(visibleNode(a)&&visibleNode(b)&&+e.getAttribute('data-w')>=w))});
@@ -333,23 +339,28 @@ nodes.forEach(function(n,i){
   n.addEventListener('click',function(){pinned=(pinned===i)?null:i;focusOn(pinned)});
   n.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();pinned=(pinned===i)?null:i;focusOn(pinned)}})});
 svg.addEventListener('click',function(ev){if(ev.target===svg){pinned=null;focusOn(null)}});
-kIn.addEventListener('input',apply);wIn.addEventListener('input',apply);apply();
+if(kIn)kIn.addEventListener('input',apply);if(wIn)wIn.addEventListener('input',apply);apply();
 })();
 """
 
 
-def render(graph: Optional[dict], labels: Dict[str, str]) -> str:
-    """The map as an HTML fragment (style + svg + controls + script). `labels` holds the
-    already-translated texts: hint, nicks, links, nick_title, link_title."""
-    if not graph:
+def render(graph: Optional[dict], labels: Dict[str, str], opened: bool = False) -> str:
+    """The map as an HTML fragment (style + svg + controls + script), inside a <details> block that
+    is closed unless `opened`: it is a big picture, so the reader asks for it. `labels` holds the
+    already-translated texts: summary, hint, caption, nicks, links, nick_title, link_title."""
+    if not graph or len(graph["nodes"]) < MIN_MAP_NODES:
         return ""
     nodes, edges = graph["nodes"], graph["edges"]
     heaviest = max(e["w"] for e in edges) if edges else 1
-    parts = ['<div id="rel"><style>', CSS, "</style>",
+    width = min(820, 360 + 11 * len(nodes))          # a small channel gets a small picture
+    summary = _fmt(labels.get("summary", SUMMARY), SUMMARY, n=len(nodes))
+    parts = [f'<div id="rel" data-start-weight="{graph["start_weight"]}"><style>', CSS, "</style>",
+             f'<details{" open" if opened else ""}><summary>{_e(summary)}</summary>',
              f'<p class="rel-hint js-only">{_e(labels.get("hint", ""))}</p>',
              f'<p class="rel-hint">{_e(labels.get("caption", ""))}</p>' if labels.get("caption") else "",
              '<svg viewBox="-470 -470 940 940" role="img" '
-             f'aria-label="{_e(labels.get("aria", "Who talks to whom"))}" xmlns="http://www.w3.org/2000/svg">']
+             f'aria-label="{_e(labels.get("aria", "Who talks to whom"))}" style="max-width:{width}px" '
+             'xmlns="http://www.w3.org/2000/svg">']
     for e in edges:
         a, b = nodes[e["a"]], nodes[e["b"]]
         width = round(0.8 + 5.2 * math.sqrt(e["w"] / heaviest), 2)
@@ -376,12 +387,17 @@ def render(graph: Optional[dict], labels: Dict[str, str]) -> str:
             f'text-anchor="{"end" if left else "start"}" dominant-baseline="central">{_e(n["nick"])}</text></g>')
     parts.append("</svg>")
     shown = len(nodes)
-    parts.append(
-        '<div class="rel-controls js-only">'
-        f'<label>{_e(labels.get("nicks", "Nicks"))} <input id="rel-k" type="range" min="{min(MIN_NODES, shown)}" '
-        f'max="{shown}" value="{shown}"> <b id="rel-kv">{shown}</b></label>'
-        f'<label>{_e(labels.get("links", "Links of at least"))} <input id="rel-w" type="range" min="1" '
-        f'max="{graph["max_weight"]}" value="{min(graph["start_weight"], graph["max_weight"])}"> <b id="rel-wv">'
-        f'{min(graph["start_weight"], graph["max_weight"])}</b></label></div>')
-    parts.append(f"<script>{JS}</script></div>")
+    controls = []
+    if shown > MIN_NODES:                                   # a slider that can only sit still is noise
+        controls.append(
+            f'<label>{_e(labels.get("nicks", "Nicks"))} <input id="rel-k" type="range" min="{MIN_NODES}" '
+            f'max="{shown}" value="{shown}"> <b id="rel-kv">{shown}</b></label>')
+    if graph["max_weight"] > 1:
+        start = min(graph["start_weight"], graph["max_weight"])
+        controls.append(
+            f'<label>{_e(labels.get("links", "Links of at least"))} <input id="rel-w" type="range" min="1" '
+            f'max="{graph["max_weight"]}" value="{start}"> <b id="rel-wv">{start}</b></label>')
+    if controls:
+        parts.append('<div class="rel-controls js-only">' + "".join(controls) + "</div>")
+    parts.append(f"</details><script>{JS}</script></div>")
     return "".join(parts)

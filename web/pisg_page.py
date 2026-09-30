@@ -976,15 +976,30 @@ b {{ color: var(--cyan); }}
 
     # ── Who talks to whom ─────────────────────────────────────────────────────
     if pisg.get("ShowRelations", True) and rel_pairs:
+        # the compact part first: the strongest pairs ...
+        top_pairs = _relations.closest_pairs(rel_pairs, _relations.clamp_int(pisg.get("RelationPairs"), 10, 0, 50))
+        if top_pairs:
+            section(t("Closest pairs", lang))
+            h('<div class="tscroll"><table class="info-table"><thead><tr>'
+              f'<th class="rank">#</th><th>{t("Pair", lang)}</th><th>{t("Mentions", lang)}</th>'
+              '</tr></thead><tbody>')
+            for i, r in enumerate(top_pairs):
+                h(f'<tr><td class="rank">{i+1}</td>'
+                  f'<td class="nick-name">{_e(r["a"])} &harr; {_e(r["b"])}</td>'
+                  f'<td class="val" title="{_e(r["a"])} &rarr; {_e(r["b"])}: {r["ab"]} &middot; '
+                  f'{_e(r["b"])} &rarr; {_e(r["a"])}: {r["ba"]}">{r["w"]}</td></tr>')
+            h('</tbody></table></div>')
+        # ... then the big picture, folded away unless the channel asks for it open
+        rel_mode = str(pisg.get("RelationMap", "closed")).strip().lower()
         rel_graph = _relations.build_graph(
             rel_pairs,
             _relations.clamp_int(pisg.get("RelationNicks"), _relations.DEFAULT_NODES, _relations.MIN_NODES, _relations.MAX_NODES),
-            _relations.clamp_int(pisg.get("RelationMinWeight"), 0, 0, 1000000))
+            _relations.clamp_int(pisg.get("RelationMinWeight"), 0, 0, 1000000)) if rel_mode != "off" else None
         if rel_graph:
             shown_n, everyone_n = len(rel_graph["nodes"]), rel_graph["everyone"]
-            section(t("Who talks to whom", lang))
-            h(_relations.render(rel_graph, {
+            map_html = _relations.render(rel_graph, {
                 "aria":       t("Who talks to whom", lang),
+                "summary":    t("Show the map ({n} nicks)", lang),
                 "hint":       t("Hover or click a nick to see who it talks to.", lang),
                 "caption":    (t("Showing the {n} most connected of {total} nicks. Colours are groups of people who mostly talk to each other.",
                                  lang, n=shown_n, total=everyone_n)
@@ -994,19 +1009,10 @@ b {{ color: var(--cyan); }}
                 "links":      t("Links of at least", lang),
                 "link_title": t("{a} ↔ {b}: {w} mentions ({a} → {b}: {ab}, {b} → {a}: {ba})", lang),
                 "nick_title": t("{nick}: {links} links, {w} mentions", lang),
-            }))
-            top_pairs = _relations.closest_pairs(rel_pairs, _relations.clamp_int(pisg.get("RelationPairs"), 10, 0, 50))
-            if top_pairs:
-                section(t("Closest pairs", lang))
-                h('<div class="tscroll"><table class="info-table"><thead><tr>'
-                  f'<th class="rank">#</th><th>{t("Pair", lang)}</th><th>{t("Mentions", lang)}</th>'
-                  '</tr></thead><tbody>')
-                for i, r in enumerate(top_pairs):
-                    h(f'<tr><td class="rank">{i+1}</td>'
-                      f'<td class="nick-name">{_e(r["a"])} &harr; {_e(r["b"])}</td>'
-                      f'<td class="val" title="{_e(r["a"])} &rarr; {_e(r["b"])}: {r["ab"]} &middot; '
-                      f'{_e(r["b"])} &rarr; {_e(r["a"])}: {r["ba"]}">{r["w"]}</td></tr>')
-                h('</tbody></table></div>')
+            }, opened=(rel_mode == "open"))
+            if map_html:                       # too few nicks for a ring: only the table above is shown
+                section(t("Who talks to whom", lang))
+                h(map_html)
 
     # ── Karma ─────────────────────────────────────────────────────────────────
     if pisg.get("ShowKarma", True) and (karma_top or karma_bottom):

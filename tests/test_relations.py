@@ -187,13 +187,13 @@ class TestRendering:
 
     def test_hostile_nicks_are_escaped_everywhere(self):
         evil = '<x-evil a="\'>'
-        g = relations.build_graph([row(evil, "bob", 5), row("bob", evil, 2), row("bob", "alice", 3)])
+        g = relations.build_graph([row(evil, "bob", 5), row("bob", evil, 2), row("bob", "alice", 3), row("alice", "carol", 2)])
         out = relations.render(g, {"hint": "<x-hint>", "caption": "<x-caption>", "nicks": "<x-n>", "links": "<x-l>"})
         assert "<x-" not in out
         assert "&lt;x-evil" in out and "&lt;x-hint" in out
 
     def test_a_translation_with_a_wrong_placeholder_cannot_break_the_page(self):
-        g = relations.build_graph([row("alice", "bob", 5)])
+        g = relations.build_graph([row("alice", "bob", 5), row("bob", "carol", 3), row("carol", "dave", 2)])
         out = relations.render(g, {"link_title": "{nope}", "nick_title": "{x} {y}"})
         assert "alice" in out and "5 mentions" in out                     # fell back to the English text
 
@@ -304,3 +304,76 @@ def test_the_page_tells_readers_without_javascript_what_is_missing(client, talki
     page = client.get("/Net/chan/").get_data(as_text=True)
     assert "<noscript>" in page and "JavaScript is off" in page
     assert "JavaScript est désactivé" in client.get("/Net/chan/?lang=fr_FR").get_data(as_text=True)
+
+
+class TestSmallChannels:
+    """A ring for two or three people is a silly picture: it is only drawn when it means something."""
+
+    def test_no_ring_for_fewer_than_four_nicks(self):
+        assert relations.render(relations.build_graph([row("alice", "bob", 9)]), {}) == ""
+        assert relations.render(relations.build_graph([row("a", "b", 5), row("b", "c", 2)]), {}) == ""
+
+    def test_four_nicks_are_enough(self):
+        out = relations.render(relations.build_graph([row("a", "b", 5), row("b", "c", 2), row("c", "d", 1)]), {})
+        assert 'id="rel"' in out and out.count('class="node"') == 4
+
+    def test_the_picture_grows_with_the_channel(self):
+        small = relations.render(relations.build_graph([row("a", "b", 5), row("b", "c", 2), row("c", "d", 1)]), {})
+        big = relations.render(relations.build_graph(big_channel(), 40), {})
+        width = lambda html: int(re.search(r'style="max-width:(\d+)px"', html).group(1))
+        assert width(small) < 450 < width(big) <= 820
+
+    def test_a_slider_that_cannot_move_is_not_shown(self):
+        few = relations.render(relations.build_graph([row("a", "b", 1), row("b", "c", 1), row("c", "d", 1)]), {})
+        assert 'id="rel-k"' not in few and 'id="rel-w"' not in few and 'class="rel-controls' not in few   # 4 nicks, all weight 1
+        five = relations.render(relations.build_graph([row("a", "b", 4), row("b", "c", 2), row("c", "d", 1), row("d", "e", 1)]), {})
+        assert 'id="rel-k"' not in five and 'id="rel-w"' in five                                 # weights differ, nicks do not
+        many = relations.render(relations.build_graph(big_channel(), 40), {})
+        assert 'id="rel-k"' in many and 'id="rel-w"' in many
+
+    def test_the_script_copes_with_missing_sliders(self):
+        assert "data-start-weight" in relations.render(relations.build_graph(dense_channel(6, 0.9)), {})
+        assert "if(kIn)kIn.addEventListener" in relations.JS and "wIn?+wIn.value:w0" in relations.JS
+
+
+def test_a_tiny_conversation_shows_the_table_but_no_ring(client, sensors):
+    for n in ("alice", "bob"):
+        sensors.on_join(n, f"{n}@h", CHAN)
+        sensors.on_privmsg(n, f"{n}@h", CHAN, "hello everyone, good to be here")
+    sensors.on_privmsg("alice", "alice@h", CHAN, "bob: how are you doing today")
+    page = client.get("/Net/chan/").get_data(as_text=True)
+    assert 'id="rel"' not in page and "Who talks to whom" not in page
+    assert "Closest pairs" in page and "alice &harr; bob" in page
+
+
+class TestFoldedMap:
+    """The map is a big picture: folded away by default, with the compact pairs table first."""
+
+    def html(self, client):
+        return client.get("/Net/chan/").get_data(as_text=True)
+
+    def test_the_map_is_closed_by_default_and_the_pairs_come_first(self, client, talking_channel):
+        page = self.html(client)
+        assert "<details><summary>Show the map (5 nicks)</summary>" in page
+        assert page.index("Closest pairs") < page.index("Who talks to whom")
+
+    def test_it_can_be_opened_by_default_per_channel(self, client, talking_channel, db):
+        db.set_channel_config(NET, CHAN, "pisg.RelationMap", "open")
+        assert "<details open><summary>" in self.html(client)
+
+    def test_it_can_be_left_out_while_the_table_stays(self, client, talking_channel, db):
+        db.set_channel_config(NET, CHAN, "pisg.RelationMap", "off")
+        page = self.html(client)
+        assert 'id="rel"' not in page and "Closest pairs" in page
+
+    def test_an_unknown_value_means_closed(self, client, talking_channel, db):
+        db.set_channel_config(NET, CHAN, "pisg.RelationMap", "sideways")
+        assert "<details><summary>" in self.html(client)
+
+    def test_the_summary_is_translated(self, client, talking_channel):
+        assert "Afficher la carte (5 pseudos)" in client.get("/Net/chan/?lang=fr_FR").get_data(as_text=True)
+
+    def test_the_folded_map_still_works_without_javascript(self):
+        out = relations.render(relations.build_graph(big_channel(), 40), {})
+        assert out.count("<details") == 1 and "</details>" in out and out.index("<details") < out.index("<svg")
+        assert out.count('class="node"') == 40                                # everything is in the markup, just folded

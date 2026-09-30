@@ -516,3 +516,6 @@ msgstr ""
 
 msgid "JavaScript is off: the charts, the time-of-day bars and the language and theme switches need it. All the numbers below work without it."
 msgstr ""
+
+msgid "Show the map ({n} nicks)"
+msgstr ""

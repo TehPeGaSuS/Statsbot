@@ -465,3 +465,6 @@ msgstr "Vermeldingen"
 
 msgid "JavaScript is off: the charts, the time-of-day bars and the language and theme switches need it. All the numbers below work without it."
 msgstr "JavaScript staat uit: de grafieken, de tijdbalken en de taal- en themakeuze hebben het nodig. Alle cijfers hieronder werken ook zonder."
+
+msgid "Show the map ({n} nicks)"
+msgstr "Toon de kaart ({n} nicks)"

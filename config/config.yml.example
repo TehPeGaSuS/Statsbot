@@ -183,6 +183,7 @@ pisg:
   RelationNicks: 40            # nicks in the map (5-60); the reader can show fewer
   RelationMinWeight: 0         # mentions a link needs to show at first (0 = automatic)
   RelationPairs: 10            # rows in the "Closest pairs" table
+  RelationMap: closed          # the map is folded away: closed (default), open or off
   ShowMru: true
   ShowLegend: true
 

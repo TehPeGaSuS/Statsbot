@@ -9,7 +9,7 @@ from conftest import CHAN, NET, make_config
 
 LABELS = ["nickA", "nickB", "quote", "url", "kicker", "kickreason", "topic", "setby", "word", "lastusedby",
           "smiley", "refby", "refnick", "karmanick", "capsex", "foulex", "actionex", "violentex",
-          "attackedex", "sibling", "relnick"]
+          "attackedex", "sibling", "relnick", "relnick2"]
 
 
 def hostile(label):
@@ -57,9 +57,10 @@ def page(tmp_path_factory):
         c.execute("INSERT INTO bot_channels(network,channel,enabled) VALUES(?,?,1)", (NET, CHAN))
         c.execute("INSERT INTO bot_channels(network,channel,enabled) VALUES(?,?,1)", (NET, "#" + hostile("sibling")))
     # the relation map and the closest-pairs table (three hostile people talking to each other)
-    third = hostile("relnick")
+    third, fourth = hostile("relnick"), hostile("relnick2")          # four nicks: enough for the ring itself
     for _ in range(4):
-        db.add_pair(NET, CHAN, a, b); db.add_pair(NET, CHAN, b, third); db.add_pair(NET, CHAN, third, a)
+        db.add_pair(NET, CHAN, a, b); db.add_pair(NET, CHAN, b, third); db.add_pair(NET, CHAN, third, fourth)
+        db.add_pair(NET, CHAN, fourth, a)
     # a second word so the "most used words" table is not filtered away, and a nick that mentions
     cfg = make_config(pisg={"BigNumbersThreshold": 1, "WordLength": 3, "ShowOps": True, "ShowVoice": True,
                             "ShowHalfops": True, "ShowTime": True, "MinQuote": 1, "MaxQuote": 500})

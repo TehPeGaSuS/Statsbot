@@ -659,6 +659,11 @@ that shows about two links per nick. **Default:** `0`
 #### `RelationPairs`
 Rows in the "Closest pairs" table (0 hides it). **Default:** `10`
 
+#### `RelationMap`
+The map is a big picture, so it is folded away under "Show the map": `closed` (default), `open` to show
+it unfolded, or `off` to leave it out and keep only the pairs table. With fewer than four nicks there
+is no map. **Default:** `closed`
+
 The pairs are kept in the database; ones seen fewer than three times and not for `stats.pair_keep_days`
 days (default `60`) are forgotten every night.
 

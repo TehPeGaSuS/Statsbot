@@ -5,6 +5,15 @@ and versions follow [Semantic Versioning](https://semver.org/). Everything relea
 file existed is treated as 1.0.0. Check what you are running with `python main.py --version`
 (it is also shown in the footer of every stats page).
 
+## [1.3.1] - 2026-10-01
+
+### Changed
+- The "Who talks to whom" map is folded away by default ("Show the map (N nicks)"): it is a big picture
+  and pushed the rest of the page down. The compact **Closest pairs** table now comes first. The new
+  option `RelationMap` (`closed` by default, `open`, or `off`) changes that per channel.
+- With fewer than four nicks there is no ring at all, only the pairs table; a smaller channel gets a
+  smaller picture; a slider that could not move (few nicks, all links equally strong) is not shown.
+
 ## [1.3.0] - 2026-10-01
 
 ### Added

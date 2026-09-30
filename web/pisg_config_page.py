@@ -40,6 +40,7 @@ _PISG_DEFAULTS = {
     "RelationNicks":           40,
     "RelationMinWeight":       0,
     "RelationPairs":           10,
+    "RelationMap":             "closed",
     "ShowMru":                 True,
     "ShowLegend":              True,
     "TopicHistory":            5,
