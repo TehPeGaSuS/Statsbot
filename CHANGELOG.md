@@ -5,6 +5,13 @@ and versions follow [Semantic Versioning](https://semver.org/). Everything relea
 file existed is treated as 1.0.0. Check what you are running with `python main.py --version`
 (it is also shown in the footer of every stats page).
 
+## [1.4.1] - 2026-10-01
+
+### Changed
+- "These didn't make it to the top" is now a compact grid of `nick (number)`, like pisg's, instead of
+  a second copy of the big table. The number is the one the table is ranked by (words by default).
+  It also saves one database query per listed nick.
+
 ## [1.4.0] - 2026-10-01
 
 ### Added

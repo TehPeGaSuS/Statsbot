@@ -366,6 +366,13 @@ h2.section-title {{ font-size: .8rem; color: var(--blue); text-transform: upperc
 .bar-fill {{ height: 100%; border-radius: 3px;
              background: linear-gradient(90deg, var(--tab-act), var(--blue)); }}
 
+.rest-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0;
+              border-top: 1px solid var(--bg3); }}
+.rest-grid span {{ padding: .4rem .7rem; border-bottom: 1px solid var(--bg3); font-size: .88rem;
+                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+.rest-grid b {{ color: var(--green); font-weight: bold; }}
+.rest-grid i {{ color: var(--muted); font-style: normal; }}
+
 /* Also active */
 .also-active {{ margin: .5rem 0 1.5rem; }}
 .also-active-title {{ color: var(--blue); font-style: italic; font-size: .85rem; margin-bottom: .4rem; }}
@@ -653,69 +660,16 @@ b {{ color: var(--cyan); }}
 
     h('</tbody></table></div>')
 
-    # "These didn't make the top" — mirrors the main nick table styling/columns
+    # "These didn't make it to the top": just the names and their lines, in a compact grid
     if rest_rows:
-        rest_max = rest_rows[0]["value"] if rest_rows else 1
-        h(f'<div class="also-active">')
+        h('<div class="also-active">')
         _also_active_label = t("These didn't make it to the top:", lang)
         h(f'<div class="also-active-title"><i>{_also_active_label}</i></div>')
-        h('<div class="tscroll"><table class="nick-table sortable-table"><thead><tr>')
-        h('<th class="rank">#</th><th data-col="nick">Nick</th>')
-        if show_lines:    h(f'<th data-col="num">{t("Number of lines", lang)}</th>')
-        if show_words:    h(f'<th data-col="num">{t("Number of Words", lang)}</th>')
-        if show_wpl:      h(f'<th data-col="num">{t("Words per line", lang)}</th>')
-        if show_cpl:      h(f'<th data-col="num">{t("Chars per line", lang)}</th>')
-        if show_time:     h(f'<th>{t("When?", lang)}</th>')
-        if show_lastseen: h(f'<th data-col="num">{t("Last seen", lang)}</th>')
-        if show_quote:    h(f'<th>{t("Random quote", lang)}</th>')
-        h('</tr></thead><tbody>')
-
-        for i, row in enumerate(rest_rows):
-            nick  = row["nick"]
-            st    = nick_stats.get(nick, {})
-            lines = st.get("lines", 0)
-            words = st.get("words", 0)
-            wpl   = f"{words/lines:.1f}" if lines else "0"
-            cpl   = f"{st.get('letters',0)/lines:.1f}" if lines else "0"
-            _last_ts = st.get("last_seen", 0)
-            last  = _ago(_last_ts, lang)
-            pct   = int(row["value"] / rest_max * 100) if rest_max else 0
-
-            # Random quote (same logic as main table)
-            q = ""
-            if show_quote:
-                min_q = pisg.get("MinQuote", 25)
-                max_q = pisg.get("MaxQuote", 65)
-                from database.models import get_quote_for_nick, get_conn as _gc2
-                with _gc2() as _qc:
-                    _qrows = _qc.execute(
-                        """SELECT q.quote FROM quotes q JOIN nicks n ON n.id=q.nick_id
-                           WHERE n.nick=? AND n.network=? AND n.channel=?
-                           AND length(q.quote) BETWEEN ? AND ?
-                           ORDER BY RANDOM() LIMIT 1""",
-                        (nick, network, channel, min_q, max_q)
-                    ).fetchone()
-                if _qrows:
-                    q = _qrows["quote"][:80]
-                else:
-                    qr = get_quote_for_nick(nick, network, channel)
-                    q  = qr["quote"][:80] if qr else ""
-
-            h('<tr>')
-            h(f'<td class="rank">{top_n + i + 1}</td>')
-            h(f'<td><span class="nick-name">{_e(nick)}</span><br>'
-              f'<div class="bar-wrap"><div class="bar-fill" style="width:{pct}%"></div></div></td>')
-            if show_lines: h(f'<td class="val" data-val="{lines}">{lines:,}</td>')
-            if show_words: h(f'<td class="val" data-val="{words}">{words:,}</td>')
-            if show_wpl:   h(f'<td data-val="{wpl}">{wpl}</td>')
-            if show_cpl:   h(f'<td data-val="{cpl}">{cpl}</td>')
-            if show_time:
-                _nh = json.dumps(nick_hours_raw.get(nick, [0]*24))
-                h(f'<td class="tz-bands" data-hours="{_nh}" style="white-space:nowrap"></td>')
-            if show_lastseen: h(f'<td class="small" data-val="{_last_ts}">{last}</td>')
-            if show_quote:    h(f'<td class="quote-cell" title="{_e(q)}"><div>{_e(q)}</div></td>')
-            h('</tr>')
-        h('</tbody></table></div></div>')
+        h('<div class="rest-grid">')
+        for row in rest_rows:
+            count = row["value"]                          # the same number the table is ranked by
+            h(f'<span><b>{_e(row["nick"])}</b> <i>({count:,})</i></span>')
+        h('</div></div>')
     # "By the way, there were X other nicks"
     total_other = total_users - len(top_rows) - len(rest_rows)
     if total_other > 0:

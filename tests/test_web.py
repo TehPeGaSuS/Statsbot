@@ -1,4 +1,5 @@
 """web/dashboard.py and web/pisg_page.py: the public pages."""
+import re
 import pytest
 
 from conftest import CHAN, NET, make_config
@@ -193,3 +194,27 @@ class TestNickChanges:
             sensors.on_nick("alice", "a@h", new, [CHAN])
         r = client.get("/Net/chan/?lang=fr_FR")
         assert "changements de pseudo" in r.get_data(as_text=True)
+
+
+class TestRestOfTheActiveNicks:
+    """"These didn't make it to the top" is a compact list: the nick and the number it is ranked by."""
+
+    def test_a_compact_grid_with_the_ranking_number(self, client, sensors, db):
+        cfg_rows = ["u%02d" % i for i in range(30)]
+        for i, n in enumerate(cfg_rows):
+            sensors.on_privmsg(n, f"{n}@h", CHAN, "word " * (40 - i) + "end")
+        page = client.get("/Net/chan/").get_data(as_text=True)
+        assert 'class="rest-grid"' in page
+        grid = page.split('class="rest-grid"')[1].split("</div>")[0]
+        assert "<b>u25</b>" in grid and "<b>u00</b>" not in grid          # u00 is in the main table
+        assert re.search(r"<b>u25</b> <i>\((\d+)\)</i>", grid)             # words, the default ranking
+
+    def test_no_grid_when_everybody_fits_in_the_top_table(self, client, sensors):
+        sensors.on_privmsg("alice", "a@h", CHAN, "hello there everybody")
+        assert 'class="rest-grid"' not in client.get("/Net/chan/").get_data(as_text=True)
+
+    def test_nicks_in_the_grid_are_escaped(self, client, sensors):
+        for i in range(30):
+            sensors.on_privmsg("<i>x%02d" % i, "a@h", CHAN, "word " * (40 - i) + "end")
+        page = client.get("/Net/chan/").get_data(as_text=True)
+        assert "<i>x29" not in page and "&lt;i&gt;x29" in page
