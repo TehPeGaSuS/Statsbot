@@ -945,69 +945,6 @@ def count_users(network: str, channel: str) -> int:
         return row["c"] if row else 0
 
 
-# ─── Ignore List ─────────────────────────────────────────────────────────────
-
-def add_ignore(pattern: str, network: str = '*', added_by: str = None):
-    """Add a nick or mask to the ignore list."""
-    with get_conn() as conn:
-        conn.execute(
-            "INSERT OR REPLACE INTO ignored(network,pattern,added_by,added_at) VALUES(?,?,?,?)",
-            (network, pattern.lower(), added_by, int(time.time()))
-        )
-
-
-def del_ignore(pattern: str, network: str = '*'):
-    """Remove a nick or mask from the ignore list."""
-    with get_conn() as conn:
-        conn.execute(
-            "DELETE FROM ignored WHERE network=? AND pattern=?",
-            (network, pattern.lower())
-        )
-
-
-def list_ignores(network: str = None) -> List[Dict]:
-    with get_conn() as conn:
-        if network:
-            rows = conn.execute(
-                "SELECT * FROM ignored WHERE network=? OR network='*' ORDER BY pattern",
-                (network,)
-            ).fetchall()
-        else:
-            rows = conn.execute("SELECT * FROM ignored ORDER BY network, pattern").fetchall()
-        return [dict(r) for r in rows]
-
-
-def is_ignored(nick: str, network: str, host: str = None) -> bool:
-    """
-    Return True if nick (or nick!user@host) matches any ignore pattern.
-
-    Patterns are matched against:
-      - the nick alone              e.g. ChanServ, *Bot*
-      - the full hostmask           e.g. *!*@services.ptirc.org
-    If host is provided, both forms are checked.
-    """
-    import fnmatch
-    nick_l = nick.lower()
-    full_mask = f"{nick_l}!{host.lower()}" if host else None
-
-    with get_conn() as conn:
-        rows = conn.execute(
-            "SELECT pattern FROM ignored WHERE network=? OR network='*'",
-            (network,)
-        ).fetchall()
-
-    for row in rows:
-        pat = row["pattern"]
-        # Hostmask pattern (contains ! or @) — match against full mask
-        if '!' in pat or '@' in pat:
-            if full_mask and fnmatch.fnmatch(full_mask, pat):
-                return True
-        else:
-            # Nick-only pattern
-            if fnmatch.fnmatch(nick_l, pat) or nick_l == pat:
-                return True
-    return False
-
 # ─── Masters ─────────────────────────────────────────────────────────────────
 
 def add_master(pattern: str, network: str = '*', added_by: str = None):

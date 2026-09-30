@@ -788,15 +788,16 @@ b {{ color: var(--cyan); }}
                 _ac = at[0]["value"]
                 atext = tn("{nick} seems to be unliked. They got beaten {count} time.", "{nick} seems to be unliked. They got beaten {count} times.", _ac, lang, nick=f"<b>{_e(at[0]['nick'])}</b>", count=f"<b>{_e(_ac)}</b>")
                 asub  = t("{nick} seems to be unliked too. They got beaten {count} times.", lang, nick=f"<b>{_e(at[1]['nick'])}</b>", count=f"<b>{_e(at[1]['value'])}</b>") if len(at) > 1 else None
+                # the example of the most attacked nick is a line in which *they* were attacked
                 with get_conn() as _aconn:
                     _arow = _aconn.execute(
-                        "SELECT s.violent_ex FROM stats s JOIN nicks n ON n.id=s.nick_id "
-                        "WHERE n.nick=? AND n.network=? AND n.channel=? AND s.period=?",
-                        (vt[0]["nick"], network, channel, period)
+                        "SELECT s.attacked_ex FROM stats s JOIN nicks n ON n.id=s.nick_id "
+                        "WHERE n.nick=? AND n.network=? AND n.channel=? AND s.period=0",
+                        (at[0]["nick"], network, channel)
                     ).fetchone()
                 # Truncate the example line after the first victim nick appears
                 # to avoid showing bystander nicks from lines like "* X slaps Y around with Z"
-                _raw_ax = strip_irc(_arow["violent_ex"]) if _arow and _arow["violent_ex"] else None
+                _raw_ax = strip_irc(_arow["attacked_ex"]) if _arow and _arow["attacked_ex"] else None
                 if _raw_ax and at:
                     _victim = at[0]["nick"]
                     _vi = _raw_ax.lower().find(_victim.lower())

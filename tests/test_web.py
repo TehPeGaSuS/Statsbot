@@ -142,3 +142,21 @@ class TestChatTextIsNeverMarkup:
 
     def test_the_text_is_still_shown(self, hostile_page):
         assert "alert(1)" in hostile_page          # escaped, but visible to the reader
+
+
+class TestAttackedExample:
+    """The 'got beaten' line must be an example of THAT nick being attacked."""
+
+    def test_the_example_belongs_to_the_most_attacked_nick(self, client, sensors):
+        for n in ("alice", "bob", "carol", "dave", "erin", "frank"):
+            sensors.on_join(n, f"{n}@h", CHAN)
+            sensors.on_privmsg(n, f"{n}@h", CHAN, "hello there everyone, good day")
+        # alice is the biggest attacker (3 victims); dave is the most attacked (twice, by frank)
+        for victim in ("bob", "carol", "erin"):
+            sensors.on_action("alice", "alice@h", CHAN, f"slaps {victim} around with a trout")
+        for weapon in ("fish", "boot"):
+            sensors.on_action("frank", "frank@h", CHAN, f"slaps dave around with a {weapon}")
+        html = client.get(f"/{NET}/chan/").get_data(as_text=True)
+        cell = html.split("They got beaten", 1)[1].split("</td>", 1)[0]     # the "unliked" cell
+        assert "frank slaps dave" in cell
+        assert "alice slaps bob" not in cell            # that is the attacker's example, shown elsewhere
