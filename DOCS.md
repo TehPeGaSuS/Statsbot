@@ -729,7 +729,7 @@ Compared with [pisg](https://github.com/PISG/pisg) 1.0a (2026-09-21).
 | Feature | pisg | Statsbot |
 |---------|------|----------|
 | Data source | Log files | Live IRC bot (real-time) |
-| Log parsers | 46 formats, one per client / bot (the WeeChat one, unchanged since 2016, cannot read the timestamps WeeChat has written by default since 4.8.0, 2025-11-30) | Not needed — Statsbot is the client and receives the events directly, so no client's log format can break it |
+| Log parsers | 46 formats, one per client / bot | Not needed — Statsbot is the client and receives the events directly, so no client's log format can break it |
 | Tracking | Per-mask (nick!user@host) | Per-nick |
 | Nick merging | Aliases + NickTracking (an optional script merges nicks by account) | Not supported (each nick is its own entry) |
 | Output | Static HTML file | Live Flask web server |
