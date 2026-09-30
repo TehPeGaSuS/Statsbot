@@ -5,6 +5,21 @@ and versions follow [Semantic Versioning](https://semver.org/). Everything relea
 file existed is treated as 1.0.0. Check what you are running with `python main.py --version`
 (it is also shown in the footer of every stats page).
 
+## [1.4.0] - 2026-10-01
+
+### Added
+- **Pick a nick on the "Who talks to whom" map.** Click a nick, or choose it in the new "Focus on"
+  list, and it moves to the middle with the people it talks to around it: the more they talk, the
+  closer they sit. Everyone else fades. Click another nick to move on, click the middle one (or
+  choose "everyone") to go back to the ring. Needs JavaScript; without it the map and the
+  Closest pairs table work as before.
+- Dots on the map are sized by how many lines each nick said (before: by how many mentions it is part of).
+- **Other interesting numbers**: the nick that changed its nick most ("can't settle on a name"),
+  shown when someone changed it at least twice. Translated into all five languages.
+
+### Changed
+- The map's hint text now mentions the new focus view (translated).
+
 ## [1.3.1] - 2026-10-01
 
 ### Changed

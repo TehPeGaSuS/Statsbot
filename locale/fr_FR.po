@@ -483,8 +483,19 @@ msgstr[1] "{count} sujets définis"
 msgid "Who talks to whom"
 msgstr "Qui parle à qui"
 
-msgid "Hover or click a nick to see who it talks to."
-msgstr "Survolez ou cliquez sur un pseudo pour voir à qui il parle."
+msgid "Hover a nick to see who it talks to; click it (or pick it below) to put it in the middle."
+msgstr "Survolez un pseudo pour voir à qui il parle ; cliquez dessus (ou choisissez-le ci-dessous) pour le mettre au centre."
+
+msgid "Focus on"
+msgstr "Centrer sur"
+
+msgid "everyone"
+msgstr "tout le monde"
+
+msgid "{nick} can't settle on a name: {count} nick change."
+msgid_plural "{nick} can't settle on a name: {count} nick changes."
+msgstr[0] "{nick} n'arrive pas à choisir un pseudo : {count} changement de pseudo."
+msgstr[1] "{nick} n'arrive pas à choisir un pseudo : {count} changements de pseudo."
 
 msgid "Showing the {n} most connected of {total} nicks. Colours are groups of people who mostly talk to each other."
 msgstr "Les {n} pseudos les plus connectés sur {total}. Les couleurs sont des groupes de personnes qui se parlent surtout entre elles."

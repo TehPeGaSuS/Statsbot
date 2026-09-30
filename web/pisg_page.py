@@ -994,13 +994,17 @@ b {{ color: var(--cyan); }}
         rel_graph = _relations.build_graph(
             rel_pairs,
             _relations.clamp_int(pisg.get("RelationNicks"), _relations.DEFAULT_NODES, _relations.MIN_NODES, _relations.MAX_NODES),
-            _relations.clamp_int(pisg.get("RelationMinWeight"), 0, 0, 1000000)) if rel_mode != "off" else None
+            _relations.clamp_int(pisg.get("RelationMinWeight"), 0, 0, 1000000),
+            {r["nick"].lower(): r["value"] for r in get_top(network, channel, "lines", period, 500)}
+        ) if rel_mode != "off" else None
         if rel_graph:
             shown_n, everyone_n = len(rel_graph["nodes"]), rel_graph["everyone"]
             map_html = _relations.render(rel_graph, {
                 "aria":       t("Who talks to whom", lang),
                 "summary":    t("Show the map ({n} nicks)", lang),
-                "hint":       t("Hover or click a nick to see who it talks to.", lang),
+                "hint":       t("Hover a nick to see who it talks to; click it (or pick it below) to put it in the middle.", lang),
+                "focus":      t("Focus on", lang),
+                "everyone":   t("everyone", lang),
                 "caption":    (t("Showing the {n} most connected of {total} nicks. Colours are groups of people who mostly talk to each other.",
                                  lang, n=shown_n, total=everyone_n)
                                if everyone_n > shown_n else
@@ -1204,6 +1208,14 @@ b {{ color: var(--cyan); }}
         if jn:
             _jv = jn[0]["value"]
             _bignum_row(tn("{nick} couldn't decide whether to stay or go: {count} join.", "{nick} couldn't decide whether to stay or go: {count} joins.", _jv, lang, nick=f"<b>{_e(jn[0]['nick'])}</b>", count=_jv))
+
+    # Most nick changes
+    if pisg.get("ShowBigNumbers", True):
+        nc = get_top(network, channel, "nicks", period, 1)
+        nc = [r for r in nc if r["value"] > 1]
+        if nc:
+            _nv = nc[0]["value"]
+            _bignum_row(tn("{nick} can't settle on a name: {count} nick change.", "{nick} can't settle on a name: {count} nick changes.", _nv, lang, nick=f"<b>{_e(nc[0]['nick'])}</b>", count=_nv))
 
     # Most foul
     if pisg.get("ShowBigNumbers", True) and qualified:

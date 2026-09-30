@@ -484,8 +484,19 @@ msgstr[1] ""
 msgid "Who talks to whom"
 msgstr ""
 
-msgid "Hover or click a nick to see who it talks to."
+msgid "Hover a nick to see who it talks to; click it (or pick it below) to put it in the middle."
 msgstr ""
+
+msgid "Focus on"
+msgstr ""
+
+msgid "everyone"
+msgstr ""
+
+msgid "{nick} can't settle on a name: {count} nick change."
+msgid_plural "{nick} can't settle on a name: {count} nick changes."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "Showing the {n} most connected of {total} nicks. Colours are groups of people who mostly talk to each other."
 msgstr ""

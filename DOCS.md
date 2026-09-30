@@ -645,6 +645,11 @@ mostly talk to each other are grouped in the same coloured arc, and the width of
 number of mentions. Below it, the "Closest pairs" table lists the strongest links. A link is counted
 each time a line mentions a nick that is in the channel. The section follows the period tabs.
 
+Hover a nick to see its links. Click it, or pick it from the "Focus on" list, to put it in the middle
+with the people it talks to around it (closer means more mentions); click it again to go back to the
+ring. Dots are sized by the lines each nick said. This needs JavaScript; without it you still get
+the folded map and the "Closest pairs" table.
+
 #### `ShowRelations`
 Show the section. **Default:** `true`
 

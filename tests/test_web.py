@@ -160,3 +160,36 @@ class TestAttackedExample:
         cell = html.split("They got beaten", 1)[1].split("</td>", 1)[0]     # the "unliked" cell
         assert "frank slaps dave" in cell
         assert "alice slaps bob" not in cell            # that is the attacker's example, shown elsewhere
+
+
+class TestNickChanges:
+    """"Other interesting numbers" names the nick that changed its nick most."""
+
+    def page(self, client):
+        r = client.get("/Net/chan/")
+        assert r.status_code == 200
+        return r.get_data(as_text=True)
+
+    def test_a_restless_nick_is_named(self, client, sensors):
+        sensors.on_join("alice", "a@h", CHAN)
+        sensors.on_privmsg("alice", "a@h", CHAN, "hello there everybody")
+        for new in ("alice_", "alice__", "alice___"):
+            sensors.on_nick("alice", "a@h", new, [CHAN])
+        page = self.page(client)
+        assert "can&#x27;t settle on a name" in page or "can't settle on a name" in page
+        assert "3 nick changes" in page
+
+    def test_one_change_is_not_worth_a_line(self, client, sensors):
+        sensors.on_join("alice", "a@h", CHAN)
+        sensors.on_privmsg("alice", "a@h", CHAN, "hello there everybody")
+        sensors.on_nick("alice", "a@h", "alice_", [CHAN])
+        page = self.page(client)
+        assert "settle on a name" not in page
+
+    def test_the_line_is_translated(self, client, sensors):
+        sensors.on_join("alice", "a@h", CHAN)
+        sensors.on_privmsg("alice", "a@h", CHAN, "hello there everybody")
+        for new in ("alice_", "alice__"):
+            sensors.on_nick("alice", "a@h", new, [CHAN])
+        r = client.get("/Net/chan/?lang=fr_FR")
+        assert "changements de pseudo" in r.get_data(as_text=True)

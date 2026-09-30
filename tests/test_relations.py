@@ -273,6 +273,10 @@ class TestOnThePage:
         assert "Qui parle à qui" in self.html(client, "/Net/chan/?lang=fr_FR")
         assert "Chi parla con chi" in self.html(client, "/Net/chan/?lang=it_IT")
 
+    def test_dots_follow_lines_said(self, client, talking_channel):
+        sizes = re.findall(r'data-r="([\d.]+)"', self.html(client))
+        assert sizes and len(set(sizes)) > 1
+
     def test_the_options_can_be_set_over_pm(self):
         from web.pisg_config_page import _PISG_DEFAULTS
         for key in relations.OPTION_DEFAULTS:
@@ -325,7 +329,7 @@ class TestSmallChannels:
 
     def test_a_slider_that_cannot_move_is_not_shown(self):
         few = relations.render(relations.build_graph([row("a", "b", 1), row("b", "c", 1), row("c", "d", 1)]), {})
-        assert 'id="rel-k"' not in few and 'id="rel-w"' not in few and 'class="rel-controls' not in few   # 4 nicks, all weight 1
+        assert 'id="rel-k"' not in few and 'id="rel-w"' not in few and 'id="rel-pick"' in few    # 4 nicks, all weight 1: only the picker
         five = relations.render(relations.build_graph([row("a", "b", 4), row("b", "c", 2), row("c", "d", 1), row("d", "e", 1)]), {})
         assert 'id="rel-k"' not in five and 'id="rel-w"' in five                                 # weights differ, nicks do not
         many = relations.render(relations.build_graph(big_channel(), 40), {})
@@ -377,3 +381,49 @@ class TestFoldedMap:
         out = relations.render(relations.build_graph(big_channel(), 40), {})
         assert out.count("<details") == 1 and "</details>" in out and out.index("<details") < out.index("<svg")
         assert out.count('class="node"') == 40                                # everything is in the markup, just folded
+
+
+class TestFocusView:
+    """Picking a nick puts it in the middle with the people it talks to around it."""
+
+    def graph(self, activity=None):
+        return relations.build_graph([row("a", "b", 9), row("b", "c", 3), row("c", "d", 1), row("d", "e", 1)], 40, 0, activity)
+
+    def test_dots_are_sized_by_lines_said_when_known(self):
+        by_mentions = {n["key"]: n["size"] for n in self.graph()["nodes"]}
+        by_lines = {n["key"]: n["size"] for n in self.graph({"e": 500, "a": 5, "b": 5, "c": 5, "d": 5})["nodes"]}
+        assert by_mentions["b"] > by_mentions["e"]                         # b is in more mentions
+        assert by_lines["e"] == max(by_lines.values()) and by_lines["e"] > by_lines["a"]
+
+    def test_unknown_activity_falls_back_to_mentions(self):
+        assert self.graph({"nobody": 9}) == self.graph()
+        assert self.graph({}) == self.graph()
+
+    def test_a_silent_nick_still_gets_a_visible_dot(self):
+        sizes = [n["size"] for n in self.graph({"a": 40})["nodes"]]
+        assert min(sizes) >= 4
+
+    def test_the_markup_carries_what_the_script_needs(self):
+        out = relations.render(self.graph(), {})
+        assert len(re.findall(r'<g class="node" data-rank="\d+" data-a="-?[\d.]+" data-r="[\d.]+"', out)) == 5
+
+    def test_there_is_a_picker_with_every_nick(self):
+        out = relations.render(self.graph(), {"focus": "Focus on", "everyone": "everyone"})
+        picker = re.search(r'<select id="rel-pick">(.*?)</select>', out).group(1)
+        assert picker.count("<option") == 6 and ">everyone<" in picker
+        assert re.findall(r'<option value="(\d+)">', picker) and "Focus on" in out
+
+    def test_the_picker_is_only_for_people_with_javascript(self):
+        out = relations.render(self.graph(), {})
+        assert re.search(r'class="rel-controls js-only".*id="rel-pick"', out)
+
+    def test_the_script_has_a_way_back(self):
+        js = relations.JS
+        for needle in ("function ego(", "function rest(", "homeD", "'M0 0L'", "pinned===i"):
+            assert needle in js
+        assert js.index("rest();") < js.index("if(pinned===i)ego(i)")      # always start from the ring
+
+    def test_nicks_in_the_picker_are_html_escaped(self):
+        g = relations.build_graph([row("<b>x</b>", "b", 9), row("b", "c", 3), row("c", "d", 1)])
+        out = relations.render(g, {})
+        assert "<b>x</b>" not in out and "&lt;b&gt;x&lt;/b&gt;" in out

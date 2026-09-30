@@ -433,8 +433,17 @@ msgstr ""
 msgid "Who talks to whom"
 msgstr "Wie praat met wie"
 
-msgid "Hover or click a nick to see who it talks to."
-msgstr "Beweeg over een nick of klik erop om te zien met wie die praat."
+msgid "Hover a nick to see who it talks to; click it (or pick it below) to put it in the middle."
+msgstr "Beweeg over een nick om te zien met wie die praat; klik erop (of kies hem hieronder) om hem in het midden te zetten."
+
+msgid "Focus on"
+msgstr "Focus op"
+
+msgid "everyone"
+msgstr "iedereen"
+
+msgid "{nick} can't settle on a name: {count} nick change."
+msgstr ""
 
 msgid "Showing the {n} most connected of {total} nicks. Colours are groups of people who mostly talk to each other."
 msgstr "De {n} meest verbonden nicks van {total}. De kleuren zijn groepen mensen die vooral met elkaar praten."

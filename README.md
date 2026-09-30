@@ -85,13 +85,14 @@ option names — `ActiveNicks`, `ShowBigNumbers`, `WordHistory`, etc. — so the
   minutes online, smileys (happy + sad separately), questions, CAPS lines,
   violent actions, foul language, monologues**
 - **Who talks to whom** — a map of the most connected nicks (people who mostly talk to each other
-  are grouped in coloured arcs; built to stay readable on busy channels) and a table of the closest pairs
+  are grouped in coloured arcs; built to stay readable on busy channels; click a nick to put it in the
+  middle with the people it talks to around it) and a table of the closest pairs
 - **Karma** — `nick++` / `nick--` suffix syntax; only counts if the target is
   in the channel; nicks containing `--` or `++` are handled correctly
   (e.g. `Mike----` awards −1 to nick `Mike--`)
 - **Big numbers** — questions, shouting %, CAPS %, violence + victim tracking
   with example lines, smiles %, sad %, line lengths, monologues, words per line
-- **Other interesting numbers** — kicks given/received, most actions, most joins,
+- **Other interesting numbers** — kicks given/received, most actions, most joins, most nick changes,
   foul language %
 - **Most active by hour** — 4-band table (0–5, 6–11, 12–17, 18–23)
 - **Most used words** — filterable by length and ignore list, with last-used-by nick

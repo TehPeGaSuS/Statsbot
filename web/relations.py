@@ -156,8 +156,12 @@ def _arrange(blocks, weights, passes: int = 8):
     return blocks
 
 
-def build_graph(pairs: List[Dict], max_nodes: int = DEFAULT_NODES, min_weight: int = 0) -> Optional[dict]:
+def build_graph(pairs: List[Dict], max_nodes: int = DEFAULT_NODES, min_weight: int = 0,
+                activity: Optional[Dict[str, int]] = None) -> Optional[dict]:
     """Directed pair counts -> what to draw. None when there is nothing to draw.
+
+    `activity` (lower-case nick -> lines said) sizes the dots by how much each nick talks; without
+    it they are sized by how many mentions they are part of.
 
     min_weight > 0 fixes the weight a link needs to be visible at first; 0 picks it so that
     about SHOWN_EDGES_PER_NODE links per nick are visible."""
@@ -209,7 +213,10 @@ def build_graph(pairs: List[Dict], max_nodes: int = DEFAULT_NODES, min_weight: i
     step = 2 * math.pi / slots
     angle = -math.pi / 2 + GAP * step / 2
     rank = {n: i for i, n in enumerate(chosen)}                          # by strength, 0 = most connected
-    top = max(strength[n] for n in chosen)
+    weight = strength
+    if activity and any(activity.get(n, 0) > 0 for n in chosen):
+        weight = {n: max(0, activity.get(n, 0)) for n in chosen}
+    top = max(weight[n] for n in chosen)
     nodes = []
     previous = None
     for n in ring_order:
@@ -219,7 +226,7 @@ def build_graph(pairs: List[Dict], max_nodes: int = DEFAULT_NODES, min_weight: i
             "key": n, "nick": names[n], "strength": strength[n], "rank": rank[n],
             "cluster": cluster_of[n], "angle": angle,
             "x": round(RING * math.cos(angle), 1), "y": round(RING * math.sin(angle), 1),
-            "size": round(4 + 9 * math.sqrt(strength[n] / top), 1),
+            "size": round(4 + 9 * math.sqrt(weight[n] / top), 1),
             "degree": sum(1 for k in inside if n in k),
         })
         angle += step
@@ -302,9 +309,13 @@ CSS = """
 #rel .node:focus{outline:none}#rel .node:focus circle{stroke:var(--blue)}
 #rel.dim .edge{opacity:.06}#rel.dim .node{opacity:.28}
 #rel.dim .edge.on{opacity:.9}#rel.dim .node.on{opacity:1}
-#rel .off{display:none}
+#rel .off,#rel .gone{display:none}
+#rel .node.centre circle{stroke:var(--text);stroke-width:4}
+#rel .node.centre text{font-weight:bold}
+#rel .rel-pick{color:var(--muted);font-size:.85rem}
+#rel .rel-pick select{background:var(--bg2);color:var(--text);border:1px solid var(--border,var(--muted));border-radius:4px;padding:.15rem .3rem;max-width:12rem}
 #rel .js-only{display:none}
-#rel.js .rel-controls{display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;justify-content:center;font-size:.85rem;color:var(--muted);margin-top:.4rem}
+#rel.js .rel-controls{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem 1.6rem;justify-content:center;font-size:.85rem;color:var(--muted);margin-top:.4rem}
 #rel.js .rel-hint.js-only{display:block}
 #rel .rel-controls input{vertical-align:middle;width:9rem}
 #rel .rel-hint{text-align:center;color:var(--muted);font-size:.8rem;margin:.2rem 0}
@@ -317,7 +328,10 @@ root.classList.add('js');        /* shows the hint and the sliders: without Java
 var svg=root.querySelector('svg'),nodes=[].slice.call(root.querySelectorAll('.node')),edges=[].slice.call(root.querySelectorAll('.edge'));
 var kIn=root.querySelector('#rel-k'),wIn=root.querySelector('#rel-w'),kOut=root.querySelector('#rel-kv'),wOut=root.querySelector('#rel-wv');
 var w0=+root.getAttribute('data-start-weight')||1;      /* used when there is no slider for it */
-var pinned=null;
+var pinned=null,pick=root.querySelector('#rel-pick');
+var home=nodes.map(function(n){var c=n.querySelector('circle'),t=n.querySelector('text');
+  return {c:c,t:t,cx:c.getAttribute('cx'),cy:c.getAttribute('cy'),tt:t.getAttribute('transform'),ta:t.getAttribute('text-anchor')}});
+var homeD=edges.map(function(e){return e.getAttribute('d')});
 function visibleNode(n){return !kIn||+n.getAttribute('data-rank')<+kIn.value}
 function apply(){
   var w=wIn?+wIn.value:w0;if(kOut)kOut.textContent=kIn.value;if(wOut)wOut.textContent=w;
@@ -325,19 +339,47 @@ function apply(){
   edges.forEach(function(e){var a=nodes[+e.getAttribute('data-a')],b=nodes[+e.getAttribute('data-b')];
     e.classList.toggle('off',!(visibleNode(a)&&visibleNode(b)&&+e.getAttribute('data-w')>=w))});
   focusOn(pinned)}
+function rest(){
+  nodes.forEach(function(n,i){var h=home[i];h.c.setAttribute('cx',h.cx);h.c.setAttribute('cy',h.cy);
+    h.t.setAttribute('transform',h.tt);h.t.setAttribute('text-anchor',h.ta);n.classList.remove('centre')});
+  edges.forEach(function(e,i){e.setAttribute('d',homeD[i]);e.classList.remove('gone')})}
+function put(i,x,y,left){var h=home[i],r=+nodes[i].getAttribute('data-r'),dx=left?-(r+7):(r+7);
+  h.c.setAttribute('cx',x);h.c.setAttribute('cy',y);
+  h.t.setAttribute('transform','translate('+(x+dx)+' '+y+')');h.t.setAttribute('text-anchor',left?'end':'start')}
+/* the nick in the middle, the people it talks to around it: the closer, the more they talk */
+function ego(i){
+  var near=[],top=1;
+  edges.forEach(function(e,k){var a=+e.getAttribute('data-a'),b=+e.getAttribute('data-b');
+    if(e.classList.contains('off')||(a!==i&&b!==i)){e.classList.add('gone');return}
+    var other=a===i?b:a,w=+e.getAttribute('data-w');top=Math.max(top,w);near.push({k:k,o:other,w:w})});
+  if(!near.length)return;
+  var base=+nodes[i].getAttribute('data-a'),step=2*Math.PI/near.length;
+  near.sort(function(p,q){var u=(+nodes[p.o].getAttribute('data-a')-base+8*Math.PI)%(2*Math.PI),
+    v=(+nodes[q.o].getAttribute('data-a')-base+8*Math.PI)%(2*Math.PI);return u-v});
+  put(i,0,0,false);nodes[i].classList.add('centre');
+  var big=near.length>14;
+  near.forEach(function(p,j){
+    var ang=-Math.PI/2+j*step,rad=95+(1-Math.sqrt(p.w/top))*(big?175:140)+(big&&j%2?22:0),
+        x=Math.round(rad*Math.cos(ang)*10)/10,y=Math.round(rad*Math.sin(ang)*10)/10;
+    put(p.o,x,y,x<0);edges[p.k].setAttribute('d','M0 0L'+x+' '+y)})}
 function focusOn(i){
+  rest();
   root.classList.toggle('dim',i!==null);
   nodes.forEach(function(n){n.classList.remove('on')});edges.forEach(function(e){e.classList.remove('on')});
+  if(pick)pick.value=(i===null?'':String(i));
   if(i===null)return;nodes[i].classList.add('on');
   edges.forEach(function(e){var a=+e.getAttribute('data-a'),b=+e.getAttribute('data-b');
-    if((a===i||b===i)&&!e.classList.contains('off')){e.classList.add('on');nodes[a].classList.add('on');nodes[b].classList.add('on')}})}
+    if((a===i||b===i)&&!e.classList.contains('off')){e.classList.add('on');nodes[a].classList.add('on');nodes[b].classList.add('on')}});
+  if(pinned===i)ego(i)}
+function choose(i){pinned=(pinned===i)?null:i;focusOn(pinned)}
 nodes.forEach(function(n,i){
   n.addEventListener('mouseenter',function(){if(pinned===null)focusOn(i)});
   n.addEventListener('mouseleave',function(){if(pinned===null)focusOn(null)});
   n.addEventListener('focus',function(){if(pinned===null)focusOn(i)});
   n.addEventListener('blur',function(){if(pinned===null)focusOn(null)});
-  n.addEventListener('click',function(){pinned=(pinned===i)?null:i;focusOn(pinned)});
-  n.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();pinned=(pinned===i)?null:i;focusOn(pinned)}})});
+  n.addEventListener('click',function(){choose(i)});
+  n.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();choose(i)}})});
+if(pick)pick.addEventListener('change',function(){pinned=pick.value===''?null:+pick.value;focusOn(pinned)});
 svg.addEventListener('click',function(ev){if(ev.target===svg){pinned=null;focusOn(null)}});
 if(kIn)kIn.addEventListener('input',apply);if(wIn)wIn.addEventListener('input',apply);apply();
 })();
@@ -380,7 +422,7 @@ def render(graph: Optional[dict], labels: Dict[str, str], opened: bool = False) 
         title = _fmt(labels.get("nick_title", NICK_TITLE), NICK_TITLE,
                      nick=n["nick"], links=n["degree"], w=n["strength"])
         parts.append(
-            f'<g class="node" data-rank="{n["rank"]}" tabindex="0" role="button">'
+            f'<g class="node" data-rank="{n["rank"]}" data-a="{round(n["angle"], 4)}" data-r="{n["size"]}" tabindex="0" role="button">'
             f"<title>{_e(title)}</title>"
             f'<circle cx="{n["x"]}" cy="{n["y"]}" r="{n["size"]}" fill="{_colour(n["cluster"])}"/>'
             f'<text transform="translate({tx} {ty}) rotate({round(rotate, 1)})" '
@@ -388,6 +430,10 @@ def render(graph: Optional[dict], labels: Dict[str, str], opened: bool = False) 
     parts.append("</svg>")
     shown = len(nodes)
     controls = []
+    options = "".join(f'<option value="{i}">{_e(n["nick"])}</option>'
+                      for i, n in sorted(enumerate(nodes), key=lambda p: p[1]["nick"].lower()))
+    controls.append(f'<label class="rel-pick">{_e(labels.get("focus", "Focus on"))} <select id="rel-pick">'
+                    f'<option value="">{_e(labels.get("everyone", "everyone"))}</option>{options}</select></label>')
     if shown > MIN_NODES:                                   # a slider that can only sit still is noise
         controls.append(
             f'<label>{_e(labels.get("nicks", "Nicks"))} <input id="rel-k" type="range" min="{MIN_NODES}" '
