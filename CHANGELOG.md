@@ -5,6 +5,14 @@ and versions follow [Semantic Versioning](https://semver.org/). Everything relea
 file existed is treated as 1.0.0. Check what you are running with `python main.py --version`
 (it is also shown in the footer of every stats page).
 
+## [1.2.0] - 2026-09-30
+
+### Added
+- Documentation site: https://statsbot-docs.v-m-m-l.workers.dev/ (generated from README.md, DOCS.md,
+  TRANSLATE.md and CHANGELOG.md by `tools/build_docs.py`).
+- A "Docs" link next to the version in the footer of every stats page. The new optional setting
+  `web.docs_url` changes the address; set it to `""` to hide the link.
+
 ## [1.1.0] - 2026-09-30
 
 ### Security

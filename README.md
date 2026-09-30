@@ -34,6 +34,8 @@ live web dashboard — no log files, no cron jobs, no static HTML generation.
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+**Documentation:** https://statsbot-docs.v-m-m-l.workers.dev/
+
 ---
 
 > [!NOTE]

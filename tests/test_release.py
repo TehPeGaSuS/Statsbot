@@ -53,3 +53,34 @@ def test_every_page_that_links_to_the_repository_shows_the_version(db, sensors, 
 def test_the_unused_channel_template_also_shows_the_version():
     from web import dashboard
     assert "Statsbot {{ statsbot_version }}</a>" in dashboard.CHANNEL_TMPL
+
+
+class TestDocsLink:
+    def _pages(self, db, sensors, tmp_path, web):
+        from conftest import CHAN, NET, make_config
+        from web import dashboard
+        sensors.on_privmsg("alice", "a@h", CHAN, "hello there everyone")
+        cfg = make_config(); cfg["web"] = web
+        dashboard.set_config(cfg, str(tmp_path / "data" / "stats.db"))
+        client = dashboard.app.test_client()
+        return [client.get(u).get_data(as_text=True) for u in ("/", f"/{NET}/", f"/{NET}/chan/")]
+
+    def test_every_page_links_to_the_docs_by_default(self, db, sensors, tmp_path):
+        from version import DEFAULT_DOCS_URL
+        for html in self._pages(db, sensors, tmp_path, {}):
+            assert f'<a href="{DEFAULT_DOCS_URL}"' in html and ">Docs</a>" in html
+
+    def test_the_link_can_be_pointed_elsewhere_and_is_escaped(self, db, sensors, tmp_path):
+        for html in self._pages(db, sensors, tmp_path, {"docs_url": 'https://docs.example/"x'}):
+            assert 'href="https://docs.example/&#34;x"' in html or 'href="https://docs.example/&quot;x"' in html
+
+    def test_an_empty_setting_hides_the_link(self, db, sensors, tmp_path):
+        for html in self._pages(db, sensors, tmp_path, {"docs_url": ""}):
+            assert ">Docs</a>" not in html
+
+
+def test_the_readme_and_the_example_config_mention_the_documentation():
+    from version import DEFAULT_DOCS_URL
+    assert DEFAULT_DOCS_URL in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "docs_url" in (ROOT / "config" / "config.yml.example").read_text(encoding="utf-8")
+    assert "docs_url" in (ROOT / "DOCS.md").read_text(encoding="utf-8")

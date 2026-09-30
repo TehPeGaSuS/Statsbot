@@ -87,6 +87,7 @@ def _prepare(group_id: str, text: str) -> str:
         lines = lines[1:]
     text = _backslash_breaks("\n".join(lines))
     text = re.sub(r"^!\[[^\]]*\]\(https?://[^)]*\)\s*$", "", text, flags=re.M)      # badge images
+    text = re.sub(r"^\*\*Documentation:\*\*.*$", "", text, flags=re.M)                 # this page IS the documentation
     if group_id == "reference":                          # the sidebar replaces the printed ToC
         text = re.sub(r"^## Table of contents\n.*?(?=^## )", "", text, flags=re.S | re.M)
     if group_id == "translating":                        # the English text; the rest is on GitHub

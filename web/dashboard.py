@@ -13,7 +13,7 @@ from typing import Optional
 from flask import Flask, render_template_string, jsonify, abort, request, redirect, url_for
 
 from slugs import channel_slug, channel_from_slug, channel_url_path
-from version import __version__
+from version import __version__, DEFAULT_DOCS_URL
 
 log = logging.getLogger("dashboard")
 
@@ -181,6 +181,7 @@ def index():
         total_channels=total_channels,
         title=web_cfg.get("title", "IRC Stats"),
         project_url=web_cfg.get("project_url", "https://github.com/TehPeGaSuS/Statsbot"),
+        docs_url=web_cfg.get("docs_url", DEFAULT_DOCS_URL),
         now=datetime.now().strftime("%Y-%m-%d %H:%M"),
     )
 
@@ -241,6 +242,7 @@ def network_stats(network: str):
         all_networks=all_networks,
         title=web_cfg.get("title", "IRC Stats"),
         project_url=web_cfg.get("project_url", "https://github.com/TehPeGaSuS/Statsbot"),
+        docs_url=web_cfg.get("docs_url", DEFAULT_DOCS_URL),
         now=datetime.now().strftime("%Y-%m-%d %H:%M"),
     )
 
@@ -483,7 +485,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahom
   <p style="color:var(--muted);text-align:center;padding:3rem 0">No channels tracked on this network yet.</p>
   {% endif %}
 </div>
-<div class="footer"><a href="{{ project_url }}" style="color:var(--faint)">Statsbot {{ statsbot_version }}</a> &mdash; Inspired by <a href="https://pisg.github.io/" style="color:var(--faint)">PISG</a> by Morten Brix Pedersen and others</div>
+<div class="footer"><a href="{{ project_url }}" style="color:var(--faint)">Statsbot {{ statsbot_version }}</a>{% if docs_url %} &middot; <a href="{{ docs_url }}" style="color:var(--faint)">Docs</a>{% endif %} &mdash; Inspired by <a href="https://pisg.github.io/" style="color:var(--faint)">PISG</a> by Morten Brix Pedersen and others</div>
 <button class="theme-toggle" id="themeToggle" title="Toggle light/dark"></button>
 
 <script>
@@ -700,7 +702,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahom
 
 </div>
 
-<div class="footer"><a href="{{ project_url }}" style="color:var(--faint)">Statsbot {{ statsbot_version }}</a> &mdash; Inspired by <a href="https://pisg.github.io/" style="color:var(--faint)">PISG</a> by Morten Brix Pedersen and others</div>
+<div class="footer"><a href="{{ project_url }}" style="color:var(--faint)">Statsbot {{ statsbot_version }}</a>{% if docs_url %} &middot; <a href="{{ docs_url }}" style="color:var(--faint)">Docs</a>{% endif %} &mdash; Inspired by <a href="https://pisg.github.io/" style="color:var(--faint)">PISG</a> by Morten Brix Pedersen and others</div>
 <button class="theme-toggle" id="themeToggle" title="Toggle light/dark"></button>
 
 <script>
@@ -1039,7 +1041,7 @@ body { background: var(--bg); color: var(--text);
 </div><!-- /container -->
 
 <div class="footer">
-  <a href="{{ project_url }}" style="color:var(--muted)">Statsbot {{ statsbot_version }}</a> — Inspired by <a href="https://pisg.github.io/" style="color:var(--faint)">PISG</a> by Morten Brix Pedersen and others &nbsp;·&nbsp; {{ now }}
+  <a href="{{ project_url }}" style="color:var(--muted)">Statsbot {{ statsbot_version }}</a>{% if docs_url %} &middot; <a href="{{ docs_url }}" style="color:var(--muted)">Docs</a>{% endif %} — Inspired by <a href="https://pisg.github.io/" style="color:var(--faint)">PISG</a> by Morten Brix Pedersen and others &nbsp;·&nbsp; {{ now }}
 </div>
 
 <script>

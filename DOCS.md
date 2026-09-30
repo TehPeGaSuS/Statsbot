@@ -291,6 +291,7 @@ web:
                      # If empty, falls back to http://localhost:PORT/
   title: "IRC Stats"
   project_url: "https://github.com/TehPeGaSuS/Statsbot"  # link shown in page footers
+  docs_url: "https://statsbot-docs.v-m-m-l.workers.dev/"  # "Docs" link in page footers; "" hides it
 ```
 
 The dashboard serves three pages:

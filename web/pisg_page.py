@@ -12,7 +12,7 @@ from typing import List, Dict, Optional
 from html import escape as _html_escape
 from i18n import t, get_lang, format_date_long, tn
 from slugs import channel_url_path
-from version import __version__
+from version import __version__, DEFAULT_DOCS_URL
 
 
 def _e(value) -> str:
@@ -202,6 +202,9 @@ def build_page(network: str, channel: str, period: int, config: dict,
     ]
     title        = web.get("title", "IRC Stats")
     project_url  = web.get("project_url", "https://github.com/TehPeGaSuS/Statsbot")
+    docs_url     = web.get("docs_url", DEFAULT_DOCS_URL)
+    docs_link    = (f' &middot; <a href="{_e(docs_url)}" style="color:var(--muted)">Docs</a>'
+                    if docs_url else "")
     # Use the bot's nick for this network as the maintainer string.
     # Checks for a per-network nick override, falls back to bot.nick.
     _net_entry  = next((n for n in config.get("networks", []) if n.get("name") == network), {})
@@ -1186,7 +1189,7 @@ b {{ color: var(--cyan); }}
 </div>''')
 
     # ── Footer ────────────────────────────────────────────────────────────────
-    h(f'<div class="footer"><a href="{_e(project_url)}" style="color:var(--muted)">Statsbot {_e(__version__)}</a> — Inspired by <a href="https://pisg.github.io/" style="color:var(--muted)">PISG</a> by Morten Brix Pedersen and others</div>')
+    h(f'<div class="footer"><a href="{_e(project_url)}" style="color:var(--muted)">Statsbot {_e(__version__)}</a>{docs_link} — Inspired by <a href="https://pisg.github.io/" style="color:var(--muted)">PISG</a> by Morten Brix Pedersen and others</div>')
     h('<button class="theme-toggle" id="themeToggle" title="Toggle light/dark"></button>')
     h('</div>') # /container
 

@@ -121,6 +121,7 @@ web:
   public_url: ""            # e.g. https://stats.yourserver.org — used by !stats and pisg config links
   title: "IRC Stats"
   project_url: "https://github.com/TehPeGaSuS/Statsbot"
+  docs_url: "https://statsbot-docs.v-m-m-l.workers.dev/"   # "Docs" link in the footers; "" hides it
   # trusted_proxies: 0       # set to the number of reverse proxy hops in front
                              # of this app (usually 1) to trust X-Forwarded-*
                              # headers for the real client IP. Leave at 0
