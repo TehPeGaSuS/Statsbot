@@ -944,7 +944,9 @@ b {{ color: var(--cyan); }}
                   f'{_e(r["b"])} &rarr; {_e(r["a"])}: {r["ba"]}">{r["w"]}</td></tr>')
             h('</tbody></table></div>')
         # ... then the big picture, folded away unless the channel asks for it open
-        rel_mode = str(pisg.get("RelationMap", "closed")).strip().lower()
+        rel_mode = pisg.get("RelationMap", "closed")
+        # YAML turns a bare `off` / `on` into False / True
+        rel_mode = {False: "off", True: "open"}.get(rel_mode) if isinstance(rel_mode, bool) else str(rel_mode).strip().lower()
         rel_graph = _relations.build_graph(
             rel_pairs,
             _relations.clamp_int(pisg.get("RelationNicks"), _relations.DEFAULT_NODES, _relations.MIN_NODES, _relations.MAX_NODES),

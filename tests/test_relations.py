@@ -370,6 +370,12 @@ class TestFoldedMap:
         page = self.html(client)
         assert 'id="rel"' not in page and "Closest pairs" in page
 
+    def test_a_yaml_boolean_off_also_leaves_it_out(self, client, talking_channel):
+        from web import dashboard
+        dashboard._config.setdefault("pisg", {})["RelationMap"] = False      # config.yml: `RelationMap: off`
+        page = self.html(client)
+        assert 'id="rel"' not in page and "Closest pairs" in page
+
     def test_an_unknown_value_means_closed(self, client, talking_channel, db):
         db.set_channel_config(NET, CHAN, "pisg.RelationMap", "sideways")
         assert "<details><summary>" in self.html(client)

@@ -5,6 +5,16 @@ and versions follow [Semantic Versioning](https://semver.org/). Everything relea
 file existed is treated as 1.0.0. Check what you are running with `python main.py --version`
 (it is also shown in the footer of every stats page).
 
+## [1.4.2] - 2026-10-18
+
+### Fixed
+- `RelationMap: off` in `config.yml` did nothing: YAML reads a bare `off` as `false`, which was taken
+  for an unknown value, so the map was shown (folded) anyway. `off` now hides the map, and a bare
+  `on` opens it.
+- "Other interesting numbers": the example kick line under "wasn't very popular, getting kicked N
+  times" could be about somebody else, when the top kicked nick was not among the channel's last
+  five kicks. It now shows that nick's own latest kick, or no example if none was logged.
+
 ## [1.4.1] - 2026-10-01
 
 ### Changed
