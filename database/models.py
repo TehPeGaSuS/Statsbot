@@ -704,13 +704,17 @@ def add_kick(network: str, channel: str, kicker: str, victim: str,
         )
 
 
-def get_recent_kicks(network: str, channel: str, limit: int = 5) -> List[Dict]:
+def get_recent_kicks(network: str, channel: str, limit: int = 5,
+                     victim: Optional[str] = None) -> List[Dict]:
+    sql = "SELECT * FROM kick_log WHERE network=? AND channel=?"
+    args: list = [network, channel]
+    if victim:
+        sql += " AND victim = ? COLLATE NOCASE"
+        args.append(victim)
+    sql += " ORDER BY ts DESC LIMIT ?"
+    args.append(limit)
     with get_conn() as conn:
-        rows = conn.execute(
-            "SELECT * FROM kick_log WHERE network=? AND channel=? ORDER BY ts DESC LIMIT ?",
-            (network, channel, limit)
-        ).fetchall()
-        return [dict(r) for r in rows]
+        return [dict(r) for r in conn.execute(sql, args).fetchall()]
 
 
 # ─── Topics ──────────────────────────────────────────────────────────────────

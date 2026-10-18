@@ -1049,9 +1049,7 @@ b {{ color: var(--cyan); }}
             text = tn("{nick} wasn't very popular, getting kicked {count} time!", "{nick} wasn't very popular, getting kicked {count} times!", _kv, lang, nick=f"<b>{_e(kt[0]['nick'])}</b>", count=_kv)
             sub  = t("{nick} seemed to be hated too: {count} kicks were received.", lang, nick=f"<b>{_e(kt[1]['nick'])}</b>", count=kt[1]['value']) if len(kt) > 1 else None
             # Find the most recent kick for this nick for the example line
-            _kick_ex = next((k for k in recent_kicks if k["victim"].lower() == kt[0]["nick"].lower()), None)
-            if not _kick_ex and recent_kicks:
-                _kick_ex = recent_kicks[0]
+            _kick_ex = next(iter(get_recent_kicks(network, channel, 1, victim=kt[0]["nick"])), None)
             if _kick_ex:
                 _ex_str = f"*** {_kick_ex['victim']} was kicked by {_kick_ex['kicker']}"
                 if (_kick_ex["reason"] or "").strip():
