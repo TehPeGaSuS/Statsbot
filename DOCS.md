@@ -265,6 +265,13 @@ stats:
   sad_smileys: [...]        # List of smileys counted as sad (sad stat)
 ```
 
+### Times are UTC
+
+Every time Statsbot keeps or shows is UTC, whatever the server's time zone: the hour buckets
+behind "Most active times", the dates of the daily activity chart, topic times, "Statistics
+generated on", the dashboard and the log file. The daily, weekly (Monday) and monthly (1st)
+resets happen at 00:00 UTC. Pages say so; nothing is shifted to the visitor's zone.
+
 ### Ignore patterns
 
 Patterns support wildcards (`*`, `?`). Two forms are recognised:

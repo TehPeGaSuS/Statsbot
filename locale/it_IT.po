@@ -30,6 +30,9 @@ msgstr "{n} giorni fa alle {time}"
 msgid "Statistics generated on {date}"
 msgstr "Statistiche generate il {date}"
 
+msgid "All times are UTC."
+msgstr "Tutti gli orari sono in UTC."
+
 msgid "During this {n}-day reporting period, a total of {total} different nicks were represented on {channel}."
 msgstr "Durante questo periodo di {n} giorni, un totale di {total} nick diversi sono stati rappresentati su {channel}."
 

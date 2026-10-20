@@ -5,6 +5,20 @@ and versions follow [Semantic Versioning](https://semver.org/). Everything relea
 file existed is treated as 1.0.0. Check what you are running with `python main.py --version`
 (it is also shown in the footer of every stats page).
 
+## [1.5.0] - 2026-10-20
+
+### Changed
+- Every timestamp is UTC, whatever the server's time zone, and the pages say so ("All times are
+  UTC." in the footer of every stats page, "UTC" after each time). The stats page no longer shifts
+  the hourly chart, the activity bands, the daily chart or "Statistics generated on" to the
+  visitor's browser zone; the dashboard and the log file use UTC too.
+- The daily, weekly and monthly resets happen at 00:00 UTC instead of the server's midnight.
+
+### Fixed
+- The hourly activity was stored in the server's local hour while the page treated it as UTC, so
+  on a server not running in UTC every hour bar was off by the server's offset. Lines from before
+  this release keep the hour they were stored with.
+
 ## [1.4.2] - 2026-10-18
 
 ### Fixed

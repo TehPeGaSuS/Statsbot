@@ -54,13 +54,9 @@ def sensors(db, cfg):
 
 @pytest.fixture
 def freeze_date(monkeypatch):
-    """freeze_date(2026, 10, 2) makes datetime.date.today() return that day."""
+    """freeze_date(2026, 10, 2) makes models.utc_today() return that day."""
     def _freeze(year, month, day):
-        class FakeDate(datetime.date):
-            @classmethod
-            def today(cls):
-                return cls(year, month, day)
-        monkeypatch.setattr(datetime, "date", FakeDate)
+        monkeypatch.setattr(models, "utc_today", lambda: datetime.date(year, month, day))
     return _freeze
 
 

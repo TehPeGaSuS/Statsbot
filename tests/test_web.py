@@ -60,6 +60,19 @@ class TestRouting:
         assert client.get(f"/{NET}/quiet/").status_code == 200
 
 
+class TestTimesAreUtc:
+    def test_the_stats_page_says_times_are_utc(self, client, busy_channel):
+        page = client.get(f"/{NET}/chan/").get_data(as_text=True)
+        assert "All times are UTC." in page
+        assert re.search(r"Statistics generated on .* \d\d:\d\d:\d\d UTC", page)
+
+    def test_the_stats_page_does_not_shift_times_to_the_browser_zone(self, client, busy_channel):
+        assert b"getTimezoneOffset" not in client.get(f"/{NET}/chan/").data
+
+    def test_the_dashboard_says_times_are_utc(self, client, busy_channel):
+        assert b" UTC" in client.get("/").data
+
+
 class TestApi:
     def test_top(self, client, busy_channel):
         rows = client.get(f"/api/{NET}/chan/top?stat=lines&limit=5").get_json()

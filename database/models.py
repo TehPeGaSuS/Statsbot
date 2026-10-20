@@ -9,6 +9,12 @@ import os
 import time
 from contextlib import contextmanager
 from typing import Optional, List, Tuple, Dict
+from datetime import datetime as _datetime, timezone as _timezone
+
+
+def utc_today():
+    """Today's date in UTC: every date and hour Statsbot stores is UTC, whatever the server's zone."""
+    return _datetime.now(_timezone.utc).date()
 
 
 DB_PATH = "data/stats.db"
@@ -490,7 +496,7 @@ def incr(nick_id: int, stat: str, value: int = 1):
         # the day/week/month/all-time tabs can each show their own
         # "active hours" breakdown instead of one shared lifetime bucket.
         if stat == "lines":
-            hour = int(time.strftime("%H"))
+            hour = time.gmtime().tm_hour
             for period in range(4):
                 conn.execute(
                     "INSERT INTO hourly_activity(nick_id,hour,period,lines) VALUES(?,?,?,?) "
@@ -835,9 +841,9 @@ def snapshot_daily(day=None):
 
     The scheduler calls this in the first minutes after midnight, so the day that just ended
     is *yesterday*: that is the default. Pass `day` (a date or ISO string) to say otherwise."""
-    from datetime import date as _date, timedelta
+    from datetime import timedelta
     if day is None:
-        day = _date.today() - timedelta(days=1)
+        day = utc_today() - timedelta(days=1)
     today = day.isoformat() if hasattr(day, "isoformat") else str(day)
     with get_conn() as conn:
         rows = conn.execute("""
@@ -864,8 +870,7 @@ def snapshot_today(network: str, channel: str):
     """Upsert today's partial stats into daily_activity for immediate display.
     Called on page render if today's row is missing; midnight snapshot takes
     precedence once the scheduler fires."""
-    from datetime import date as _date
-    today = _date.today().isoformat()
+    today = utc_today().isoformat()
     with get_conn() as conn:
         existing = conn.execute(
             "SELECT 1 FROM daily_activity WHERE network=? AND channel=? AND date=?",
@@ -906,8 +911,8 @@ def get_daily_activity(network: str, channel: str, days: int = 30) -> List[Dict]
 
 def trim_daily_activity(keep_days: int = 365):
     """Remove daily_activity rows older than keep_days days."""
-    from datetime import date as _date, timedelta
-    cutoff = (_date.today() - timedelta(days=keep_days)).isoformat()
+    from datetime import timedelta
+    cutoff = (utc_today() - timedelta(days=keep_days)).isoformat()
     with get_conn() as conn:
         conn.execute("DELETE FROM daily_activity WHERE date < ?", (cutoff,))
 

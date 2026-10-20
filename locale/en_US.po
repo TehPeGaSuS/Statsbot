@@ -31,6 +31,9 @@ msgstr ""
 msgid "Statistics generated on {date}"
 msgstr ""
 
+msgid "All times are UTC."
+msgstr ""
+
 msgid "During this {n}-day reporting period, a total of {total} different nicks were represented on {channel}."
 msgstr ""
 

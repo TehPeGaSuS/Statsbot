@@ -10,7 +10,7 @@ Periodic task scheduler:
 import asyncio
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 log = logging.getLogger("scheduler")
 
@@ -52,7 +52,7 @@ class Scheduler:
         log.info("Scheduler started.")
         while self._running:
             await asyncio.sleep(60)
-            now = datetime.now()
+            now = datetime.now(timezone.utc)      # resets happen at midnight UTC
             try:
                 self._tick(now)
             except Exception as e:
@@ -90,7 +90,7 @@ class Scheduler:
             self._last_month = month
             self._save("last_monthly_reset", month)
 
-        log.debug(f"Tick at {now.strftime('%H:%M')}")
+        log.debug(f"Tick at {now.strftime('%H:%M')} UTC")
 
     def stop(self):
         self._running = False

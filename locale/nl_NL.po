@@ -29,6 +29,9 @@ msgstr "{n} dagen geleden om {time}"
 msgid "Statistics generated on {date}"
 msgstr "Statistieken gegenereerd op {date}"
 
+msgid "All times are UTC."
+msgstr "Alle tijden zijn in UTC."
+
 msgid "During this {n}-day reporting period, a total of {total} different nicks were represented on {channel}."
 msgstr "In deze periode van {n} dagen waren er {total} verschillende nicks actief op {channel}."
 

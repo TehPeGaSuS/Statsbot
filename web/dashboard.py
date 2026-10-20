@@ -7,7 +7,7 @@ Serves a pisg-style HTML stats page at http://host:8033/
 import time
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from flask import Flask, render_template_string, jsonify, abort, request, redirect, url_for
@@ -65,8 +65,7 @@ def get_online_count(network: str, channel: str) -> int:
 def _datefmt(ts):
     if not ts:
         return ""
-    from datetime import datetime
-    return datetime.fromtimestamp(ts).strftime("%d/%m/%Y")
+    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%d/%m/%Y")
 
 
 def set_config(config: dict, db_path: str):
@@ -81,7 +80,7 @@ def _ts(ts: int) -> str:
     if not ts:
         return "never"
     try:
-        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
+        return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     except Exception:
         return "?"
 
@@ -182,7 +181,7 @@ def index():
         title=web_cfg.get("title", "IRC Stats"),
         project_url=web_cfg.get("project_url", "https://github.com/TehPeGaSuS/Statsbot"),
         docs_url=web_cfg.get("docs_url", DEFAULT_DOCS_URL),
-        now=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        now=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     )
 
 
@@ -243,7 +242,7 @@ def network_stats(network: str):
         title=web_cfg.get("title", "IRC Stats"),
         project_url=web_cfg.get("project_url", "https://github.com/TehPeGaSuS/Statsbot"),
         docs_url=web_cfg.get("docs_url", DEFAULT_DOCS_URL),
-        now=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        now=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     )
 
 @app.route("/<network>/<path:channel>/")

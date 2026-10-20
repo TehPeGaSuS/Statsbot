@@ -502,7 +502,7 @@ b {{ color: var(--cyan); }}
   <h1>{_e(channel)} <span style="color:var(--muted);font-size:1rem">on {_e(network)}</span>
     <span id="live-count">●</span>
   </h1>
-  <p class="subtitle" data-utc="{now_iso}" data-i18n-gen="{t_gen}"><span class="local-time">{t_gen}</span></p>
+  <p class="subtitle"><time datetime="{now_iso}">{t_gen}</time></p>
   <p class="subtitle">{t_period}</p>
 </div>
 <div class="container">
@@ -552,7 +552,7 @@ b {{ color: var(--cyan); }}
 
     # ── Activity by hour ──────────────────────────────────────────────────────
     if pisg.get("ShowActiveTimes", True):
-        section(t("Most active times", lang))
+        section(t("Most active times", lang) + " (UTC)")
         h(f'<div class="chart-scroll"><div class="chart-wrap"><canvas id="hourChart"></canvas></div></div>')
         if pisg.get("ShowLegend", True):
             h('<div class="band-legend">')
@@ -565,8 +565,8 @@ b {{ color: var(--cyan); }}
     # ── Daily activity chart ─────────────────────────────────────────────────
     if daily_days and pisg.get("DailyActivity", 30):
         # Build complete date range — fill missing days with null
-        from datetime import date as _d, timedelta as _td
-        _end   = _d.today()
+        from datetime import timedelta as _td
+        _end   = datetime.now(timezone.utc).date()
         _start = _end - _td(days=daily_days - 1)
         _lookup = {r["date"]: r["lines"] for r in daily_data}
         _all_dates = []
@@ -1021,11 +1021,11 @@ b {{ color: var(--cyan); }}
             _days = (datetime.now(timezone.utc) - _tdt).days if _tdt else 0
             if _tdt and _days > 1:
                 _twhen = t("{n} days ago at {time}", lang, n=_days,
-                           time=_tdt.strftime("%H:%M"))
+                           time=_tdt.strftime("%H:%M UTC"))
             elif _tdt and _tdt.date() == datetime.now(timezone.utc).date():
-                _twhen = t("today at {time}", lang, time=_tdt.strftime("%H:%M"))
+                _twhen = t("today at {time}", lang, time=_tdt.strftime("%H:%M UTC"))
             elif _tdt:
-                _twhen = t("yesterday at {time}", lang, time=_tdt.strftime("%H:%M"))
+                _twhen = t("yesterday at {time}", lang, time=_tdt.strftime("%H:%M UTC"))
             else:
                 _twhen = ""
             _topic_clean = strip_irc(_tp["topic"] or "")
@@ -1203,22 +1203,15 @@ b {{ color: var(--cyan); }}
 </div>''')
 
     # ── Footer ────────────────────────────────────────────────────────────────
-    h(f'<div class="footer"><a href="{_e(project_url)}" style="color:var(--muted)">Statsbot {_e(__version__)}</a>{docs_link} — Inspired by <a href="https://pisg.github.io/" style="color:var(--muted)">PISG</a> by Morten Brix Pedersen and others</div>')
+    h(f'<div class="footer"><a href="{_e(project_url)}" style="color:var(--muted)">Statsbot {_e(__version__)}</a>{docs_link} — Inspired by <a href="https://pisg.github.io/" style="color:var(--muted)">PISG</a> by Morten Brix Pedersen and others<br>{_e(t("All times are UTC.", lang))}</div>')
     h('<button class="theme-toggle" id="themeToggle" title="Toggle light/dark"></button>')
     h('</div>') # /container
 
     # ── JavaScript ───────────────────────────────────────────────────────────
     h(f"""<script>
 // Hourly activity chart
-const hdataUtc = {json.dumps(hourly_data)};
-// Shift UTC hourly data to browser local time
-const tzOffH = -(new Date().getTimezoneOffset() / 60);
-const hdata = {{}};
-for (var _h = 0; _h < 24; _h++) {{
-  var _lh = ((_h + tzOffH) % 24 + 24) % 24;
-  hdata[_lh] = (hdata[_lh] || 0) + (hdataUtc[_h] || 0);
-}}
-// Labels: local hours
+const hdata = {json.dumps(hourly_data)};
+// Labels: UTC hours
 const labels = Array.from({{length:24}}, (_,i) => i.toString().padStart(2,'0')+':00');
 const vals = labels.map((_,i) => hdata[i] || 0);
 // Band colours matching legend: blue=0-5, green=6-11, yellow=12-17, red=18-23
@@ -1251,17 +1244,17 @@ new Chart(document.getElementById('hourChart'), {{
 if (document.getElementById('dailyChart')) {{
   const dDatesUtc = {_daily_dates};
   const dLines    = {_daily_lines};  // null = no data for that day
-  const todayISO  = new Date().toLocaleDateString('en-CA');
+  const todayISO  = new Date().toISOString().slice(0, 10);   // today in UTC
   const blueCol  = getComputedStyle(document.body).getPropertyValue('--blue').trim();
   const gridCol  = getComputedStyle(document.body).getPropertyValue('--bg3').trim();
   const mutedCol = getComputedStyle(document.body).getPropertyValue('--muted').trim();
 
-  const localLabels = dDatesUtc.map(function(d) {{
+  const dLabels = dDatesUtc.map(function(d) {{
     var dt = new Date(d + 'T12:00:00Z');
-    return dt.toLocaleDateString(undefined, {{month:'short', day:'numeric'}});
+    return dt.toLocaleDateString(undefined, {{month:'short', day:'numeric', timeZone:'UTC'}});
   }});
   const isToday = dDatesUtc.map(function(d) {{
-    return new Date(d + 'T12:00:00Z').toLocaleDateString('en-CA') === todayISO;
+    return d === todayISO;
   }});
   const colors = dLines.map(function(v, i) {{
     if (v === null) return gridCol;
@@ -1283,7 +1276,7 @@ if (document.getElementById('dailyChart')) {{
   new Chart(document.getElementById('dailyChart'), {{
     type: 'bar',
     data: {{
-      labels: localLabels,
+      labels: dLabels,
       datasets: [{{
         data: dLines.map(function(v) {{ return v === null ? 0 : v; }}),
         backgroundColor: colors,
@@ -1411,33 +1404,21 @@ if (document.getElementById('dailyChart')) {{
   });
 })();
 
-// ── Timezone-aware activity bands ─────────────────────────────────────────────
+// ── Activity bands (UTC hours) ────────────────────────────────────────────────
 (function() {
-  var offsetH = -(new Date().getTimezoneOffset() / 60); // e.g. +1 for WET, -5 for EST
   var bandCols = ['blue-h','green-h','yellow-h','red-h'];
   var bands = [[0,5],[6,11],[12,17],[18,23]];
 
-  function shiftHours(utcArr) {
-    var local = new Array(24).fill(0);
-    for (var h = 0; h < 24; h++) {
-      var lh = ((h + offsetH) % 24 + 24) % 24;
-      local[lh] += utcArr[h];
-    }
-    return local;
-  }
-
-  function bucket(localArr) {
+  function bucket(hours) {
     return bands.map(function(b) {
       var sum = 0;
-      for (var h = b[0]; h <= b[1]; h++) sum += localArr[h];
+      for (var h = b[0]; h <= b[1]; h++) sum += hours[h];
       return sum;
     });
   }
 
   document.querySelectorAll('.tz-bands').forEach(function(td) {
-    var utcArr = JSON.parse(td.dataset.hours);
-    var local  = shiftHours(utcArr);
-    var nb     = bucket(local);
+    var nb     = bucket(JSON.parse(td.dataset.hours));
     var total  = nb.reduce(function(a,b){return a+b;}, 0) || 1;
     var html   = '';
     nb.forEach(function(v, bi) {
@@ -1481,25 +1462,6 @@ document.querySelectorAll('.sortable-table').forEach(function(table) {
   });
 });
 
-// ── Auto timezone ─────────────────────────────────────────────────────────────
-(function() {
-  // Convert the "Statistics generated on" timestamp
-  document.querySelectorAll('[data-utc]').forEach(function(el) {
-    var utc = el.dataset.utc;
-    if (!utc) return;
-    var d = new Date(utc);
-    var span = el.querySelector('.local-time');
-    if (!span) return;
-    var opts = { weekday:'long', year:'numeric', month:'long', day:'2-digit',
-                  hour:'2-digit', minute:'2-digit', second:'2-digit' };
-    var localStr = d.toLocaleString(undefined, opts);
-    // Replace the date part inside the existing translated string
-    var tmpl = el.dataset.i18nGen || '';
-    var braceIdx = tmpl.indexOf('{');
-    var prefix = braceIdx >= 0 ? tmpl.substring(0, braceIdx) : '';
-    span.textContent = prefix + localStr;
-  });
-})();
 </script>
 </body>
 </html>""")

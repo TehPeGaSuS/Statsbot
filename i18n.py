@@ -301,4 +301,4 @@ def format_date_long(dt, lang: str = DEFAULT) -> str:
     months   = _get_list(_EN_MONTHS, lang)
     wd  = weekdays[dt.weekday()]
     mon = months[dt.month - 1]
-    return f"{wd} {dt.day:02d} {mon} {dt.year} - {dt.strftime('%H:%M:%S')}"
+    return f"{wd} {dt.day:02d} {mon} {dt.year} - {dt.strftime('%H:%M:%S')} UTC"

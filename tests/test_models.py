@@ -61,6 +61,20 @@ class TestIncrement:
             rows = c.execute("SELECT period, lines FROM hourly_activity WHERE nick_id=?", (nid,)).fetchall()
         assert sorted((r["period"], r["lines"]) for r in rows) == [(0, 2), (1, 2), (2, 2), (3, 2)]
 
+    def test_hourly_activity_uses_the_utc_hour_whatever_the_server_zone(self, db, monkeypatch):
+        import time
+        monkeypatch.setenv("TZ", "Asia/Kolkata")       # UTC+05:30: the local hour is never the UTC one
+        time.tzset()
+        try:
+            nid = db.get_or_create_nick("alice", NET, CHAN)
+            db.incr(nid, "lines")
+            with db.get_conn() as c:
+                hours = {r["hour"] for r in c.execute("SELECT hour FROM hourly_activity WHERE nick_id=?", (nid,))}
+            assert hours == {time.gmtime().tm_hour}
+        finally:
+            monkeypatch.delenv("TZ")
+            time.tzset()
+
 
 class TestTopAndRank:
     def _fill(self, db):

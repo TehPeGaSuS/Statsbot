@@ -12,6 +12,7 @@ import logging
 import os
 import sys
 import threading
+import time
 
 import yaml
 
@@ -45,9 +46,10 @@ def setup_logging(config: dict):
         handlers.append(logging.FileHandler(log_file))
     except Exception:
         pass
+    logging.Formatter.converter = time.gmtime     # log timestamps are UTC, like the rest of Statsbot
     logging.basicConfig(
         level=level,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+        format="%(asctime)s UTC [%(name)s] %(levelname)s: %(message)s",
         handlers=handlers,
     )
 
